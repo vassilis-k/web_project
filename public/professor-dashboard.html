@@ -1,0 +1,1428 @@
+<!DOCTYPE html>
+<html lang="el">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Καθηγητής Dashboard</title>
+    <link rel="stylesheet" href="/css/style.css">
+    <!-- Chart.js for statistics -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        /* General dashboard container styles */
+        .dashboard-container {
+            width: 90%;
+            max-width: 1400px;
+            margin: 20px auto;
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+        .dashboard-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        /* Navigation styles */
+        nav {
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #eee;
+        }
+        nav a {
+            margin-right: 15px;
+            text-decoration: none;
+            color: #007bff;
+            font-weight: bold;
+        }
+        nav a:hover {
+            color: #0056b3;
+        }
+
+        /* Section specific styles */
+        .section-content {
+            margin-top: 20px;
+            border-top: 1px solid #eee;
+            padding-top: 20px;
+        }
+
+        /* Form groups */
+        .form-group {
+            margin-bottom: 15px;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        .form-group input[type="text"],
+        .form-group input[type="email"],
+        .form-group input[type="number"],
+        .form-group input[type="url"],
+        .form-group textarea,
+        .form-group select {
+            width: calc(100% - 22px); /* Account for padding and border */
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;
+            font-size: 1em;
+        }
+        .form-group select {
+            width: 100%;
+        }
+
+        /* Buttons */
+        button {
+            background-color: #007bff;
+            color: white;
+            padding: 10px 15px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        .action-button {
+            padding: 6px 10px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-right: 5px;
+            border: none;
+            font-size: 0.8em;
+        }
+        .action-button.primary { background-color: #007bff; color: white; }
+        .action-button.danger { background-color: #dc3545; color: white; }
+        .action-button.warning { background-color: #ffc107; color: #333; }
+        .action-button.info { background-color: #17a2b8; color: white; }
+        .action-button.success { background-color: #28a745; color: white; }
+
+
+        /* Lists (topics, invitations, search results) */
+        .topic-list ul, .invitation-list ul, .student-results ul, .notes-list ul {
+            list-style: none;
+            padding: 0;
+        }
+        .topic-list li, .invitation-list li, .student-results li, .notes-list li {
+            background-color: #f9f9f9;
+            border: 1px solid #ddd;
+            padding: 10px;
+            margin-bottom: 10px;
+            border-radius: 4px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap; /* Allow items to wrap */
+        }
+        .topic-list li h3, .invitation-list li h4 {
+            margin: 0;
+            color: #333;
+            flex-basis: 100%; /* Take full width on top */
+            margin-bottom: 5px;
+        }
+        .topic-actions, .invitation-actions, .assign-actions {
+            margin-top: 10px; /* Add margin for spacing when wrapping */
+        }
+        .topic-actions button {
+            margin-left: 10px;
+            margin-top: 5px; /* Spacing for small screens */
+        }
+        .error-message {
+            color: red;
+            margin-top: 10px;
+        }
+
+        /* Table styles for theses list */
+        .thesis-list-table table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+        }
+        .thesis-list-table th, .thesis-list-table td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+            font-size: 0.9em;
+        }
+        .thesis-list-table th {
+            background-color: #f2f2f2;
+        }
+        .filter-controls {
+            margin-bottom: 15px;
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+        .export-buttons {
+            margin-top: 15px;
+            display: flex;
+            gap: 10px;
+        }
+        .export-buttons button {
+            background-color: #6c757d;
+            color: white;
+            border: none;
+            padding: 8px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        /* Modal styles */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 100;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0,0,0,0.4);
+        }
+        .modal-content {
+            background-color: #fefefe;
+            margin: 5% auto;
+            padding: 20px;
+            border: 1px solid #888;
+            width: 80%;
+            max-width: 800px;
+            border-radius: 8px;
+            position: relative;
+        }
+        .close-button {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+            position: absolute;
+            top: 10px;
+            right: 20px;
+        }
+        .close-button:hover, .close-button:focus {
+            color: black;
+            text-decoration: none;
+            cursor: pointer;
+        }
+
+        /* Specific styles for modal content */
+        #modalThesisDetails h5 {
+            margin-top: 15px;
+            margin-bottom: 10px;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 5px;
+        }
+        #modalThesisDetails ul {
+            list-style: disc;
+            margin-left: 20px;
+        }
+        #modalThesisActions {
+            margin-top: 20px;
+            border-top: 1px solid #eee;
+            padding-top: 15px;
+        }
+        #thesisDynamicActions {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-bottom: 15px;
+        }
+        .grade-input {
+            width: 60px;
+            padding: 5px;
+            border-radius: 4px;
+            border: 1px solid #ccc;
+            margin-right: 5px;
+            box-sizing: border-box;
+        }
+        .grade-save-btn {
+            background-color: #28a745;
+            color: white;
+            padding: 5px 10px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.9em;
+        }
+        .notes-list li {
+            background-color: #f4f4f4;
+            margin-bottom: 5px;
+            padding: 8px;
+            border-left: 3px solid #007bff;
+            font-size: 0.9em;
+        }
+        #addNoteText {
+            width: calc(100% - 22px);
+            margin-bottom: 10px;
+            font-size: 1em;
+        }
+
+        /* Styles for Charts */
+        #professorStats canvas {
+            margin-bottom: 30px;
+        }
+    </style>
+</head>
+<body>
+    <div class="dashboard-container">
+        <div class="dashboard-header">
+            <h2 id="welcomeMessage">Καθηγητής Dashboard</h2>
+            <button onclick="logout()">Αποσύνδεση</button>
+        </div>
+
+        <nav>
+            <a href="#topics-section">Διαχείριση Θεμάτων</a> |
+            <a href="#assign-section">Ανάθεση Θεμάτων</a> |
+            <a href="#theses-list-section">Οι Διπλωματικές μου</a> |
+            <a href="#invitations-section">Προσκλήσεις Επιτροπής</a> |
+            <a href="#stats-section">Στατιστικά</a>
+        </nav>
+
+        <!-- 1) Διαχείριση Θεμάτων (Δημιουργία/Προβολή/Επεξεργασία) -->
+        <section id="topics-section" class="section-content">
+            <h3>Διαχείριση Θεμάτων προς Ανάθεση</h3>
+            <h4>Δημιουργία Νέου Θέματος</h4>
+            <form id="createTopicForm" class="topic-form">
+                <div class="form-group">
+                    <label for="newTopicTitle">Τίτλος Θέματος:</label>
+                    <input type="text" id="newTopicTitle" name="title" required>
+                </div>
+                <div class="form-group">
+                    <label for="newTopicDescription">Περιγραφή (Σύνοψη):</label>
+                    <textarea id="newTopicDescription" name="description" rows="5" required></textarea>
+                </div>
+                <div class="form-group">
+                    <label for="newTopicPdfUrl">Σύνδεσμος PDF Αναλυτικής Περιγραφής:</label>
+                    <input type="url" id="newTopicPdfUrl" name="description_pdf_url">
+                </div>
+                <button type="submit">Δημιουργία Θέματος</button>
+                <p id="createTopicMessage" class="error-message"></p>
+            </form>
+
+            <h4>Θέματα που Έχω Δημιουργήσει</h4>
+            <div id="professorTopics" class="topic-list">
+                <p>Φόρτωση θεμάτων...</p>
+            </div>
+        </section>
+
+        <!-- 2) Αρχική ανάθεση θέματος σε φοιτητή -->
+        <section id="assign-section" class="section-content" style="display: none;">
+            <h3>Ανάθεση Θεμάτων σε Φοιτητές</h3>
+            <div class="student-search">
+                <h4>Αναζήτηση Φοιτητή</h4>
+                <div class="form-group">
+                    <input type="text" id="studentSearchTerm" placeholder="Αναζήτηση με όνομα, επώνυμο ή email">
+                    <button onclick="searchStudents()">Αναζήτηση</button>
+                </div>
+                <div id="studentSearchResults" class="student-results"></div>
+                <p id="studentSearchMessage" class="error-message"></p>
+            </div>
+
+            <div class="assign-form">
+                <h4>Ανάθεση Διαθέσιμου Θέματος σε Φοιτητή</h4>
+                <div class="form-group">
+                    <label for="availableTopicsSelect">Διαθέσιμα Θέματα:</label>
+                    <select id="availableTopicsSelect"></select>
+                </div>
+                <div class="form-group">
+                    <label for="selectedStudentInfo">Επιλεγμένος Φοιτητής:</label>
+                    <span id="selectedStudentInfo">Κανένας</span>
+                    <input type="hidden" id="selectedStudentId">
+                </div>
+                <button onclick="assignTopic()" class="assign-btn">Ανάθεση Θέματος</button>
+                <button onclick="unassignTopic()" class="unassign-btn" style="background-color: #dc3545;">Αναίρεση Ανάθεσης</button>
+                <p id="assignTopicMessage" class="error-message"></p>
+            </div>
+        </section>
+
+        <!-- 3) Προβολή λίστας διπλωματικών -->
+        <section id="theses-list-section" class="section-content" style="display: none;">
+            <h3>Οι Διπλωματικές μου Εργασίες</h3>
+            <div class="filter-controls">
+                <label for="thesisStatusFilter">Κατάσταση:</label>
+                <select id="thesisStatusFilter">
+                    <option value="all">Όλες</option>
+                    <option value="available">Διαθέσιμη</option>
+                    <option value="under_assignment">Υπό Ανάθεση</option>
+                    <option value="active">Ενεργή</option>
+                    <option value="under_review">Υπό Εξέταση</option>
+                    <option value="completed">Ολοκληρωμένη</option>
+                    <option value="cancelled">Ακυρωμένη</option>
+                </select>
+
+                <label for="thesisRoleFilter">Ρόλος:</label>
+                <select id="thesisRoleFilter">
+                    <option value="all">Όλοι</option>
+                    <option value="supervisor">Επιβλέπων</option>
+                    <option value="member">Μέλος Επιτροπής</option>
+                </select>
+
+                <button onclick="fetchProfessorTheses()">Εφαρμογή Φίλτρων</button>
+                <div class="export-buttons">
+                    <button onclick="exportTheses('csv')">Εξαγωγή σε CSV</button>
+                    <button onclick="exportTheses('json')">Εξαγωγή σε JSON</button>
+                </div>
+            </div>
+            <div id="professorThesesList" class="thesis-list-table">
+                <p>Φόρτωση διπλωματικών...</p>
+            </div>
+        </section>
+
+        <!-- 4) Προβολή προσκλήσεων συμμετοχής σε τριμελή -->
+        <section id="invitations-section" class="section-content" style="display: none;">
+            <h3>Προσκλήσεις Συμμετοχής σε Τριμελή Επιτροπή</h3>
+            <div id="professorInvitations" class="invitation-list">
+                <p>Φόρτωση προσκλήσεων...</p>
+            </div>
+            <p id="invitationActionMessage" class="error-message"></p>
+        </section>
+
+        <!-- 5) Στατιστικά -->
+        <section id="stats-section" class="section-content" style="display: none;">
+            <h3>Στατιστικά</h3>
+            <div id="professorStats">
+                <h4>Συνολικές Διπλωματικές</h4>
+                <canvas id="thesesCountChart" width="400" height="200"></canvas>
+                <h4>Μέσος Χρόνος Περάτωσης (Ημέρες)</h4>
+                <canvas id="avgTimeChart" width="400" height="200"></canvas>
+                <h4>Μέσος Βαθμός</h4>
+                <canvas id="avgGradeChart" width="400" height="200"></canvas>
+            </div>
+        </section>
+
+        <!-- Edit Topic Modal (existing) -->
+        <div id="editTopicModal" class="modal">
+            <div class="modal-content">
+                <span class="close-button" onclick="closeModal('editTopicModal')">&times;</span>
+                <h4>Επεξεργασία Θέματος</h4>
+                <form id="editTopicForm">
+                    <input type="hidden" id="editTopicId">
+                    <div class="form-group">
+                        <label for="editTopicTitle">Τίτλος Θέματος:</label>
+                        <input type="text" id="editTopicTitle" name="title" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="editTopicDescription">Περιγραφή (Σύνοψη):</label>
+                        <textarea id="editTopicDescription" name="description" rows="5" required></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label for="editTopicPdfUrl">Σύνδεσμος PDF Αναλυτικής Περιγραφής:</label>
+                        <input type="url" id="editTopicPdfUrl" name="description_pdf_url">
+                    </div>
+                    <button type="submit">Αποθήκευση Αλλαγών</button>
+                    <p id="editTopicMessage" class="error-message"></p>
+                </form>
+            </div>
+        </div>
+
+        <!-- New: Thesis Details Modal -->
+        <div id="thesisDetailsModal" class="modal">
+            <div class="modal-content">
+                <span class="close-button" onclick="closeModal('thesisDetailsModal')">&times;</span>
+                <h3 id="modalThesisTitle">Λεπτομέρειες Διπλωματικής</h3>
+                <div id="modalThesisDetails">
+                    <!-- Dynamic content will be loaded here -->
+                </div>
+                <div id="modalThesisActions" style="margin-top: 20px;">
+                    <h4>Ενέργειες Διαχείρισης</h4>
+                    <!-- Dynamic action buttons based on status and role -->
+                    <div id="thesisDynamicActions"></div>
+
+                    <!-- Notes Section -->
+                    <div style="margin-top: 20px;">
+                        <h5>Σημειώσεις (Μόνο για εσάς)</h5>
+                        <textarea id="addNoteText" rows="3" maxlength="300" placeholder="Προσθέστε μια σημείωση (μέγ. 300 χαρακτήρες)"></textarea>
+                        <button class="action-button primary" onclick="addNoteToThesis()">Προσθήκη Σημείωσης</button>
+                        <p id="noteMessage" class="error-message"></p>
+                        <ul id="myNotesList" class="notes-list" style="margin-top: 10px;"></ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- New: Cancel Thesis by Supervisor Modal -->
+        <div id="cancelThesisBySupervisorModal" class="modal">
+            <div class="modal-content">
+                <span class="close-button" onclick="closeModal('cancelThesisBySupervisorModal')">&times;</span>
+                <h4>Ακύρωση Διπλωματικής Εργασίας (Επιβλέπων)</h4>
+                <form id="cancelThesisBySupervisorForm">
+                    <input type="hidden" id="cancelBySupervisorThesisId">
+                    <p>Ακύρωση ανάθεσης διπλωματικής (απαιτείται να έχουν περάσει 2 έτη από την ανάθεση).</p>
+                    <div class="form-group">
+                        <label for="gsNumberSupervisorInput">Αριθμός Γ.Σ. Ακύρωσης:</label>
+                        <input type="text" id="gsNumberSupervisorInput" name="gs_number" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="gsYearSupervisorInput">Έτος Γ.Σ. Ακύρωσης:</label>
+                        <input type="number" id="gsYearSupervisorInput" name="gs_year" required>
+                    </div>
+                    <button type="submit" class="action-button danger">Οριστική Ακύρωση</button>
+                    <p id="cancelBySupervisorMessage" class="error-message"></p>
+                </form>
+            </div>
+        </div>
+
+
+    </div>
+
+    <script>
+        let availableTopics = []; // Global array for available topics
+        let currentProfessorId = null; // To store the current logged-in professor's ID
+        let currentProfessorRole = null; // To store the current logged-in professor's role
+
+        document.addEventListener('DOMContentLoaded', () => {
+            fetchUserInfo();
+            fetchProfessorTopics();
+            fetchAvailableTopicsForAssignment(); // For the "Assign Topics" section
+            fetchProfessorInvitations();
+            fetchProfessorTheses(); // Initial load of the thesis list
+
+            document.getElementById('createTopicForm').addEventListener('submit', handleCreateTopic);
+            document.getElementById('editTopicForm').addEventListener('submit', handleUpdateTopic);
+            document.getElementById('cancelThesisBySupervisorForm').addEventListener('submit', handleCancelThesisBySupervisorSubmit); // New
+
+            // Navigation logic
+            document.querySelectorAll('nav a').forEach(link => {
+                link.addEventListener('click', (event) => {
+                    event.preventDefault();
+                    document.querySelectorAll('section').forEach(section => {
+                        section.style.display = 'none';
+                    });
+                    const targetSection = document.querySelector(event.target.getAttribute('href'));
+                    if (targetSection) {
+                        targetSection.style.display = 'block';
+                    }
+                    // Refresh data when navigating to specific sections
+                    if (event.target.getAttribute('href') === '#topics-section') {
+                        fetchProfessorTopics();
+                    } else if (event.target.getAttribute('href') === '#assign-section') {
+                        fetchAvailableTopicsForAssignment();
+                        document.getElementById('studentSearchResults').innerHTML = ''; // Clear search results
+                        document.getElementById('selectedStudentInfo').textContent = 'Κανένας';
+                        document.getElementById('selectedStudentId').value = '';
+                        document.getElementById('studentSearchTerm').value = ''; // Clear search term
+                        document.getElementById('studentSearchMessage').textContent = '';
+                        document.getElementById('assignTopicMessage').textContent = '';
+                    } else if (event.target.getAttribute('href') === '#invitations-section') {
+                        fetchProfessorInvitations();
+                    } else if (event.target.getAttribute('href') === '#theses-list-section') {
+                        fetchProfessorTheses();
+                    } else if (event.target.getAttribute('href') === '#stats-section') {
+                        fetchProfessorStatistics();
+                    }
+                });
+            });
+
+            // Filters for thesis list
+            document.getElementById('thesisStatusFilter').addEventListener('change', fetchProfessorTheses);
+            document.getElementById('thesisRoleFilter').addEventListener('change', fetchProfessorTheses);
+        });
+
+        async function fetchUserInfo() {
+            try {
+                const response = await fetch('/api/user-info');
+                if (response.ok) {
+                    const data = await response.json();
+                    currentProfessorId = data.userId; // Store professor ID
+                    currentProfessorRole = data.userRole; // Store professor role
+                    if (data.userName) {
+                        document.getElementById('welcomeMessage').textContent = `Καλώς Ορίσατε, ${data.userName}!`;
+                    }
+                }
+            } catch (err) {
+                console.error('Could not fetch user info:', err);
+            }
+        }
+
+        // --- 1) Διαχείριση Θεμάτων (Δημιουργία/Προβολή/Επεξεργασία) ---
+        async function fetchProfessorTopics() {
+            try {
+                const response = await fetch('/api/professor/topics');
+                if (response.ok) {
+                    const topics = await response.json();
+                    renderProfessorTopics(topics);
+                } else {
+                    const errorData = await response.json();
+                    document.getElementById('professorTopics').innerHTML = `<p style="color: red;">Σφάλμα φόρτωσης θεμάτων: ${errorData.message}</p>`;
+                }
+            } catch (error) {
+                console.error('Error fetching professor topics:', error);
+                document.getElementById('professorTopics').innerHTML = `<p style="color: red;">Αδυναμία επικοινωνίας με τον server.</p>`;
+            }
+        }
+
+        function renderProfessorTopics(topics) {
+            const topicsList = document.getElementById('professorTopics');
+            topicsList.innerHTML = ''; // Clear previous content
+
+            if (topics.length === 0) {
+                topicsList.innerHTML = '<p>Δεν έχετε δημιουργήσει ακόμα θέματα.</p>';
+                return;
+            }
+
+            const ul = document.createElement('ul');
+            topics.forEach(topic => {
+                const li = document.createElement('li');
+                li.innerHTML = `
+                    <div>
+                        <h3>${escapeHtml(topic.title)}</h3>
+                        <p>${escapeHtml(topic.description)}</p>
+                        ${topic.description_pdf_url ? `<p><a href="${escapeHtml(topic.description_pdf_url)}" target="_blank">Περιγραφή PDF</a></p>` : ''}
+                        <p>Κατάσταση: <strong>${translateThesisStatus(topic.status)}</strong></p>
+                    </div>
+                    <div class="topic-actions">
+                        <button class="action-button warning" onclick="openEditModal(${topic.id}, '${escapeHtml(topic.title)}', '${escapeHtml(topic.description)}', '${escapeHtml(topic.description_pdf_url || '')}')">Επεξεργασία</button>
+                    </div>
+                `;
+                ul.appendChild(li);
+            });
+            topicsList.appendChild(ul);
+        }
+
+        async function handleCreateTopic(event) {
+            event.preventDefault();
+            const form = event.target;
+            const formData = new FormData(form);
+            const data = Object.fromEntries(formData.entries());
+
+            try {
+                const response = await fetch('/api/professor/topics', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+                const result = await response.json();
+                const messageElement = document.getElementById('createTopicMessage');
+
+                if (response.ok) {
+                    messageElement.textContent = result.message;
+                    messageElement.style.color = 'green';
+                    form.reset(); // Clear form
+                    fetchProfessorTopics(); // Refresh list
+                    fetchAvailableTopicsForAssignment(); // Refresh topics for assignment section
+                } else {
+                    messageElement.textContent = result.message || 'Σφάλμα κατά τη δημιουργία θέματος.';
+                    messageElement.style.color = 'red';
+                }
+            } catch (error) {
+                console.error('Error creating topic:', error);
+                document.getElementById('createTopicMessage').textContent = 'Αδυναμία επικοινωνίας με τον server.';
+                document.getElementById('createTopicMessage').style.color = 'red';
+            }
+        }
+
+        function openEditModal(id, title, description, pdfUrl) {
+            document.getElementById('editTopicId').value = id;
+            document.getElementById('editTopicTitle').value = title;
+            document.getElementById('editTopicDescription').value = description;
+            document.getElementById('editTopicPdfUrl').value = pdfUrl;
+            document.getElementById('editTopicMessage').textContent = ''; // Clear previous messages
+            document.getElementById('editTopicModal').style.display = 'block';
+        }
+
+        async function handleUpdateTopic(event) {
+            event.preventDefault();
+            const form = event.target;
+            const topicId = document.getElementById('editTopicId').value;
+            const formData = new FormData(form);
+            const data = Object.fromEntries(formData.entries());
+
+            try {
+                const response = await fetch(`/api/professor/topics/${topicId}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+                const result = await response.json();
+                const messageElement = document.getElementById('editTopicMessage');
+
+                if (response.ok) {
+                    messageElement.textContent = result.message;
+                    messageElement.style.color = 'green';
+                    fetchProfessorTopics(); // Refresh list
+                    fetchAvailableTopicsForAssignment(); // Refresh topics for assignment section
+                    setTimeout(() => closeModal('editTopicModal'), 1500); // Close modal after a short delay
+                } else {
+                    messageElement.textContent = result.message || 'Σφάλμα κατά την ενημέρωση θέματος.';
+                    messageElement.style.color = 'red';
+                }
+            } catch (error) {
+                console.error('Error updating topic:', error);
+                document.getElementById('editTopicMessage').textContent = 'Αδυναμία επικοινωνίας με τον server.';
+                document.getElementById('editTopicMessage').style.color = 'red';
+            }
+        }
+
+        // --- 2) Αρχική ανάθεση θέματος σε φοιτητή ---
+        async function fetchAvailableTopicsForAssignment() {
+            try {
+                const response = await fetch('/api/professor/topics');
+                if (response.ok) {
+                    // Include 'under_assignment' topics for unassign functionality
+                    availableTopics = (await response.json()).filter(topic =>
+                        topic.status === 'available' || topic.status === 'under_assignment'
+                    );
+                    const select = document.getElementById('availableTopicsSelect');
+                    select.innerHTML = '';
+
+                    // Sort topics by status (available first)
+                    availableTopics.sort((a, b) => {
+                        if (a.status === 'available' && b.status !== 'available') return -1;
+                        if (a.status !== 'available' && b.status === 'available') return 1;
+                        return 0;
+                    });
+
+                    if (availableTopics.length === 0) {
+                        select.innerHTML = '<option value="">Δεν υπάρχουν διαθέσιμα/ανατεθειμένα θέματα</option>';
+                        select.disabled = true;
+                    } else {
+                        select.disabled = false;
+                        availableTopics.forEach(topic => {
+                            const option = document.createElement('option');
+                            option.value = topic.id;
+                            option.textContent = `${topic.title} (Κατάσταση: ${translateThesisStatus(topic.status)})`;
+                            select.appendChild(option);
+                        });
+                    }
+                } else {
+                    console.error('Error fetching available topics:', await response.json());
+                    document.getElementById('assignTopicMessage').textContent = 'Σφάλμα φόρτωσης διαθέσιμων θεμάτων.';
+                    document.getElementById('assignTopicMessage').style.color = 'red';
+                }
+            } catch (error) {
+                console.error('Error fetching available topics:', error);
+                document.getElementById('assignTopicMessage').textContent = 'Αδυναμία επικοινωνίας με τον server για διαθέσιμα θέματα.';
+                document.getElementById('assignTopicMessage').style.color = 'red';
+            }
+        }
+
+        async function searchStudents() {
+            const searchTerm = document.getElementById('studentSearchTerm').value;
+            const searchResultsDiv = document.getElementById('studentSearchResults');
+            const messageElement = document.getElementById('studentSearchMessage');
+            messageElement.textContent = '';
+            searchResultsDiv.innerHTML = '';
+
+            if (!searchTerm) {
+                messageElement.textContent = 'Παρακαλώ εισάγετε έναν όρο αναζήτησης.';
+                messageElement.style.color = 'red';
+                return;
+            }
+
+            try {
+                const response = await fetch(`/api/professor/students/search?term=${encodeURIComponent(searchTerm)}`);
+                if (response.ok) {
+                    const students = await response.json();
+                    if (students.length === 0) {
+                        searchResultsDiv.innerHTML = '<p>Δεν βρέθηκαν φοιτητές.</p>';
+                    } else {
+                        const ul = document.createElement('ul');
+                        students.forEach(student => {
+                            const li = document.createElement('li');
+                            li.innerHTML = `
+                                ${escapeHtml(student.name)} ${escapeHtml(student.surname)} (${escapeHtml(student.email)})
+                                <button class="action-button primary" onclick="selectStudent(${student.id}, '${escapeHtml(student.name)} ${escapeHtml(student.surname)}')">Επιλογή</button>
+                            `;
+                            ul.appendChild(li);
+                        });
+                        searchResultsDiv.appendChild(ul);
+                    }
+                } else {
+                    messageElement.textContent = 'Σφάλμα αναζήτησης φοιτητών.';
+                    messageElement.style.color = 'red';
+                }
+            } catch (error) {
+                console.error('Error searching students:', error);
+                messageElement.textContent = 'Αδυναμία επικοινωνίας με τον server για αναζήτηση φοιτητών.';
+                messageElement.style.color = 'red';
+            }
+        }
+
+        function selectStudent(studentId, studentName) {
+            document.getElementById('selectedStudentId').value = studentId;
+            document.getElementById('selectedStudentInfo').textContent = studentName;
+            document.getElementById('studentSearchResults').innerHTML = ''; // Clear results after selection
+            document.getElementById('studentSearchMessage').textContent = '';
+        }
+
+        async function assignTopic() {
+            const thesisId = document.getElementById('availableTopicsSelect').value;
+            const studentId = document.getElementById('selectedStudentId').value;
+            const messageElement = document.getElementById('assignTopicMessage');
+            messageElement.textContent = '';
+
+            if (!thesisId || !studentId) {
+                messageElement.textContent = 'Παρακαλώ επιλέξτε ένα θέμα και έναν φοιτητή.';
+                messageElement.style.color = 'red';
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/professor/assign-topic', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ thesisId, studentId })
+                });
+                const result = await response.json();
+                if (response.ok) {
+                    messageElement.textContent = result.message;
+                    messageElement.style.color = 'green';
+                    fetchAvailableTopicsForAssignment(); // Refresh available topics
+                    document.getElementById('selectedStudentInfo').textContent = 'Κανένας';
+                    document.getElementById('selectedStudentId').value = '';
+                } else {
+                    messageElement.textContent = result.message || 'Σφάλμα ανάθεσης θέματος.';
+                    messageElement.style.color = 'red';
+                }
+            } catch (error) {
+                console.error('Error assigning topic:', error);
+                messageElement.textContent = 'Αδυναμία επικοινωνίας με τον server.';
+                messageElement.style.color = 'red';
+            }
+        }
+
+        async function unassignTopic() {
+            const thesisId = document.getElementById('availableTopicsSelect').value;
+            const messageElement = document.getElementById('assignTopicMessage');
+            messageElement.textContent = '';
+
+            if (!thesisId) {
+                messageElement.textContent = 'Παρακαλώ επιλέξτε ένα θέμα προς αναίρεση ανάθεσης.';
+                messageElement.style.color = 'red';
+                return;
+            }
+
+            // Optional: Confirm if the selected topic is actually 'under_assignment'
+            const selectedTopic = availableTopics.find(t => t.id == thesisId);
+            if (!selectedTopic || selectedTopic.status !== 'under_assignment') {
+                 messageElement.textContent = 'Μπορείτε να αναιρέσετε μόνο θέματα που είναι "Υπό Ανάθεση".';
+                 messageElement.style.color = 'red';
+                 return;
+            }
+
+            if (!confirm('Είστε σίγουροι ότι θέλετε να αναιρέσετε την ανάθεση αυτού του θέματος;')) {
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/professor/unassign-topic', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ thesisId })
+                });
+                const result = await response.json();
+                if (response.ok) {
+                    messageElement.textContent = result.message;
+                    messageElement.style.color = 'green';
+                    fetchAvailableTopicsForAssignment(); // Refresh available topics
+                } else {
+                    messageElement.textContent = result.message || 'Σφάλμα αναίρεσης ανάθεσης θέματος.';
+                    messageElement.style.color = 'red';
+                }
+            } catch (error) {
+                console.error('Error unassigning topic:', error);
+                messageElement.textContent = 'Αδυναμία επικοινωνίας με τον server.';
+                messageElement.style.color = 'red';
+            }
+        }
+
+
+        // --- 3) Προβολή λίστας διπλωματικών (φιλτραρισμένες) ---
+        async function fetchProfessorTheses() {
+            const statusFilter = document.getElementById('thesisStatusFilter').value;
+            const roleFilter = document.getElementById('thesisRoleFilter').value;
+
+            try {
+                const response = await fetch(`/api/professor/theses?status=${statusFilter}&role=${roleFilter}`);
+                const thesesListDiv = document.getElementById('professorThesesList');
+                if (response.ok) {
+                    const theses = await response.json();
+                    renderProfessorThesesTable(theses);
+                } else {
+                    const errorData = await response.json();
+                    thesesListDiv.innerHTML = `<p style="color: red;">Σφάλμα φόρτωσης διπλωματικών: ${errorData.message}</p>`;
+                }
+            } catch (error) {
+                console.error('Error fetching professor theses:', error);
+                document.getElementById('professorThesesList').innerHTML = `<p style="color: red;">Αδυναμία επικοινωνίας με τον server.</p>`;
+            }
+        }
+
+        function renderProfessorThesesTable(theses) {
+            const thesesListDiv = document.getElementById('professorThesesList');
+            thesesListDiv.innerHTML = '';
+
+            if (theses.length === 0) {
+                thesesListDiv.innerHTML = '<p>Δεν υπάρχουν διπλωματικές εργασίες με αυτά τα κριτήρια.</p>';
+                return;
+            }
+
+            const table = document.createElement('table');
+            table.innerHTML = `
+                <thead>
+                    <tr>
+                        <th>Τίτλος</th>
+                        <th>Φοιτητής</th>
+                        <th>Επιβλέπων</th>
+                        <th>Μέλη Επιτροπής</th>
+                        <th>Προσκλήσεις Επιτροπής</th>
+                        <th>Κατάσταση</th>
+                        <th>Βαθμός</th>
+                        <th>Ενέργειες</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${theses.map(thesis => `
+                        <tr>
+                            <td>${escapeHtml(thesis.title)}</td>
+                            <td>${thesis.student_name ? `${escapeHtml(thesis.student_name)} ${escapeHtml(thesis.student_surname)}` : 'N/A'}</td>
+                            <td>${escapeHtml(thesis.supervisor_name)} ${escapeHtml(thesis.supervisor_surname)}</td>
+                            <td>${thesis.committee_members_parsed.map(m => `${escapeHtml(m.name)}`).join(', ') || 'N/A'}</td>
+                            <td>${thesis.committee_invitations_full ? thesis.committee_invitations_full.split(',').map(inv => {
+                                const parts = inv.split(':');
+                                if (parts.length === 3) return `${escapeHtml(parts[1])} (${translateInvitationStatus(parts[2])})`;
+                                return 'Invalid Invitation Data'; // Fallback for malformed data
+                            }).join(', ') : 'N/A'}</td>
+                            <td>${translateThesisStatus(thesis.status)}</td>
+                            <td>${thesis.final_grade !== null ? thesis.final_grade : 'N/A'}</td>
+                            <td>
+                                <button class="action-button info" onclick="viewThesisDetails(${thesis.id})">Προβολή</button>
+                            </td>
+                        </tr>
+                    `).join('')}
+                </tbody>
+            `;
+            thesesListDiv.appendChild(table);
+        }
+
+        async function viewThesisDetails(thesisId) {
+            try {
+                const response = await fetch(`/api/professor/theses/${thesisId}`);
+                if (response.ok) {
+                    const thesis = await response.json();
+                    renderThesisDetailsModal(thesis);
+                } else {
+                    const errorData = await response.json();
+                    alert(`Σφάλμα φόρτωσης λεπτομερειών: ${errorData.message}`);
+                }
+            } catch (error) {
+                console.error('Error fetching thesis details:', error);
+                alert('Αδυναμία επικοινωνίας με τον server για λεπτομέρειες διπλωματικής.');
+            }
+        }
+
+        async function renderThesisDetailsModal(thesis) {
+            document.getElementById('modalThesisTitle').textContent = `Λεπτομέρειες: ${escapeHtml(thesis.title)}`;
+            const detailsDiv = document.getElementById('modalThesisDetails');
+            const actionsDiv = document.getElementById('thesisDynamicActions');
+            const myNotesList = document.getElementById('myNotesList');
+            const addNoteText = document.getElementById('addNoteText');
+
+            // Reset notes input
+            addNoteText.value = '';
+            document.getElementById('noteMessage').textContent = '';
+
+            let committeeMembersHtml = '';
+            if (thesis.committee_members && thesis.committee_members.length > 0) {
+                committeeMembersHtml = `
+                    <h5>Μέλη Επιτροπής:</h5>
+                    <ul>
+                        ${thesis.committee_members.map(member => `
+                            <li>
+                                ${escapeHtml(member.name)} ${escapeHtml(member.surname)} (${escapeHtml(member.email)})
+                                ${member.grade !== null ? ` - Βαθμός: ${member.grade}` : ''}
+                                ${member.grade_details ? ` (${escapeHtml(member.grade_details)})` : ''}
+                                ${thesis.status === 'under_review' && member.professor_id === currentProfessorId ? `
+                                    <input type="number" min="0" max="10" class="grade-input" value="${member.grade !== null ? member.grade : ''}" id="gradeInput_${thesis.id}_${member.professor_id}">
+                                    <input type="text" placeholder="Λεπτομέρειες βαθμού" class="grade-input" value="${member.grade_details !== null ? escapeHtml(member.grade_details) : ''}" id="gradeDetailsInput_${thesis.id}_${member.professor_id}" style="width: 120px;">
+                                    <button class="grade-save-btn" onclick="saveProfessorGrade(${thesis.id}, ${member.professor_id})">Αποθήκευση Βαθμού</button>
+                                ` : ''}
+                            </li>
+                        `).join('')}
+                    </ul>
+                `;
+            } else if (thesis.committee_invitations && thesis.committee_invitations.length > 0) {
+                committeeMembersHtml = `
+                    <h5>Προσκλήσεις Επιτροπής (Υπό Ανάθεση):</h5>
+                    <ul>
+                        ${thesis.committee_invitations.map(inv => `
+                            <li>${escapeHtml(inv.name)} ${escapeHtml(inv.surname)} (${escapeHtml(inv.email)}) - ${translateInvitationStatus(inv.status)}</li>
+                        `).join('')}
+                    </ul>
+                `;
+            } else {
+                committeeMembersHtml = '<p>Δεν έχουν οριστεί/προσκληθεί μέλη επιτροπής.</p>';
+            }
+
+            let myNotesHtml = '';
+            if (thesis.my_notes && thesis.my_notes.length > 0) {
+                myNotesHtml = `
+                    <ul>
+                        ${thesis.my_notes.map(note => `
+                            <li>
+                                <p>${escapeHtml(note.note)}</p>
+                                <small>${new Date(note.created_at).toLocaleString('el-GR')}</small>
+                            </li>
+                        `).join('')}
+                    </ul>
+                `;
+            } else {
+                myNotesHtml = '<p>Δεν έχετε προσθέσει σημειώσεις για αυτή τη διπλωματική.</p>';
+            }
+            myNotesList.innerHTML = myNotesHtml;
+
+
+            detailsDiv.innerHTML = `
+                <p><strong>Φοιτητής:</strong> ${thesis.student_name ? `${escapeHtml(thesis.student_name)} ${escapeHtml(thesis.student_surname)} (${escapeHtml(thesis.student_email)})` : 'N/A'}</p>
+                <p><strong>Επιβλέπων:</strong> ${escapeHtml(thesis.supervisor_name)} ${escapeHtml(thesis.supervisor_surname)} (${escapeHtml(thesis.supervisor_email)})</p>
+                <p><strong>Τίτλος:</strong> ${escapeHtml(thesis.title)}</p>
+                <p><strong>Περιγραφή:</strong> ${escapeHtml(thesis.description)}</p>
+                ${thesis.description_pdf_url ? `<p><strong>Αναλυτική Περιγραφή:</strong> <a href="${escapeHtml(thesis.description_pdf_url)}" target="_blank">PDF</a></p>` : ''}
+                <p><strong>Κατάσταση:</strong> ${translateThesisStatus(thesis.status)}</p>
+                ${thesis.assignment_date ? `<p><strong>Ημερομηνία Ανάθεσης:</strong> ${new Date(thesis.assignment_date).toLocaleDateString('el-GR')}</p>` : ''}
+                ${thesis.gs_approval_protocol ? `<p><strong>ΑΠ Γ.Σ. Ανάθεσης:</strong> ${escapeHtml(thesis.gs_approval_protocol)}</p>` : ''}
+                ${thesis.status === 'under_review' && thesis.presentation_date ? `<p><strong>Ημερομηνία Παρουσίασης:</strong> ${new Date(thesis.presentation_date).toLocaleString('el-GR')}</p>` : ''}
+                ${thesis.status === 'under_review' && thesis.presentation_location ? `<p><strong>Τοποθεσία Παρουσίασης:</strong> ${escapeHtml(thesis.presentation_location)}</p>` : ''}
+                ${thesis.final_grade !== null ? `<p><strong>Τελικός Βαθμός:</strong> ${thesis.final_grade}</p>` : ''}
+                ${thesis.repository_url ? `<p><strong>Σύνδεσμος Αποθετηρίου:</strong> <a href="${escapeHtml(thesis.repository_url)}" target="_blank">View</a></p>` : ''}
+                ${thesis.cancellation_reason ? `<p style="color: red;"><strong>Ακυρωμένη:</strong> ${escapeHtml(thesis.cancellation_reason)}</p>` : ''}
+                ${committeeMembersHtml}
+            `;
+
+            actionsDiv.innerHTML = '';
+            // Dynamic actions based on thesis status and professor's role
+            if (thesis.status === 'active' && thesis.supervisor_id === currentProfessorId) {
+                actionsDiv.innerHTML += `<button class="action-button primary" onclick="setThesisUnderReview(${thesis.id})">Μεταφορά σε "Υπό Εξέταση"</button>`;
+                actionsDiv.innerHTML += `<button class="action-button danger" onclick="openCancelThesisBySupervisorModal(${thesis.id})">Ακύρωση Ανάθεσης (2ετία)</button>`;
+            } else if (thesis.status === 'under_review' && thesis.supervisor_id === currentProfessorId && thesis.presentation_date && thesis.presentation_location) {
+                actionsDiv.innerHTML += `<button class="action-button info" onclick="generatePresentationAnnouncement(${thesis.id})">Δημιουργία Ανακοίνωσης Παρουσίασης</button>`;
+            }
+            // Add note functionality is always available
+            document.getElementById('addNoteText').dataset.thesisId = thesis.id; // Store thesis ID for note
+            document.getElementById('thesisDetailsModal').style.display = 'block';
+        }
+
+        async function addNoteToThesis() {
+            const thesisId = document.getElementById('addNoteText').dataset.thesisId;
+            const noteText = document.getElementById('addNoteText').value;
+            const messageElement = document.getElementById('noteMessage');
+
+            if (!noteText) {
+                messageElement.textContent = 'Η σημείωση δεν μπορεί να είναι κενή.';
+                messageElement.style.color = 'red';
+                return;
+            }
+            if (noteText.length > 300) {
+                 messageElement.textContent = 'Η σημείωση δεν μπορεί να υπερβαίνει τους 300 χαρακτήρες.';
+                messageElement.style.color = 'red';
+                return;
+            }
+
+            try {
+                const response = await fetch(`/api/professor/theses/${thesisId}/notes`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ note: noteText })
+                });
+                const result = await response.json();
+                if (response.ok) {
+                    messageElement.textContent = result.message;
+                    messageElement.style.color = 'green';
+                    document.getElementById('addNoteText').value = '';
+                    // Re-fetch details to update notes list in modal
+                    viewThesisDetails(thesisId);
+                } else {
+                    messageElement.textContent = result.message || 'Σφάλμα προσθήκης σημείωσης.';
+                    messageElement.style.color = 'red';
+                }
+            } catch (error) {
+                console.error('Error adding note:', error);
+                messageElement.textContent = 'Αδυναμία επικοινωνίας με τον server.';
+                messageElement.style.color = 'red';
+            }
+        }
+
+        async function setThesisUnderReview(thesisId) {
+            if (!confirm('Είστε σίγουροι ότι θέλετε να μεταφέρετε τη διπλωματική σε κατάσταση "Υπό Εξέταση";')) {
+                return;
+            }
+            try {
+                const response = await fetch(`/api/professor/theses/${thesisId}/set-under-review`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' }
+                });
+                const result = await response.json();
+                alert(result.message);
+                if (response.ok) {
+                    closeModal('thesisDetailsModal');
+                    fetchProfessorTheses(); // Refresh main list
+                }
+            } catch (error) {
+                console.error('Error setting thesis under review:', error);
+                alert('Αδυναμία επικοινωνίας με τον server.');
+            }
+        }
+
+        function openCancelThesisBySupervisorModal(thesisId) {
+            document.getElementById('cancelBySupervisorThesisId').value = thesisId;
+            document.getElementById('gsNumberSupervisorInput').value = '';
+            document.getElementById('gsYearSupervisorInput').value = new Date().getFullYear();
+            document.getElementById('cancelBySupervisorMessage').textContent = '';
+            document.getElementById('cancelThesisBySupervisorModal').style.display = 'block';
+        }
+
+        async function handleCancelThesisBySupervisorSubmit(event) {
+            event.preventDefault();
+            const thesisId = document.getElementById('cancelBySupervisorThesisId').value;
+            const gsNumber = document.getElementById('gsNumberSupervisorInput').value;
+            const gsYear = document.getElementById('gsYearSupervisorInput').value;
+            const messageElement = document.getElementById('cancelBySupervisorMessage');
+
+            try {
+                const response = await fetch(`/api/professor/theses/${thesisId}/cancel-by-supervisor`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ gs_number: gsNumber, gs_year: gsYear })
+                });
+                const result = await response.json();
+                if (response.ok) {
+                    messageElement.textContent = result.message;
+                    messageElement.style.color = 'green';
+                    closeModal('cancelThesisBySupervisorModal');
+                    closeModal('thesisDetailsModal');
+                    fetchProfessorTheses();
+                } else {
+                    messageElement.textContent = result.message || 'Σφάλμα ακύρωσης διπλωματικής.';
+                    messageElement.style.color = 'red';
+                }
+            } catch (error) {
+                console.error('Error cancelling thesis by supervisor:', error);
+                messageElement.textContent = 'Αδυναμία επικοινωνίας με τον server.';
+                messageElement.style.color = 'red';
+            }
+        }
+
+        async function saveProfessorGrade(thesisId, professorId) {
+            const gradeInput = document.getElementById(`gradeInput_${thesisId}_${professorId}`);
+            const gradeDetailsInput = document.getElementById(`gradeDetailsInput_${thesisId}_${professorId}`);
+            const grade = gradeInput ? parseInt(gradeInput.value) : null;
+            const gradeDetails = gradeDetailsInput ? gradeDetailsInput.value : null;
+
+            if (grade === null || isNaN(grade) || grade < 0 || grade > 10) {
+                alert('Παρακαλώ εισάγετε έναν έγκυρο βαθμό (0-10).');
+                return;
+            }
+
+            try {
+                const response = await fetch(`/api/professor/theses/${thesisId}/grade`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ grade, grade_details: gradeDetails })
+                });
+                const result = await response.json();
+                alert(result.message);
+                if (response.ok) {
+                    viewThesisDetails(thesisId); // Refresh modal content
+                    fetchProfessorTheses(); // Refresh main list
+                }
+            } catch (error) {
+                console.error('Error saving grade:', error);
+                alert('Αδυναμία επικοινωνίας με τον server κατά την αποθήκευση βαθμού.');
+            }
+        }
+
+        async function generatePresentationAnnouncement(thesisId) {
+            try {
+                const response = await fetch(`/api/professor/theses/${thesisId}/announcement`);
+                const result = await response.json();
+                if (response.ok) {
+                    alert(result.message);
+                    if (result.announcementUrl) {
+                        // In a real app, you'd open this URL to view/download the generated PDF
+                        // window.open(result.announcementUrl, '_blank');
+                    }
+                } else {
+                    alert(result.message || 'Σφάλμα κατά τη δημιουργία ανακοίνωσης.');
+                }
+            } catch (error) {
+                console.error('Error generating announcement:', error);
+                alert('Αδυναμία επικοινωνίας με τον server για δημιουργία ανακοίνωσης.');
+            }
+        }
+
+        async function exportTheses(format) {
+            const statusFilter = document.getElementById('thesisStatusFilter').value;
+            const roleFilter = document.getElementById('thesisRoleFilter').value;
+            try {
+                const response = await fetch(`/api/professor/theses/export?format=${format}&status=${statusFilter}&role=${roleFilter}`);
+                if (response.ok) {
+                    const blob = await response.blob();
+                    const contentDisposition = response.headers.get('Content-Disposition');
+                    let filename = `theses_export_${Date.now()}.${format}`;
+                    if (contentDisposition && contentDisposition.includes('filename=')) {
+                         filename = contentDisposition.split('filename=')[1].trim().replace(/"/g, '');
+                    }
+
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = filename;
+                    document.body.appendChild(a);
+                    a.click();
+                    a.remove();
+                    window.URL.revokeObjectURL(url);
+                    alert(`Οι διπλωματικές εξήχθησαν επιτυχώς σε ${format.toUpperCase()}!`);
+                } else {
+                    const errorData = await response.json();
+                    alert(`Σφάλμα εξαγωγής: ${errorData.message}`);
+                }
+            } catch (error) {
+                console.error('Error exporting theses:', error);
+                alert('Αδυναμία επικοινωνίας με τον server για εξαγωγή διπλωματικών.');
+            }
+        }
+
+        // --- 4) Προβολή προσκλήσεων συμμετοχής σε τριμελή ---
+        async function fetchProfessorInvitations() {
+            try {
+                const response = await fetch('/api/professor/invitations');
+                const invitationsDiv = document.getElementById('professorInvitations');
+                if (response.ok) {
+                    const invitations = await response.json();
+                    renderProfessorInvitations(invitations);
+                } else {
+                    const errorData = await response.json();
+                    invitationsDiv.innerHTML = `<p style="color: red;">Σφάλμα φόρτωσης προσκλήσεων: ${errorData.message}</p>`;
+                }
+            } catch (error) {
+                console.error('Error fetching professor invitations:', error);
+                document.getElementById('professorInvitations').innerHTML = `<p style="color: red;">Αδυναμία επικοινωνίας με τον server.</p>`;
+            }
+        }
+
+        function renderProfessorInvitations(invitations) {
+            const invitationsDiv = document.getElementById('professorInvitations');
+            invitationsDiv.innerHTML = '';
+
+            if (invitations.length === 0) {
+                invitationsDiv.innerHTML = '<p>Δεν υπάρχουν εκκρεμείς προσκλήσεις συμμετοχής σε τριμελή επιτροπή.</p>';
+                return;
+            }
+
+            const ul = document.createElement('ul');
+            invitations.forEach(invitation => {
+                const li = document.createElement('li');
+                li.innerHTML = `
+                    <div>
+                        <h4>Πρόσκληση για Διπλωματική: "${escapeHtml(invitation.thesis_title)}"</h4>
+                        <p>Φοιτητής: ${escapeHtml(invitation.student_name)} ${escapeHtml(invitation.student_surname)}</p>
+                        <p>Επιβλέπων: ${escapeHtml(invitation.supervisor_name)} ${escapeHtml(invitation.supervisor_surname)}</p>
+                        <p>Κατάσταση: <strong>${translateInvitationStatus(invitation.status)}</strong></p>
+                    </div>
+                    <div class="invitation-actions">
+                        <button class="action-button primary" onclick="acceptInvitation(${invitation.invitation_id})">Αποδοχή</button>
+                        <button class="action-button danger" onclick="declineInvitation(${invitation.invitation_id})">Απόρριψη</button>
+                    </div>
+                `;
+                ul.appendChild(li);
+            });
+            invitationsDiv.appendChild(ul);
+        }
+
+        function translateInvitationStatus(status) {
+            const statusMap = {
+                'pending': 'Σε αναμονή',
+                'accepted': 'Αποδεκτή',
+                'declined': 'Απορρίφθηκε'
+            };
+            return statusMap[status] || status;
+        }
+
+        async function acceptInvitation(invitationId) {
+            try {
+                const response = await fetch(`/api/professor/invitations/${invitationId}/accept`, {
+                    method: 'POST'
+                });
+                const result = await response.json();
+                const messageElement = document.getElementById('invitationActionMessage');
+                if (response.ok) {
+                    messageElement.textContent = result.message;
+                    messageElement.style.color = 'green';
+                    fetchProfessorInvitations(); // Refresh list
+                    fetchProfessorTheses(); // Also refresh thesis list as status might change
+                } else {
+                    messageElement.textContent = result.message || 'Σφάλμα αποδοχής πρόσκλησης.';
+                    messageElement.style.color = 'red';
+                }
+            } catch (error) {
+                console.error('Error accepting invitation:', error);
+                document.getElementById('invitationActionMessage').textContent = 'Αδυναμία επικοινωνίας με τον server.';
+                document.getElementById('invitationActionMessage').style.color = 'red';
+            }
+        }
+
+        async function declineInvitation(invitationId) {
+            try {
+                const response = await fetch(`/api/professor/invitations/${invitationId}/decline`, {
+                    method: 'POST'
+                });
+                const result = await response.json();
+                const messageElement = document.getElementById('invitationActionMessage');
+                if (response.ok) {
+                    messageElement.textContent = result.message;
+                    messageElement.style.color = 'green';
+                    fetchProfessorInvitations(); // Refresh list
+                } else {
+                    messageElement.textContent = result.message || 'Σφάλμα απόρριψης πρόσκλησης.';
+                    messageElement.style.color = 'red';
+                }
+            } catch (error) {
+                console.error('Error declining invitation:', error);
+                document.getElementById('invitationActionMessage').textContent = 'Αδυναμία επικοινωνίας με τον server.';
+                document.getElementById('invitationActionMessage').style.color = 'red';
+            }
+        }
+
+        // --- 5) Προβολή στατιστικών ---
+        async function fetchProfessorStatistics() {
+            try {
+                const response = await fetch('/api/professor/statistics');
+                if (response.ok) {
+                    const stats = await response.json();
+                    renderProfessorStatistics(stats);
+                } else {
+                    const errorData = await response.json();
+                    document.getElementById('professorStats').innerHTML = `<p style="color: red;">Σφάλμα φόρτωσης στατιστικών: ${errorData.message}</p>`;
+                }
+            } catch (error) {
+                console.error('Error fetching professor statistics:', error);
+                document.getElementById('professorStats').innerHTML = `<p style="color: red;">Αδυναμία επικοινωνίας με τον server για στατιστικά.</p>`;
+            }
+        }
+
+        function renderProfessorStatistics(stats) {
+            // Helper to destroy existing chart instances if any
+            const destroyChart = (chartId) => {
+                const existingChart = Chart.getChart(chartId);
+                if (existingChart) existingChart.destroy();
+            };
+
+            // 1. Συνολικό πλήθος διπλωματικών
+            destroyChart('thesesCountChart');
+            const thesesCountCtx = document.getElementById('thesesCountChart').getContext('2d');
+            new Chart(thesesCountCtx, {
+                type: 'bar',
+                data: {
+                    labels: ['Επιβλέπων', 'Μέλος Επιτροπής'],
+                    datasets: [{
+                        label: 'Πλήθος Διπλωματικών',
+                        data: [stats.total_supervised || 0, stats.total_committee_member || 0],
+                        backgroundColor: ['rgba(75, 192, 192, 0.6)', 'rgba(153, 102, 255, 0.6)'],
+                        borderColor: ['rgba(75, 192, 192, 1)', 'rgba(153, 102, 255, 1)'],
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    scales: { y: { beginAtZero: true, ticks: { precision: 0 } } },
+                    plugins: { legend: { display: false } }
+                }
+            });
+
+            // 2. Μέσος χρόνος περάτωσης (Ημέρες)
+            destroyChart('avgTimeChart');
+            const avgTimeCtx = document.getElementById('avgTimeChart').getContext('2d');
+            new Chart(avgTimeCtx, {
+                type: 'bar',
+                data: {
+                    labels: ['Επιβλέπων', 'Μέλος Επιτροπής'],
+                    datasets: [{
+                        label: 'Μέσος Χρόνος (Ημέρες)',
+                        data: [stats.avg_time_supervised ? parseFloat(stats.avg_time_supervised).toFixed(2) : 0, stats.avg_time_committee_member ? parseFloat(stats.avg_time_committee_member).toFixed(2) : 0],
+                        backgroundColor: ['rgba(255, 159, 64, 0.6)', 'rgba(54, 162, 235, 0.6)'],
+                        borderColor: ['rgba(255, 159, 64, 1)', 'rgba(54, 162, 235, 1)'],
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    scales: { y: { beginAtZero: true, title: { display: true, text: 'Ημέρες' } } },
+                    plugins: { legend: { display: false } }
+                }
+            });
+
+            // 3. Μέσος βαθμός
+            destroyChart('avgGradeChart');
+            const avgGradeCtx = document.getElementById('avgGradeChart').getContext('2d');
+            new Chart(avgGradeCtx, {
+                type: 'bar',
+                data: {
+                    labels: ['Επιβλέπων', 'Μέλος Επιτροπής'],
+                    datasets: [{
+                        label: 'Μέσος Βαθμός',
+                        data: [stats.avg_grade_supervised ? parseFloat(stats.avg_grade_supervised).toFixed(2) : 0, stats.avg_grade_committee_member ? parseFloat(stats.avg_grade_committee_member).toFixed(2) : 0],
+                        backgroundColor: ['rgba(75, 192, 192, 0.6)', 'rgba(255, 99, 132, 0.6)'],
+                        borderColor: ['rgba(75, 192, 192, 1)', 'rgba(255, 99, 132, 1)'],
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    scales: { y: { beginAtZero: true, max: 10, title: { display: true, text: 'Βαθμός (0-10)' } } },
+                    plugins: { legend: { display: false } }
+                }
+            });
+        }
+
+
+        // --- Utility functions ---
+        function translateThesisStatus(status) {
+            const statusMap = {
+                'available': 'Διαθέσιμη',
+                'under_assignment': 'Υπό Ανάθεση',
+                'active': 'Ενεργή',
+                'under_review': 'Υπό Εξέταση',
+                'completed': 'Ολοκληρωμένη',
+                'cancelled': 'Ακυρωμένη'
+            };
+            return statusMap[status] || status;
+        }
+
+        function closeModal(modalId) {
+            document.getElementById(modalId).style.display = 'none';
+        }
+
+        function escapeHtml(text) {
+            if (typeof text !== 'string' && typeof text !== 'number' && text !== null) return text;
+            if (text === null || text === undefined) return 'N/A'; // Handle null/undefined explicitly
+            if (typeof text === 'number') return text.toString();
+            const map = {
+                '&': '&amp;',
+                '<': '&lt;',
+                '>': '&gt;',
+                '"': '&quot;',
+                "'": '&#039;'
+            };
+            return text.replace(/[&<>"']/g, function(m) { return map[m]; });
+        }
+
+        async function logout() {
+            try {
+                const response = await fetch('/logout', { method: 'POST' });
+                if (response.ok) {
+                    window.location.href = '/login.html';
+                } else {
+                    alert('Σφάλμα αποσύνδεσης.');
+                }
+            } catch (error) {
+                console.error('Error during logout:', error);
+                alert('Αδυναμία αποσύνδεσης.');
+            }
+        }
+    </script>
+</body>
+</html>

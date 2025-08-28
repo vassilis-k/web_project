@@ -1,0 +1,473 @@
+<!DOCTYPE html>
+<html lang="el">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Φοιτητής Dashboard</title>
+    <link rel="stylesheet" href="/css/style.css">
+    <style>
+        .dashboard-container {
+            width: 90%;
+            max-width: 1000px;
+            margin: 20px auto;
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+        .dashboard-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        .section-content {
+            margin-top: 20px;
+            border-top: 1px solid #eee;
+            padding-top: 20px;
+        }
+        .thesis-details p {
+            margin-bottom: 5px;
+        }
+        .committee-list li, .professor-list li {
+            background-color: #f9f9f9;
+            border: 1px solid #ddd;
+            padding: 8px;
+            margin-bottom: 5px;
+            border-radius: 4px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .committee-list ul, .professor-list ul {
+            list-style: none;
+            padding: 0;
+        }
+        .profile-form .form-group {
+            display: flex;
+            flex-wrap: wrap;
+            margin-bottom: 10px;
+        }
+        .profile-form .form-group label {
+            flex: 1 0 100px; /* Label takes up to 100px or full width */
+            margin-bottom: 5px;
+        }
+        .profile-form .form-group input,
+        .profile-form .form-group select {
+            flex: 2 0 200px; /* Input takes up to 200px or more */
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        .profile-form button {
+            margin-top: 15px;
+        }
+        .invite-prof-form .form-group {
+            margin-bottom: 10px;
+        }
+        .invite-prof-form button {
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="dashboard-container">
+        <div class="dashboard-header">
+            <h2 id="welcomeMessage">Φοιτητής Dashboard</h2>
+            <button onclick="logout()">Αποσύνδεση</button>
+        </div>
+
+        <nav>
+            <a href="#thesis-section">Η Διπλωματική μου</a> |
+            <a href="#profile-section">Το Προφίλ μου</a>
+            <!-- Άλλες ενότητες για 'Υπό Εξέταση' κλπ. θα προστεθούν αργότερα βάσει κατάστασης διπλωματικής -->
+        </nav>
+
+        <section id="thesis-section" class="section-content">
+            <h3>Η Διπλωματική μου Εργασία</h3>
+            <div id="thesisDetails">
+                <p>Φόρτωση λεπτομερειών διπλωματικής...</p>
+            </div>
+            <div id="thesisActions" class="section-content">
+                <!-- Ενέργειες βάσει κατάστασης διπλωματικής θα εμφανιστούν εδώ -->
+            </div>
+        </section>
+
+        <section id="profile-section" class="section-content" style="display: none;">
+            <h3>Το Προφίλ μου</h3>
+            <form id="profileForm" class="profile-form">
+                <div class="form-group">
+                    <label for="name">Όνομα:</label>
+                    <input type="text" id="name" name="name" required>
+                </div>
+                <div class="form-group">
+                    <label for="surname">Επίθετο:</label>
+                    <input type="text" id="surname" name="surname" required>
+                </div>
+                <!-- Το Email είναι read-only -->
+                <div class="form-group">
+                    <label for="email">Email:</label>
+                    <input type="email" id="email" name="email" disabled>
+                </div>
+                <div class="form-group">
+                    <label for="landline">Σταθερό Τηλ.:</label>
+                    <input type="text" id="landline" name="landline">
+                </div>
+                <div class="form-group">
+                    <label for="mobile">Κινητό Τηλ.:</label>
+                    <input type="text" id="mobile" name="mobile">
+                </div>
+                <div class="form-group">
+                    <label for="street">Οδός:</label>
+                    <input type="text" id="street" name="street">
+                </div>
+                <div class="form-group">
+                    <label for="street_number">Αριθμός:</label>
+                    <input type="text" id="street_number" name="street_number">
+                </div>
+                <div class="form-group">
+                    <label for="city">Πόλη:</label>
+                    <input type="text" id="city" name="city">
+                </div>
+                <div class="form-group">
+                    <label for="postal_code">Τ.Κ.:</label>
+                    <input type="text" id="postal_code" name="postal_code">
+                </div>
+                <div class="form-group">
+                    <label for="country">Χώρα:</label>
+                    <input type="text" id="country" name="country">
+                </div>
+                <button type="submit">Αποθήκευση Προφίλ</button>
+                <p id="profileMessage" class="error-message"></p>
+            </form>
+        </section>
+
+        <!-- Δυναμικές ενότητες βάσει κατάστασης διπλωματικής -->
+    </div>
+
+    <script>
+        let studentThesis = null; // Αποθήκευση λεπτομερειών διπλωματικής παγκοσμίως
+
+        document.addEventListener('DOMContentLoaded', () => {
+            fetchUserInfo();
+            fetchStudentThesis();
+            fetchStudentProfile();
+
+            document.getElementById('profileForm').addEventListener('submit', handleProfileUpdate);
+
+            // Λογική πλοήγησης
+            document.querySelectorAll('nav a').forEach(link => {
+                link.addEventListener('click', (event) => {
+                    event.preventDefault();
+                    document.querySelectorAll('section').forEach(section => {
+                        section.style.display = 'none';
+                    });
+                    const targetSection = document.querySelector(event.target.getAttribute('href'));
+                    if (targetSection) {
+                        targetSection.style.display = 'block';
+                    }
+                });
+            });
+        });
+
+        async function fetchUserInfo() {
+            try {
+                const response = await fetch('/api/user-info');
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data.userName) {
+                        document.getElementById('welcomeMessage').textContent = `Καλώς Ορίσατε, ${data.userName}!`;
+                    }
+                }
+            } catch (err) {
+                console.error('Could not fetch user info:', err);
+            }
+        }
+
+        async function fetchStudentThesis() {
+            try {
+                const response = await fetch('/api/student/thesis');
+                const thesisDetailsDiv = document.getElementById('thesisDetails');
+                const thesisActionsDiv = document.getElementById('thesisActions');
+
+                if (response.ok) {
+                    studentThesis = await response.json(); // Αποθήκευση για global πρόσβαση
+                    renderStudentThesis(studentThesis);
+                    renderThesisActions(studentThesis);
+                } else if (response.status === 404) {
+                    thesisDetailsDiv.innerHTML = '<p>Δεν έχετε αναλάβει ακόμη διπλωματική εργασία.</p>';
+                    thesisActionsDiv.innerHTML = '';
+                } else {
+                    const errorData = await response.json();
+                    thesisDetailsDiv.innerHTML = `<p style="color: red;">Σφάλμα φόρτωσης διπλωματικής: ${errorData.message}</p>`;
+                    thesisActionsDiv.innerHTML = '';
+                }
+            } catch (error) {
+                console.error('Error fetching student thesis:', error);
+                document.getElementById('thesisDetails').innerHTML = `<p style="color: red;">Αδυναμία επικοινωνίας με τον server για τη διπλωματική.</p>`;
+                document.getElementById('thesisActions').innerHTML = '';
+            }
+        }
+
+        function renderStudentThesis(thesis) {
+            const thesisDetailsDiv = document.getElementById('thesisDetails');
+            let committeeHtml = '';
+            if (thesis.committee_members && thesis.committee_members.length > 0) {
+                committeeHtml = `
+                    <h4>Μέλη Επιτροπής:</h4>
+                    <ul class="committee-list">
+                        ${thesis.committee_members.map(m => `<li>${escapeHtml(m.name)} ${escapeHtml(m.surname)} (${m.role === 'supervisor' ? 'Επιβλέπων' : 'Μέλος'})</li>`).join('')}
+                    </ul>
+                `;
+            } else if (thesis.committee_invitations && thesis.committee_invitations.length > 0) {
+                 committeeHtml = `
+                    <h4>Προσκλήσεις Επιτροπής σε αναμονή:</h4>
+                    <ul class="committee-list">
+                        ${thesis.committee_invitations.map(inv => `<li>${escapeHtml(inv.name)} ${escapeHtml(inv.surname)} (${inv.invitation_status === 'pending' ? 'Σε αναμονή' : 'Αποδεκτή'})</li>`).join('')}
+                    </ul>
+                `;
+            } else {
+                committeeHtml = '<p>Δεν έχουν οριστεί ακόμα μέλη επιτροπής.</p>';
+            }
+
+            thesisDetailsDiv.innerHTML = `
+                <h3>${escapeHtml(thesis.title)}</h3>
+                <p><strong>Κατάσταση:</strong> ${translateThesisStatus(thesis.status)}</p>
+                <p><strong>Επιβλέπων Καθηγητής:</strong> ${escapeHtml(thesis.supervisor_name)} ${escapeHtml(thesis.supervisor_surname)}</p>
+                <p><strong>Περιγραφή:</strong> ${escapeHtml(thesis.description)}</p>
+                ${thesis.description_pdf_url ? `<p><strong>Αναλυτική Περιγραφή:</strong> <a href="${escapeHtml(thesis.description_pdf_url)}" target="_blank">PDF</a></p>` : ''}
+                ${thesis.assignment_date ? `<p><strong>Ημερομηνία Ανάθεσης:</strong> ${new Date(thesis.assignment_date).toLocaleDateString('el-GR')}</p>` : ''}
+                ${committeeHtml}
+            `;
+        }
+
+        function translateThesisStatus(status) {
+            const statusMap = {
+                'available': 'Διαθέσιμη',
+                'under_assignment': 'Υπό Ανάθεση',
+                'active': 'Ενεργή',
+                'under_review': 'Υπό Εξέταση',
+                'completed': 'Ολοκληρωμένη',
+                'cancelled': 'Ακυρωμένη'
+            };
+            return statusMap[status] || status;
+        }
+
+        async function renderThesisActions(thesis) {
+            const thesisActionsDiv = document.getElementById('thesisActions');
+            thesisActionsDiv.innerHTML = ''; // Εκκαθάριση προηγούμενων ενεργειών
+
+            if (thesis.status === 'under_assignment') {
+                let professorsListHtml = '<p>Φόρτωση καθηγητών...</p>';
+                try {
+                    const response = await fetch('/api/student/professors-for-invitation');
+                    if (response.ok) {
+                        const professors = await response.json();
+                        const existingInvitationProfessors = (thesis.committee_invitations || []).map(inv => inv.invited_professor_id);
+                        const supervisorId = thesis.supervisor_id;
+
+                        // Φιλτράρισμα επιβλέποντος και ήδη προσκεκλημένων καθηγητών
+                        const availableProfessors = professors.filter(p =>
+                            p.id !== supervisorId && !existingInvitationProfessors.includes(p.id)
+                        );
+
+                        if (availableProfessors.length > 0) {
+                            professorsListHtml = `
+                                <ul class="professor-list">
+                                    ${availableProfessors.map(p => `
+                                        <li>
+                                            ${escapeHtml(p.name)} ${escapeHtml(p.surname)} (${escapeHtml(p.email)})
+                                            <button onclick="inviteProfessor(${thesis.id}, ${p.id})">Πρόσκληση</button>
+                                        </li>
+                                    `).join('')}
+                                </ul>
+                            `;
+                        } else {
+                            professorsListHtml = '<p>Δεν υπάρχουν διαθέσιμοι καθηγητές για πρόσκληση.</p>';
+                        }
+                    } else {
+                        professorsListHtml = '<p style="color: red;">Σφάλμα φόρτωσης καθηγητών για πρόσκληση.</p>';
+                    }
+                } catch (error) {
+                    console.error('Error fetching professors for invitation:', error);
+                    professorsListHtml = '<p style="color: red;">Αδυναμία επικοινωνίας με τον server για τους καθηγητές.</p>';
+                }
+
+                thesisActionsDiv.innerHTML = `
+                    <h4>Διαχείριση Επιτροπής (Υπό Ανάθεση)</h4>
+                    <p>Προσκαλέστε δύο επιπλέον καθηγητές να συμμετάσχουν στην τριμελή επιτροπή.</p>
+                    <div id="pendingInvitations">
+                        <h5>Προσκλήσεις σε εκκρεμότητα/αποδοχή:</h5>
+                        ${(thesis.committee_invitations && thesis.committee_invitations.length > 0)
+                            ? `<ul class="committee-list">${thesis.committee_invitations.map(inv => `
+                                <li>
+                                    ${escapeHtml(inv.name)} ${escapeHtml(inv.surname)} (${escapeHtml(inv.email)}) - ${inv.invitation_status === 'pending' ? 'Σε αναμονή' : 'Αποδεκτή'}
+                                    ${inv.invitation_status === 'pending' ? `<button onclick="cancelInvitation(${inv.id})">Ακύρωση</button>` : ''}
+                                </li>`).join('')}</ul>`
+                            : '<p>Δεν έχουν σταλεί προσκλήσεις.</p>'}
+                    </div>
+                    <h5>Διαθέσιμοι Καθηγητές για Πρόσκληση:</h5>
+                    ${professorsListHtml}
+                    <button onclick="checkAndActivateThesis(${thesis.id})" style="margin-top: 20px;">Έλεγχος και Ενεργοποίηση Διπλωματικής</button>
+                    <p id="inviteMessage" class="error-message" style="margin-top: 10px;"></p>
+                `;
+            }
+            // Προσθήκη άλλων ενεργειών βάσει κατάστασης αργότερα
+        }
+
+        async function inviteProfessor(thesisId, professorId) {
+            try {
+                const response = await fetch('/api/student/invite-committee-member', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ thesisId, professorId })
+                });
+                const result = await response.json();
+                const messageElement = document.getElementById('inviteMessage');
+                if (response.ok) {
+                    messageElement.textContent = result.message;
+                    messageElement.style.color = 'green';
+                    fetchStudentThesis(); // Ανανέωση λεπτομερειών και ενεργειών διπλωματικής
+                } else {
+                    messageElement.textContent = result.message || 'Σφάλμα κατά την αποστολή πρόσκλησης.';
+                    messageElement.style.color = 'red';
+                }
+            } catch (error) {
+                console.error('Error inviting professor:', error);
+                document.getElementById('inviteMessage').textContent = 'Αδυναμία επικοινωνίας με τον server.';
+                document.getElementById('inviteMessage').style.color = 'red';
+            }
+        }
+
+        async function cancelInvitation(invitationId) {
+            if (!confirm('Είστε σίγουροι ότι θέλετε να ακυρώσετε αυτή την πρόσκληση;')) {
+                return;
+            }
+            try {
+                const response = await fetch(`/api/student/invitations/${invitationId}`, {
+                    method: 'DELETE',
+                    headers: { 'Content-Type': 'application/json' }
+                });
+                const result = await response.json();
+                const messageElement = document.getElementById('inviteMessage');
+                if (response.ok) {
+                    messageElement.textContent = result.message;
+                    messageElement.style.color = 'green';
+                    fetchStudentThesis(); // Ανανέωση λεπτομερειών και ενεργειών διπλωματικής
+                } else {
+                    messageElement.textContent = result.message || 'Σφάλμα κατά την ακύρωση πρόσκλησης.';
+                    messageElement.style.color = 'red';
+                }
+            } catch (error) {
+                console.error('Error cancelling invitation:', error);
+                document.getElementById('inviteMessage').textContent = 'Αδυναμία επικοινωνίας με τον server.';
+                document.getElementById('inviteMessage').style.color = 'red';
+            }
+        }
+
+        async function checkAndActivateThesis(thesisId) {
+            try {
+                const response = await fetch('/api/student/check-activate-thesis', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ thesisId })
+                });
+                const result = await response.json();
+                const messageElement = document.getElementById('inviteMessage');
+                if (response.ok) {
+                    messageElement.textContent = result.message;
+                    messageElement.style.color = 'green';
+                    fetchStudentThesis(); // Ανανέωση λεπτομερειών και ενεργειών διπλωματικής
+                } else {
+                    messageElement.textContent = result.message || 'Αδυναμία ενεργοποίησης διπλωματικής.';
+                    messageElement.style.color = 'red';
+                }
+            } catch (error) {
+                console.error('Error checking and activating thesis:', error);
+                document.getElementById('inviteMessage').textContent = 'Αδυναμία επικοινωνίας με τον server.';
+                document.getElementById('inviteMessage').style.color = 'red';
+            }
+        }
+
+
+        async function fetchStudentProfile() {
+            try {
+                const response = await fetch('/api/student/profile');
+                if (response.ok) {
+                    const profile = await response.json();
+                    for (const key in profile) {
+                        const input = document.getElementById(key);
+                        if (input) {
+                            input.value = profile[key];
+                        }
+                    }
+                } else {
+                    const errorData = await response.json();
+                    document.getElementById('profileMessage').textContent = `Σφάλμα φόρτωσης προφίλ: ${errorData.message}`;
+                    document.getElementById('profileMessage').style.color = 'red';
+                }
+            } catch (error) {
+                console.error('Error fetching student profile:', error);
+                document.getElementById('profileMessage').textContent = 'Αδυναμία επικοινωνίας με τον server για το προφίλ.';
+                document.getElementById('profileMessage').style.color = 'red';
+            }
+        }
+
+        async function handleProfileUpdate(event) {
+            event.preventDefault();
+            const form = event.target;
+            const formData = new FormData(form);
+            const data = Object.fromEntries(formData.entries());
+
+            try {
+                const response = await fetch('/api/student/profile', {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+                const result = await response.json();
+                const messageElement = document.getElementById('profileMessage');
+
+                if (response.ok) {
+                    messageElement.textContent = result.message;
+                    messageElement.style.color = 'green';
+                    fetchUserInfo(); // Ενημέρωση welcome message αν άλλαξε όνομα/επώνυμο
+                } else {
+                    messageElement.textContent = result.message || 'Σφάλμα κατά την ενημέρωση προφίλ.';
+                    messageElement.style.color = 'red';
+                }
+            } catch (error) {
+                console.error('Error updating profile:', error);
+                document.getElementById('profileMessage').textContent = 'Αδυναμία επικοινωνίας με τον server.';
+                document.getElementById('profileMessage').style.color = 'red';
+            }
+        }
+
+        function escapeHtml(text) {
+            if (typeof text !== 'string') return text;
+            const map = {
+                '&': '&amp;',
+                '<': '&lt;',
+                '>': '&gt;',
+                '"': '&quot;',
+                "'": '&#039;'
+            };
+            return text.replace(/[&<>"']/g, function(m) { return map[m]; });
+        }
+
+        async function logout() {
+            try {
+                const response = await fetch('/logout', { method: 'POST' });
+                if (response.ok) {
+                    window.location.href = '/login.html';
+                } else {
+                    alert('Σφάλμα αποσύνδεσης.');
+                }
+            } catch (error) {
+                console.error('Error during logout:', error);
+                alert('Αδυναμία αποσύνδεσης.');
+            }
+        }
+    </script>
+</body>
+</html>
