@@ -5,95 +5,42 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Φοιτητής Dashboard</title>
     <link rel="stylesheet" href="/css/style.css">
-    <style>
-        .dashboard-container {
-            width: 90%;
-            max-width: 1000px;
-            margin: 20px auto;
-            background-color: #fff;
-            padding: 20px;
-            border-radius: 8px;
-            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-        }
-        .dashboard-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 20px;
-        }
-        .section-content {
-            margin-top: 20px;
-            border-top: 1px solid #eee;
-            padding-top: 20px;
-        }
-        .thesis-details p {
-            margin-bottom: 5px;
-        }
-        .committee-list li, .professor-list li {
-            background-color: #f9f9f9;
-            border: 1px solid #ddd;
-            padding: 8px;
-            margin-bottom: 5px;
-            border-radius: 4px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-        .committee-list ul, .professor-list ul {
-            list-style: none;
-            padding: 0;
-        }
-        .profile-form .form-group {
-            display: flex;
-            flex-wrap: wrap;
-            margin-bottom: 10px;
-        }
-        .profile-form .form-group label {
-            flex: 1 0 100px; /* Label takes up to 100px or full width */
-            margin-bottom: 5px;
-        }
-        .profile-form .form-group input,
-        .profile-form .form-group select {
-            flex: 2 0 200px; /* Input takes up to 200px or more */
-            padding: 8px;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-        }
-        .profile-form button {
-            margin-top: 15px;
-        }
-        .invite-prof-form .form-group {
-            margin-bottom: 10px;
-        }
-        .invite-prof-form button {
-            margin-top: 10px;
-        }
-    </style>
 </head>
 <body>
-    <div class="dashboard-container">
-        <div class="dashboard-header">
-            <h2 id="welcomeMessage">Φοιτητής Dashboard</h2>
-            <button onclick="logout()">Αποσύνδεση</button>
+    <div class="white-line-top">
+        <div class="logo-top-left">
+            <img src="/img/upatras-logo.png" alt="University of Patras Logo">
         </div>
-
-        <nav>
-            <a href="#thesis-section">Η Διπλωματική μου</a> |
-            <a href="#profile-section">Το Προφίλ μου</a>
-            <!-- Άλλες ενότητες για 'Υπό Εξέταση' κλπ. θα προστεθούν αργότερα βάσει κατάστασης διπλωματικής -->
+        <div class="header-text-top-right">
+            <div style="display: flex; align-items: center; gap: 16px;">
+                <div class="header-buttons-inline" style="margin-right: 24px;">
+                    <button class="logout-header-btn" onclick="logout()">Αποσύνδεση</button>
+                </div>
+                <div class="main-title">Σύστημα Υποστήριξης Διπλωματικών Εργασιών</div>
+            </div>
+            <div class="subtitle">Πανεπιστήμιο Πατρών</div>
+        </div>
+    </div>
+    <div class="student-dashboard-container">
+        <div class="student-dashboard-header">
+            <h2 id="welcomeMessage">Φοιτητής Dashboard</h2>
+        </div>
+        <nav class="student-dashboard-nav">
+            <button class="student-dashboard-nav-btn" onclick="showStudentSection('thesis-section')">Η Διπλωματική μου</button>
+            <button class="student-dashboard-nav-btn" onclick="showStudentSection('profile-section')">Το Προφίλ μου</button>
         </nav>
 
-        <section id="thesis-section" class="section-content">
+        <section id="thesis-section" class="student-section-content">
             <h3>Η Διπλωματική μου Εργασία</h3>
             <div id="thesisDetails">
                 <p>Φόρτωση λεπτομερειών διπλωματικής...</p>
             </div>
-            <div id="thesisActions" class="section-content">
+            <div id="thesisActions" class="student-section-content">
                 <!-- Ενέργειες βάσει κατάστασης διπλωματικής θα εμφανιστούν εδώ -->
             </div>
         </section>
 
-        <section id="profile-section" class="section-content" style="display: none;">
+        <section id="profile-section" class="student-section-content" style="display: none;">
             <h3>Το Προφίλ μου</h3>
             <form id="profileForm" class="profile-form">
                 <div class="form-group">
@@ -104,7 +51,6 @@
                     <label for="surname">Επίθετο:</label>
                     <input type="text" id="surname" name="surname" required>
                 </div>
-                <!-- Το Email είναι read-only -->
                 <div class="form-group">
                     <label for="email">Email:</label>
                     <input type="email" id="email" name="email" disabled>
@@ -141,12 +87,9 @@
                 <p id="profileMessage" class="error-message"></p>
             </form>
         </section>
-
-        <!-- Δυναμικές ενότητες βάσει κατάστασης διπλωματικής -->
     </div>
-
     <script>
-        let studentThesis = null; // Αποθήκευση λεπτομερειών διπλωματικής παγκοσμίως
+        let studentThesis = null;
 
         document.addEventListener('DOMContentLoaded', () => {
             fetchUserInfo();
@@ -155,14 +98,14 @@
 
             document.getElementById('profileForm').addEventListener('submit', handleProfileUpdate);
 
-            // Λογική πλοήγησης
-            document.querySelectorAll('nav a').forEach(link => {
-                link.addEventListener('click', (event) => {
+            // Navigation logic for buttons
+            document.querySelectorAll('.student-dashboard-nav-btn').forEach(btn => {
+                btn.addEventListener('click', (event) => {
                     event.preventDefault();
-                    document.querySelectorAll('section').forEach(section => {
+                    document.querySelectorAll('.student-section-content').forEach(section => {
                         section.style.display = 'none';
                     });
-                    const targetSection = document.querySelector(event.target.getAttribute('href'));
+                    const targetSection = document.getElementById(event.target.getAttribute('onclick').match(/'([^']+)'/)[1]);
                     if (targetSection) {
                         targetSection.style.display = 'block';
                     }

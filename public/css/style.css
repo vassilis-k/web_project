@@ -519,3 +519,205 @@ button:hover {
     font-size: 1.1rem;
     font-weight: 600;
 }
+
+/* --- Student Dashboard Styles --- */
+.student-dashboard-container {
+    width: 90%;
+    max-width: 1000px;
+    margin: 160px auto 20px auto; /* Add gap below top white frame */
+    background-color: rgba(255,255,255,0.92);
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+}
+.student-dashboard-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+}
+.student-dashboard-nav {
+    margin-bottom: 20px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid #eee;
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+.student-dashboard-nav-btn {
+    background: #7a2327;
+    color: #fff;
+    border: none;
+    border-radius: 6px;
+    padding: 10px 18px;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+.student-dashboard-nav-btn:hover,
+.student-dashboard-nav-btn.active {
+    background: #a03a3e;
+}
+.student-section-content {
+    margin-top: 20px;
+    border-top: 1px solid #eee;
+    padding-top: 20px;
+}
+.thesis-details p {
+    margin-bottom: 5px;
+}
+.committee-list li, .professor-list li {
+    background-color: #f9f9f9;
+    border: 1px solid #ddd;
+    padding: 8px;
+    margin-bottom: 5px;
+    border-radius: 4px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+.committee-list ul, .professor-list ul {
+    list-style: none;
+    padding: 0;
+}
+.profile-form .form-group {
+    display: flex;
+    flex-wrap: wrap;
+    margin-bottom: 10px;
+}
+.profile-form .form-group label {
+    flex: 1 0 100px;
+    margin-bottom: 5px;
+}
+.profile-form .form-group input,
+.profile-form .form-group select {
+    flex: 2 0 200px;
+    padding: 8px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+}
+.profile-form button {
+    margin-top: 15px;
+}
+.invite-prof-form .form-group {
+    margin-bottom: 10px;
+}
+.invite-prof-form button {
+    margin-top: 10px;
+}
+/* --- End Student Dashboard Styles --- */
+
+/* --- Secretariat Dashboard Styles --- */
+.secretariat-dashboard-container {
+    width: 95%;
+    max-width: 1400px;
+    margin: 160px auto 20px auto; 
+    background-color: rgba(255,255,255,0.92);
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+}
+.secretariat-dashboard-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+}
+.secretariat-dashboard-nav {
+    margin-bottom: 20px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid #eee;
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+.secretariat-dashboard-nav-btn {
+    background: #7a2327;
+    color: #fff;
+    border: none;
+    border-radius: 6px;
+    padding: 10px 18px;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+.secretariat-dashboard-nav-btn:hover,
+.secretariat-dashboard-nav-btn.active {
+    background: #a03a3e;
+}
+.secretariat-section-content {
+    margin-top: 20px;
+    border-top: 1px solid #eee;
+    padding-top: 20px;
+}
+.thesis-card {
+    background-color: #f9f9f9;
+    border: 1px solid #ddd;
+    padding: 15px;
+    margin-bottom: 15px;
+    border-radius: 6px;
+}
+.thesis-card h4 {
+    margin-top: 0;
+    margin-bottom: 10px;
+    color: #007bff;
+}
+.thesis-card p {
+    margin-bottom: 5px;
+    font-size: 0.9em;
+}
+.thesis-actions {
+    margin-top: 10px;
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+.thesis-actions button {
+    padding: 8px 12px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.85em;
+}
+.thesis-actions .gs-btn { background-color: #28a745; color: white; }
+.thesis-actions .cancel-btn { background-color: #dc3545; color: white; }
+.thesis-actions .complete-btn { background-color: #007bff; color: white; }
+
+.modal {
+    display: none; /* Hidden by default */
+    position: fixed; /* Stay in place */
+    z-index: 1; /* Sit on top */
+    left: 0;
+    top: 0;
+    width: 100%; /* Full width */
+    height: 100%; /* Full height */
+    overflow: auto; /* Enable scroll if needed */
+    background-color: rgba(0,0,0,0.4); /* Black w/ opacity */
+}
+.modal-content {
+    background-color: #fefefe;
+    margin: 10% auto; /* 10% from the top and centered */
+    padding: 20px;
+    border: 1px solid #888;
+    width: 50%; /* Adjust as needed */
+    border-radius: 8px;
+    position: relative;
+}
+.close-button {
+    color: #aaa;
+    float: right;
+    font-size: 28px;
+    font-weight: bold;
+    position: absolute;
+    top: 10px;
+    right: 20px;
+}
+.close-button:hover,
+.close-button:focus {
+    color: black;
+    text-decoration: none;
+    cursor: pointer;
+}
+/* --- End Secretariat Dashboard Styles --- */
