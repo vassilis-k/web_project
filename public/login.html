@@ -4,9 +4,26 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Σύστημα Υποστήριξης Διπλωματικών Εργασιών - Σύνδεση</title>
+    <!-- Import Open Sans font -->
+    <link href="https://fonts.googleapis.com/css?family=Open+Sans:400,600,700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/css/style.css">
 </head>
 <body>
+    <div class="white-line-top">
+        <div class="logo-top-left">
+            <img src="/img/upatras-logo.png" alt="University of Patras Logo">
+        </div>
+        <div class="header-text-top-right">
+            <div style="display: flex; align-items: center; gap: 16px;">
+                <div class="header-buttons-inline" style="margin-right: 24px;">
+                    <a href="login.html" class="login-header-btn">Σύνδεση</a>
+                    <button class="announcements-header-btn" onclick="window.location.href='index.html'">Ανακοινώσεις</button>
+                </div>
+                <div class="main-title">Σύστημα Υποστήριξης Διπλωματικών Εργασιών</div>
+            </div>
+            <div class="subtitle">Πανεπιστήμιο Πατρών</div>
+        </div>
+    </div>
     <div class="login-container">
         <h2>Σύνδεση Χρήστη</h2>
         <form id="loginForm" action="/login" method="POST">
@@ -22,8 +39,6 @@
             <p id="errorMessage" class="error-message" style="color: red;"></p>
         </form>
     </div>
-
-    <!-- Το script πρέπει να είναι ΕΔΩ, στο τέλος του <body> -->
     <script>
         document.getElementById('loginForm').addEventListener('submit', async function(event) {
             event.preventDefault(); // Prevent default form submission

@@ -7,279 +7,33 @@
     <link rel="stylesheet" href="/css/style.css">
     <!-- Chart.js for statistics -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <style>
-        /* General dashboard container styles */
-        .dashboard-container {
-            width: 90%;
-            max-width: 1400px;
-            margin: 20px auto;
-            background-color: #fff;
-            padding: 20px;
-            border-radius: 8px;
-            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-        }
-        .dashboard-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 20px;
-        }
-
-        /* Navigation styles */
-        nav {
-            margin-bottom: 20px;
-            padding-bottom: 10px;
-            border-bottom: 1px solid #eee;
-        }
-        nav a {
-            margin-right: 15px;
-            text-decoration: none;
-            color: #007bff;
-            font-weight: bold;
-        }
-        nav a:hover {
-            color: #0056b3;
-        }
-
-        /* Section specific styles */
-        .section-content {
-            margin-top: 20px;
-            border-top: 1px solid #eee;
-            padding-top: 20px;
-        }
-
-        /* Form groups */
-        .form-group {
-            margin-bottom: 15px;
-        }
-        .form-group label {
-            display: block;
-            margin-bottom: 5px;
-            font-weight: bold;
-        }
-        .form-group input[type="text"],
-        .form-group input[type="email"],
-        .form-group input[type="number"],
-        .form-group input[type="url"],
-        .form-group textarea,
-        .form-group select {
-            width: calc(100% - 22px); /* Account for padding and border */
-            padding: 10px;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-            box-sizing: border-box;
-            font-size: 1em;
-        }
-        .form-group select {
-            width: 100%;
-        }
-
-        /* Buttons */
-        button {
-            background-color: #007bff;
-            color: white;
-            padding: 10px 15px;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 16px;
-        }
-        button:hover {
-            background-color: #0056b3;
-        }
-        .action-button {
-            padding: 6px 10px;
-            border-radius: 4px;
-            cursor: pointer;
-            margin-right: 5px;
-            border: none;
-            font-size: 0.8em;
-        }
-        .action-button.primary { background-color: #007bff; color: white; }
-        .action-button.danger { background-color: #dc3545; color: white; }
-        .action-button.warning { background-color: #ffc107; color: #333; }
-        .action-button.info { background-color: #17a2b8; color: white; }
-        .action-button.success { background-color: #28a745; color: white; }
-
-
-        /* Lists (topics, invitations, search results) */
-        .topic-list ul, .invitation-list ul, .student-results ul, .notes-list ul {
-            list-style: none;
-            padding: 0;
-        }
-        .topic-list li, .invitation-list li, .student-results li, .notes-list li {
-            background-color: #f9f9f9;
-            border: 1px solid #ddd;
-            padding: 10px;
-            margin-bottom: 10px;
-            border-radius: 4px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            flex-wrap: wrap; /* Allow items to wrap */
-        }
-        .topic-list li h3, .invitation-list li h4 {
-            margin: 0;
-            color: #333;
-            flex-basis: 100%; /* Take full width on top */
-            margin-bottom: 5px;
-        }
-        .topic-actions, .invitation-actions, .assign-actions {
-            margin-top: 10px; /* Add margin for spacing when wrapping */
-        }
-        .topic-actions button {
-            margin-left: 10px;
-            margin-top: 5px; /* Spacing for small screens */
-        }
-        .error-message {
-            color: red;
-            margin-top: 10px;
-        }
-
-        /* Table styles for theses list */
-        .thesis-list-table table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 15px;
-        }
-        .thesis-list-table th, .thesis-list-table td {
-            border: 1px solid #ddd;
-            padding: 8px;
-            text-align: left;
-            font-size: 0.9em;
-        }
-        .thesis-list-table th {
-            background-color: #f2f2f2;
-        }
-        .filter-controls {
-            margin-bottom: 15px;
-            display: flex;
-            gap: 10px;
-            align-items: center;
-            flex-wrap: wrap;
-        }
-        .export-buttons {
-            margin-top: 15px;
-            display: flex;
-            gap: 10px;
-        }
-        .export-buttons button {
-            background-color: #6c757d;
-            color: white;
-            border: none;
-            padding: 8px 12px;
-            border-radius: 4px;
-            cursor: pointer;
-        }
-
-        /* Modal styles */
-        .modal {
-            display: none;
-            position: fixed;
-            z-index: 100;
-            left: 0;
-            top: 0;
-            width: 100%;
-            height: 100%;
-            overflow: auto;
-            background-color: rgba(0,0,0,0.4);
-        }
-        .modal-content {
-            background-color: #fefefe;
-            margin: 5% auto;
-            padding: 20px;
-            border: 1px solid #888;
-            width: 80%;
-            max-width: 800px;
-            border-radius: 8px;
-            position: relative;
-        }
-        .close-button {
-            color: #aaa;
-            float: right;
-            font-size: 28px;
-            font-weight: bold;
-            position: absolute;
-            top: 10px;
-            right: 20px;
-        }
-        .close-button:hover, .close-button:focus {
-            color: black;
-            text-decoration: none;
-            cursor: pointer;
-        }
-
-        /* Specific styles for modal content */
-        #modalThesisDetails h5 {
-            margin-top: 15px;
-            margin-bottom: 10px;
-            border-bottom: 1px solid #eee;
-            padding-bottom: 5px;
-        }
-        #modalThesisDetails ul {
-            list-style: disc;
-            margin-left: 20px;
-        }
-        #modalThesisActions {
-            margin-top: 20px;
-            border-top: 1px solid #eee;
-            padding-top: 15px;
-        }
-        #thesisDynamicActions {
-            display: flex;
-            gap: 10px;
-            flex-wrap: wrap;
-            margin-bottom: 15px;
-        }
-        .grade-input {
-            width: 60px;
-            padding: 5px;
-            border-radius: 4px;
-            border: 1px solid #ccc;
-            margin-right: 5px;
-            box-sizing: border-box;
-        }
-        .grade-save-btn {
-            background-color: #28a745;
-            color: white;
-            padding: 5px 10px;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 0.9em;
-        }
-        .notes-list li {
-            background-color: #f4f4f4;
-            margin-bottom: 5px;
-            padding: 8px;
-            border-left: 3px solid #007bff;
-            font-size: 0.9em;
-        }
-        #addNoteText {
-            width: calc(100% - 22px);
-            margin-bottom: 10px;
-            font-size: 1em;
-        }
-
-        /* Styles for Charts */
-        #professorStats canvas {
-            margin-bottom: 30px;
-        }
-    </style>
+    
 </head>
 <body>
+    <div class="white-line-top">
+        <div class="logo-top-left">
+            <img src="/img/upatras-logo.png" alt="University of Patras Logo">
+        </div>
+        <div class="header-text-top-right">
+            <div style="display: flex; align-items: center; gap: 16px;">
+                <div class="header-buttons-inline" style="margin-right: 24px;">
+                    <button class="logout-header-btn" onclick="logout()">Αποσύνδεση</button>
+                </div>
+                <div class="main-title">Σύστημα Υποστήριξης Διπλωματικών Εργασιών</div>
+            </div>
+            <div class="subtitle">Πανεπιστήμιο Πατρών</div>
+        </div>
+    </div>
     <div class="dashboard-container">
         <div class="dashboard-header">
             <h2 id="welcomeMessage">Καθηγητής Dashboard</h2>
-            <button onclick="logout()">Αποσύνδεση</button>
         </div>
-
-        <nav>
-            <a href="#topics-section">Διαχείριση Θεμάτων</a> |
-            <a href="#assign-section">Ανάθεση Θεμάτων</a> |
-            <a href="#theses-list-section">Οι Διπλωματικές μου</a> |
-            <a href="#invitations-section">Προσκλήσεις Επιτροπής</a> |
-            <a href="#stats-section">Στατιστικά</a>
+        <nav class="dashboard-nav">
+            <button class="dashboard-nav-btn" onclick="showSection('topics-section')">Διαχείριση Θεμάτων</button>
+            <button class="dashboard-nav-btn" onclick="showSection('assign-section')">Ανάθεση Θεμάτων</button>
+            <button class="dashboard-nav-btn" onclick="showSection('theses-list-section')">Οι Διπλωματικές μου</button>
+            <button class="dashboard-nav-btn" onclick="showSection('invitations-section')">Προσκλήσεις Επιτροπής</button>
+            <button class="dashboard-nav-btn" onclick="showSection('stats-section')">Στατιστικά</button>
         </nav>
 
         <!-- 1) Διαχείριση Θεμάτων (Δημιουργία/Προβολή/Επεξεργασία) -->
@@ -361,10 +115,10 @@
                     <option value="member">Μέλος Επιτροπής</option>
                 </select>
 
-                <button onclick="fetchProfessorTheses()">Εφαρμογή Φίλτρων</button>
+                <button class="filter-btn">Εφαρμογή Φίλτρων</button>
                 <div class="export-buttons">
-                    <button onclick="exportTheses('csv')">Εξαγωγή σε CSV</button>
-                    <button onclick="exportTheses('json')">Εξαγωγή σε JSON</button>
+                    <button class="export-btn">Εξαγωγή σε JSON</button>
+                    <button class="export-btn">Εξαγωγή σε PDF</button>
                 </div>
             </div>
             <div id="professorThesesList" class="thesis-list-table">
@@ -381,16 +135,21 @@
             <p id="invitationActionMessage" class="error-message"></p>
         </section>
 
-        <!-- 5) Στατιστικά -->
         <section id="stats-section" class="section-content" style="display: none;">
             <h3>Στατιστικά</h3>
-            <div id="professorStats">
-                <h4>Συνολικές Διπλωματικές</h4>
-                <canvas id="thesesCountChart" width="400" height="200"></canvas>
-                <h4>Μέσος Χρόνος Περάτωσης (Ημέρες)</h4>
-                <canvas id="avgTimeChart" width="400" height="200"></canvas>
-                <h4>Μέσος Βαθμός</h4>
-                <canvas id="avgGradeChart" width="400" height="200"></canvas>
+            <div class="stats-charts-row">
+                <div class="stats-chart-box">
+                    <h4>Συνολικές Διπλωματικές</h4>
+                    <canvas id="thesesCountPieChart" width="300" height="300"></canvas>
+                </div>
+                <div class="stats-chart-box">
+                    <h4>Μέσος Χρόνος Περάτωσης (Ημέρες)</h4>
+                    <canvas id="avgTimePieChart" width="300" height="300"></canvas>
+                </div>
+                <div class="stats-chart-box stats-chart-box-center">
+                    <h4>Μέσος Βαθμός</h4>
+                    <canvas id="avgGradePieChart" width="300" height="300"></canvas>
+                </div>
             </div>
         </section>
 
@@ -1305,75 +1064,78 @@
         }
 
         function renderProfessorStatistics(stats) {
-            // Helper to destroy existing chart instances if any
+            // Destroy previous charts if any
             const destroyChart = (chartId) => {
                 const existingChart = Chart.getChart(chartId);
                 if (existingChart) existingChart.destroy();
             };
 
-            // 1. Συνολικό πλήθος διπλωματικών
-            destroyChart('thesesCountChart');
-            const thesesCountCtx = document.getElementById('thesesCountChart').getContext('2d');
+            // 1. Συνολικές Διπλωματικές (Pie)
+            destroyChart('thesesCountPieChart');
+            const thesesCountCtx = document.getElementById('thesesCountPieChart').getContext('2d');
             new Chart(thesesCountCtx, {
-                type: 'bar',
+                type: 'pie',
                 data: {
                     labels: ['Επιβλέπων', 'Μέλος Επιτροπής'],
                     datasets: [{
-                        label: 'Πλήθος Διπλωματικών',
-                        data: [stats.total_supervised || 0, stats.total_committee_member || 0],
-                        backgroundColor: ['rgba(75, 192, 192, 0.6)', 'rgba(153, 102, 255, 0.6)'],
+                        data: [
+                            stats?.total_supervised ? stats.total_supervised : 0,
+                            stats?.total_committee_member ? stats.total_committee_member : 0
+                        ],
+                        backgroundColor: ['rgba(75, 192, 192, 0.7)', 'rgba(153, 102, 255, 0.7)'],
                         borderColor: ['rgba(75, 192, 192, 1)', 'rgba(153, 102, 255, 1)'],
-                        borderWidth: 1
+                        borderWidth: 2
                     }]
                 },
                 options: {
-                    responsive: true,
-                    scales: { y: { beginAtZero: true, ticks: { precision: 0 } } },
-                    plugins: { legend: { display: false } }
+                    responsive: false,
+                    plugins: { legend: { position: 'bottom' } }
                 }
             });
 
-            // 2. Μέσος χρόνος περάτωσης (Ημέρες)
-            destroyChart('avgTimeChart');
-            const avgTimeCtx = document.getElementById('avgTimeChart').getContext('2d');
+            // 2. Μέσος Χρόνος Περάτωσης (Pie)
+            destroyChart('avgTimePieChart');
+            const avgTimeCtx = document.getElementById('avgTimePieChart').getContext('2d');
             new Chart(avgTimeCtx, {
-                type: 'bar',
+                type: 'pie',
                 data: {
                     labels: ['Επιβλέπων', 'Μέλος Επιτροπής'],
                     datasets: [{
-                        label: 'Μέσος Χρόνος (Ημέρες)',
-                        data: [stats.avg_time_supervised ? parseFloat(stats.avg_time_supervised).toFixed(2) : 0, stats.avg_time_committee_member ? parseFloat(stats.avg_time_committee_member).toFixed(2) : 0],
-                        backgroundColor: ['rgba(255, 159, 64, 0.6)', 'rgba(54, 162, 235, 0.6)'],
+                        data: [
+                            stats?.avg_time_supervised ? parseFloat(stats.avg_time_supervised) : 0,
+                            stats?.avg_time_committee_member ? parseFloat(stats.avg_time_committee_member) : 0
+                        ],
+                        backgroundColor: ['rgba(255, 159, 64, 0.7)', 'rgba(54, 162, 235, 0.7)'],
                         borderColor: ['rgba(255, 159, 64, 1)', 'rgba(54, 162, 235, 1)'],
-                        borderWidth: 1
+                        borderWidth: 2
                     }]
                 },
                 options: {
-                    responsive: true,
-                    scales: { y: { beginAtZero: true, title: { display: true, text: 'Ημέρες' } } },
-                    plugins: { legend: { display: false } }
+                    responsive: false,
+                    plugins: { legend: { position: 'bottom' } }
                 }
             });
 
-            // 3. Μέσος βαθμός
-            destroyChart('avgGradeChart');
-            const avgGradeCtx = document.getElementById('avgGradeChart').getContext('2d');
+            // 3. Μέσος Βαθμός (Pie)
+            destroyChart('avgGradePieChart');
+            const avgGradeCtx = document.getElementById('avgGradePieChart').getContext('2d');
             new Chart(avgGradeCtx, {
-                type: 'bar',
+                type: 'pie',
                 data: {
                     labels: ['Επιβλέπων', 'Μέλος Επιτροπής'],
                     datasets: [{
-                        label: 'Μέσος Βαθμός',
-                        data: [stats.avg_grade_supervised ? parseFloat(stats.avg_grade_supervised).toFixed(2) : 0, stats.avg_grade_committee_member ? parseFloat(stats.avg_grade_committee_member).toFixed(2) : 0],
-                        backgroundColor: ['rgba(75, 192, 192, 0.6)', 'rgba(255, 99, 132, 0.6)'],
+                        data: [
+                            stats?.avg_grade_supervised ? parseFloat(stats.avg_grade_supervised) : 0,
+                            stats?.avg_grade_committee_member ? parseFloat(stats.avg_grade_committee_member) : 0
+                        ],
+                        backgroundColor: ['rgba(75, 192, 192, 0.7)', 'rgba(255, 99, 132, 0.7)'],
                         borderColor: ['rgba(75, 192, 192, 1)', 'rgba(255, 99, 132, 1)'],
-                        borderWidth: 1
+                        borderWidth: 2
                     }]
                 },
                 options: {
-                    responsive: true,
-                    scales: { y: { beginAtZero: true, max: 10, title: { display: true, text: 'Βαθμός (0-10)' } } },
-                    plugins: { legend: { display: false } }
+                    responsive: false,
+                    plugins: { legend: { position: 'bottom' } }
                 }
             });
         }
@@ -1421,6 +1183,34 @@
             } catch (error) {
                 console.error('Error during logout:', error);
                 alert('Αδυναμία αποσύνδεσης.');
+            }
+        }
+
+        function showSection(sectionId) {
+            document.querySelectorAll('section').forEach(section => {
+                section.style.display = 'none';
+            });
+            const targetSection = document.getElementById(sectionId);
+            if (targetSection) {
+                targetSection.style.display = 'block';
+            }
+            // Optionally refresh data for each section as needed
+            if (sectionId === 'topics-section') {
+                fetchProfessorTopics();
+            } else if (sectionId === 'assign-section') {
+                fetchAvailableTopicsForAssignment();
+                document.getElementById('studentSearchResults').innerHTML = '';
+                document.getElementById('selectedStudentInfo').textContent = 'Κανένας';
+                document.getElementById('selectedStudentId').value = '';
+                document.getElementById('studentSearchTerm').value = '';
+                document.getElementById('studentSearchMessage').textContent = '';
+                document.getElementById('assignTopicMessage').textContent = '';
+            } else if (sectionId === 'invitations-section') {
+                fetchProfessorInvitations();
+            } else if (sectionId === 'theses-list-section') {
+                fetchProfessorTheses();
+            } else if (sectionId === 'stats-section') {
+                fetchProfessorStatistics();
             }
         }
     </script>

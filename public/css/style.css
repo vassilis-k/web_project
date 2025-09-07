@@ -1,20 +1,95 @@
+@import url('https://fonts.googleapis.com/css?family=Open+Sans:400,600,700&display=swap');
+
+/* Set Open Sans as the default font for all elements */
+html, body, * {
+    font-family: 'Open Sans', Arial, sans-serif !important;
+}
+
 body {
-    font-family: Arial, sans-serif;
-    background-color: #f4f4f4;
-    display: flex;
-    justify-content: center;
-    align-items: center;
+    background: url('/img/background1.jpg') no-repeat center center fixed;
+    background-size: cover;
     min-height: 100vh;
     margin: 0;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+}
+
+.white-line-top {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 110px;
+    background-color: #fff;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    z-index: 101;
+    display: flex;
+    align-items: flex-start;
+    padding-left: 32px;
+}
+
+.logo-top-left {
+    position: relative;
+    top: 18px;
+    left: 32px;
+    z-index: 102;
+}
+
+.logo-top-left img {
+    height: 80px;
+    width: auto;
+    display: block;
+}
+
+.header-text-top-right {
+    position: absolute;
+    right: 48px;
+    top: 28px;
+    text-align: right;
+    z-index: 102;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+}
+
+.header-text-top-right .main-title {
+    font-size: 1.15rem;
+    font-weight: 600;
+    color: #7a2327;
+    letter-spacing: 0.5px;
+    margin-bottom: 4px;
+}
+
+.header-text-top-right .subtitle {
+    font-size: 1rem;
+    font-weight: 400;
+    color: #333;
+}
+
+.header-buttons-top {
+    display: relative;
+    top: 32px;
+    right: 48px;
+    gap: 12px;
+    align-items: center;
+    z-index: 103;
+}
+
+.header-buttons-inline {
+    display: flex;
+    gap: 12px;
 }
 
 .login-container, .container {
-    background-color: #fff;
+    background-color: rgba(255,255,255,0.92);
     padding: 30px;
-    border-radius: 8px;
-    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    border-radius: 12px;
+    box-shadow: 0 4px 24px rgba(0,0,0,0.10);
     width: 300px;
     text-align: center;
+    margin-top: 120px;
 }
 
 h2 {
@@ -50,7 +125,6 @@ button {
     border-radius: 4px;
     cursor: pointer;
     font-size: 16px;
-    width: 100%;
 }
 
 button:hover {
@@ -60,4 +134,388 @@ button:hover {
 .error-message {
     color: red;
     margin-top: 10px;
+}
+
+.login-header-btn,
+.announcements-header-btn {
+    padding: 8px 18px;
+    background: #7a2327;
+    color: #fff;
+    border-radius: 6px;
+    text-decoration: none;
+    font-weight: 600;
+    font-size: 1rem;
+    border: none;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.login-header-btn:hover,
+.announcements-header-btn:hover {
+    background: #a03a3e;
+}
+
+/* --- Dashboard Header Logout Button --- */
+.logout-header-btn {
+    padding: 8px 18px;
+    background: #7a2327;
+    color: #fff;
+    border-radius: 6px;
+    text-decoration: none;
+    font-weight: 600;
+    font-size: 1rem;
+    border: none;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+.logout-header-btn:hover {
+    background: #a03a3e;
+}
+
+.announcements-container {
+    background: rgba(255,255,255,0.92);
+    padding: 30px;
+    border-radius: 12px;
+    box-shadow: 0 4px 24px rgba(0,0,0,0.10);
+    width: 500px;
+    margin: 140px auto 0 auto;
+}
+
+.announcement {
+    margin-bottom: 24px;
+}
+.announcement h3 {
+    margin-bottom: 8px;
+    color: #7a2327;
+    font-size: 1.1rem;
+}
+.announcement p {
+    color: #333;
+    font-size: 1rem;
+}
+
+/* --- Professor Dashboard Styles --- */
+.dashboard-container {
+    width: 90%;
+    max-width: 1400px;
+    margin: 160px auto 20px auto;
+    background-color: rgba(255,255,255,0.92);
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+}
+.dashboard-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+}
+nav {
+    margin-bottom: 20px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid #eee;
+}
+nav a {
+    margin-right: 15px;
+    text-decoration: none;
+    color: #007bff;
+    font-weight: bold;
+}
+nav a:hover {
+    color: #0056b3;
+}
+.dashboard-nav {
+    margin-bottom: 20px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid #eee;
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+.dashboard-nav-btn {
+    background: #7a2327;
+    color: #fff;
+    border: none;
+    border-radius: 6px;
+    padding: 10px 18px;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+.dashboard-nav-btn:hover,
+.dashboard-nav-btn.active {
+    background: #a03a3e;
+}
+.section-content {
+    margin-top: 20px;
+    border-top: 1px solid #eee;
+    padding-top: 20px;
+}
+.form-group {
+    margin-bottom: 15px;
+}
+.form-group label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: bold;
+}
+.form-group input[type="text"],
+.form-group input[type="email"],
+.form-group input[type="number"],
+.form-group input[type="url"],
+.form-group textarea,
+.form-group select {
+    width: calc(100% - 22px);
+    padding: 10px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    box-sizing: border-box;
+    font-size: 1em;
+}
+.form-group select {
+    width: 100%;
+}
+button {
+    background-color: #177a35;
+    color: white;
+    padding: 10px 15px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 16px;
+}
+button:hover {
+    background-color: #0c4e1a;
+}
+#assign-section .student-search .form-group {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+}
+.action-button {
+    padding: 6px 10px;
+    border-radius: 4px;
+    cursor: pointer;
+    margin-right: 5px;
+    border: none;
+    font-size: 0.8em;
+}
+
+.action-button.primary { background-color: #007bff; color: white; }
+.action-button.danger { background-color: #dc3545; color: white; }
+.action-button.warning { background-color: #ffc107; color: #333; }
+.action-button.info { background-color: #17a2b8; color: white; }
+.action-button.success { background-color: #28a745; color: white; }
+.topic-list ul, .invitation-list ul, .student-results ul, .notes-list ul {
+    list-style: none;
+    padding: 0;
+}
+.topic-list li, .invitation-list li, .student-results li, .notes-list li {
+    background-color: #f9f9f9;
+    border: 1px solid #ddd;
+    padding: 10px;
+    margin-bottom: 10px;
+    border-radius: 4px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+}
+.topic-list li h3, .invitation-list li h4 {
+    margin: 0;
+    color: #333;
+    flex-basis: 100%;
+    margin-bottom: 5px;
+}
+.topic-actions, .invitation-actions, .assign-actions {
+    margin-top: 10px;
+}
+.topic-actions button {
+    margin-left: 10px;
+    margin-top: 5px;
+}
+.error-message {
+    color: red;
+    margin-top: 10px;
+}
+.thesis-list-table table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 15px;
+}
+.thesis-list-table th, .thesis-list-table td {
+    border: 1px solid #ddd;
+    padding: 8px;
+    text-align: left;
+    font-size: 0.9em;
+}
+.thesis-list-table th {
+    background-color: #f2f2f2;
+}
+.filter-controls {
+    margin-bottom: 15px;
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    flex-wrap: wrap;
+}
+.export-buttons {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    margin-top: 0; /* Align with filter button */
+}
+
+.export-btn {
+    padding: 6px 12px;
+    font-size: 0.9em;
+    border-radius: 4px;
+    background-color: #555a58; /* Different color from filter button */
+    color: white;
+    border: none;
+    cursor: pointer;
+    transition: background 0.2s;
+    height: 32px; /* Smaller height */
+    line-height: 1;
+}
+
+.export-btn:hover {
+    background-color: #484d4b;
+}
+
+/* Example filter button style for contrast */
+.filter-btn {
+    background-color: #177a35;
+    color: white;
+    padding: 10px 15px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 16px;
+}
+
+.filter-btn:hover {
+    background-color: #0c4e1a;
+}
+.modal {
+    display: none;
+    position: fixed;
+    z-index: 100;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    overflow: auto;
+    background-color: rgba(0,0,0,0.4);
+}
+.modal-content {
+    background-color: #fefefe;
+    margin: 5% auto;
+    padding: 20px;
+    border: 1px solid #888;
+    width: 80%;
+    max-width: 800px;
+    border-radius: 8px;
+    position: relative;
+}
+.close-button {
+    color: #aaa;
+    float: right;
+    font-size: 28px;
+    font-weight: bold;
+    position: absolute;
+    top: 10px;
+    right: 20px;
+}
+.close-button:hover, .close-button:focus {
+    color: black;
+    text-decoration: none;
+    cursor: pointer;
+}
+#modalThesisDetails h5 {
+    margin-top: 15px;
+    margin-bottom: 10px;
+    border-bottom: 1px solid #eee;
+    padding-bottom: 5px;
+}
+#modalThesisDetails ul {
+    list-style: disc;
+    margin-left: 20px;
+}
+#modalThesisActions {
+    margin-top: 20px;
+    border-top: 1px solid #eee;
+    padding-top: 15px;
+}
+#thesisDynamicActions {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-bottom: 15px;
+}
+.grade-input {
+    width: 60px;
+    padding: 5px;
+    border-radius: 4px;
+    border: 1px solid #ccc;
+    margin-right: 5px;
+    box-sizing: border-box;
+}
+.grade-save-btn {
+    background-color: #28a745;
+    color: white;
+    padding: 5px 10px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.9em;
+}
+.notes-list li {
+    background-color: #f4f4f4;
+    margin-bottom: 5px;
+    padding: 8px;
+    border-left: 3px solid #007bff;
+    font-size: 0.9em;
+}
+#addNoteText {
+    width: calc(100% - 22px);
+    margin-bottom: 10px;
+    font-size: 1em;
+}
+#professorStats canvas {
+    margin-bottom: 30px;
+}
+
+/* --- Statistics Pie Charts Layout --- */
+.stats-charts-row {
+    display: flex;
+    justify-content: center;
+    gap: 40px;
+    margin-bottom: 40px;
+    flex-wrap: wrap;
+}
+
+.stats-chart-box {
+    background: rgba(255,255,255,0.96);
+    border-radius: 12px;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.07);
+    padding: 24px 16px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    min-width: 320px;
+    margin-bottom: 0; 
+}
+
+.stats-chart-box-center {
+    margin: 0; 
+    max-width: 340px;
+}
+.stats-chart-box h4 {
+    margin-bottom: 18px;
+    color: #7a2327;
+    font-size: 1.1rem;
+    font-weight: 600;
 }
