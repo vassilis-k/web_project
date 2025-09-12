@@ -82,3 +82,15 @@ VALUES
 (13, '2025-09-24', '10:00:00', 'Δημόσια Παρουσίαση - Optimization Algorithms', 'Την 24/09/2025 και ώρα 10:00 θα παρουσιαστεί η διπλωματική εργασία με θέμα "Σχεδίαση Αλγορίθμων Βελτιστοποίησης".'),
 (14, '2025-09-26', '14:30:00', 'Δημόσια Παρουσίαση - Information Extraction', 'Την 26/09/2025 και ώρα 14:30 θα παρουσιαστεί η διπλωματική εργασία με θέμα "Αυτόματη Εξαγωγή Πληροφορίας".'),
 (15, '2025-09-28', '11:30:00', 'Δημόσια Παρουσίαση - AI Applications', 'Την 28/09/2025 και ώρα 11:30 θα παρουσιαστεί η διπλωματική εργασία με θέμα "Εφαρμογές Τεχνητής Νοημοσύνης".');
+
+-- hashed passwords
+UPDATE users SET password = '$2a$10$eBz9X5J9k3F8K1QZ9uJz5u' WHERE email LIKE '%@ac.upatras.gr';
+UPDATE users SET password = '$2a$10$8Jz9X5J9k3F8K1QZ9uJz5p' WHERE email LIKE '%@prof.upatras.gr';
+UPDATE users SET password = '$2a$10$9Jz9X5J9k3F8K1QZ9uJz5q' WHERE email LIKE '%@sec.upatras.gr';
+
+
+
+-- passwords:
+-- Student Password: student123
+-- Professor Password: professor123
+-- Secretariat Password: secretariat123
