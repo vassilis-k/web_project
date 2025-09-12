@@ -44,11 +44,19 @@ VALUES
 ('Ασφάλεια Δικτύων', 'Μελέτη και υλοποίηση πρωτοκόλλων ασφαλείας σε δίκτυα.', 'active', 15, 1, CURDATE()),
 ('Εφαρμογές Μηχανικής Μάθησης', 'Ανάπτυξη εφαρμογών μηχανικής μάθησης για πρόβλεψη δεδομένων.', 'active', 11, 2, CURDATE());
 
+-- Technically, thesis rows above also need fixes (reverse supervisor and student ids) but it doesn' matter for now
+
 -- under_review
 INSERT INTO thesis (title, description, status, supervisor_id, student_id, assignment_date)
 VALUES
 ('Ανάλυση Εικόνας', 'Επεξεργασία και ανάλυση εικόνας με χρήση αλγορίθμων.', 'under_review', 12, 3, CURDATE()),
 ('Συστήματα Ρομποτικής', 'Σχεδίαση και έλεγχος ρομποτικών συστημάτων.', 'under_review', 13, 4, CURDATE());
+
+-- Fixes
+select * from thesis where status = "under_review";
+
+update thesis set supervisor_id = 3, student_id = 12 where id = 8;
+update thesis set supervisor_id = 4, student_id = 13 where id = 9;
 
 -- completed
 INSERT INTO thesis (title, description, status, supervisor_id, student_id, assignment_date, final_grade)
@@ -61,13 +69,30 @@ VALUES
 ('Αυτόματη Εξαγωγή Πληροφορίας', 'Υλοποίηση συστήματος αυτόματης εξαγωγής πληροφορίας από κείμενα.', 'completed', 14, 3, CURDATE(), 8),
 ('Εφαρμογές Τεχνητής Νοημοσύνης', 'Ανάπτυξη εφαρμογών τεχνητής νοημοσύνης για ανάλυση δεδομένων.', 'completed', 15, 4, CURDATE(), 9);
 
+-- Fixes
+select * from thesis where status = "completed";
+
+update thesis set supervisor_id = 5, student_id = 14 where id = 10;
+update thesis set supervisor_id = 6, student_id = 15 where id = 11;
+update thesis set supervisor_id = 8, student_id = 11 where id = 12;
+update thesis set supervisor_id = 9, student_id = 12 where id = 13; # this student has already an assignment under review
+update thesis set supervisor_id = 20, student_id = 13 where id = 14; # this student has already an assignment under review 
+update thesis set supervisor_id = 3, student_id = 14 where id = 15; # this student has TWO completed assignments well GOOD FOR HIM HAHAHA
+update thesis set supervisor_id = 4, student_id = 15 where id = 16; # this one AS WELL?! Damn we have a couple smartypants in our hands
+
+update thesis set student_id = null, status = "available" where (11 < id < 16);
+
 -- cancelled
 INSERT INTO thesis (title, description, status, supervisor_id, student_id, assignment_date, cancellation_reason)
 VALUES
 ('Ανάλυση Κειμένου', 'Εξαγωγή πληροφορίας από κείμενα με NLP.', 'cancelled', 11, 7, CURDATE(), 'Αίτημα φοιτητή'),
 ('Σχεδίαση Βάσης Δεδομένων', 'Σχεδίαση και υλοποίηση βάσης δεδομένων για εκπαιδευτικά ιδρύματα.', 'cancelled', 12, 8, CURDATE(), 'Αίτημα καθηγητή');
 
+-- Fixes
+select * from thesis where status = "cancelled";
 
+update thesis set supervisor_id = 7, student_id = 11 where id = 17; # this guys casually completes as assignment and goes for a second one only to fail :(
+update thesis set supervisor_id = 8, student_id = 12 where id = 18; # this student has already an assignment under review
 
 INSERT INTO thesis_announcements (thesis_id, announcement_date, announcement_time, title, announcement_text)
 VALUES
@@ -84,13 +109,18 @@ VALUES
 (15, '2025-09-28', '11:30:00', 'Δημόσια Παρουσίαση - AI Applications', 'Την 28/09/2025 και ώρα 11:30 θα παρουσιαστεί η διπλωματική εργασία με θέμα "Εφαρμογές Τεχνητής Νοημοσύνης".');
 
 -- hashed passwords
-UPDATE users SET password = '$2a$10$eBz9X5J9k3F8K1QZ9uJz5u' WHERE email LIKE '%@ac.upatras.gr';
-UPDATE users SET password = '$2a$10$8Jz9X5J9k3F8K1QZ9uJz5p' WHERE email LIKE '%@prof.upatras.gr';
-UPDATE users SET password = '$2a$10$9Jz9X5J9k3F8K1QZ9uJz5q' WHERE email LIKE '%@sec.upatras.gr';
-
-
+UPDATE users SET password = '$2b$10$.phBLQOdyHiTGvOxIes98u4hC3ENbLO0o0cpGCQG5exn6BnLiKk/m' WHERE email LIKE '%@ac.upatras.gr';
+UPDATE users SET password = '$2b$10$qzNAm2uCEQgU/gg2gGu7ROXoh1fWlF7iNwwfFMzoPC6/mtJCFFpI.' WHERE email LIKE '%@prof.upatras.gr';
+UPDATE users SET password = '$2b$10$2RDoofjgJ7zqys2PrE3.k.nAZXUaB2HJSq2zZj15UxC2M0DQ.c9MC' WHERE email LIKE '%@sec.upatras.gr';
 
 -- passwords:
 -- Student Password: student123
 -- Professor Password: professor123
 -- Secretariat Password: secretariat123
+
+-- Fixes
+update users set email = replace(email, "@ac.upatras.gr", "@prof.upatras.gr") where email like "%@ac.upatras.gr%";
+update users set email = replace(email, "@prof.upatras.gr", "@ac.upatras.gr") where email like "%@prof.upatras.gr%";
+
+select * from users where role="professor";
+select * from users where role="student";
