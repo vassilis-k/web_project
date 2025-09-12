@@ -123,6 +123,18 @@ CREATE TABLE progress_notes (
     FOREIGN KEY (author_id) REFERENCES users(id)
 );
 
+CREATE TABLE thesis_announcements (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    thesis_id INT NOT NULL,
+    announcement_date DATE NOT NULL,
+    announcement_time TIME NOT NULL,
+    title VARCHAR(255) NOT NULL,
+    announcement_text TEXT NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (thesis_id) REFERENCES thesis(id)
+);
+
+CREATE INDEX idx_thesis_announcements_date ON thesis_announcements(announcement_date);
 CREATE INDEX idx_users_email ON users(email);
 CREATE INDEX idx_thesis_student ON thesis(student_id);
 CREATE INDEX idx_thesis_supervisor ON thesis(supervisor_id);
