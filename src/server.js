@@ -6,6 +6,7 @@ const authRoutes = require('./routes/authRoutes');
 const professorRoutes = require('./routes/professorRoutes');
 const studentRoutes = require('./routes/studentRoutes');
 const secretariatRoutes = require('./routes/secretariatRoutes'); // Import secretariat routes
+const announcementRoutes = require('./routes/announcementRoutes');
 const { isAuthenticated, authorizeRole } = require('./middleware/authMiddleware');
 
 const app = express();
@@ -39,6 +40,8 @@ app.use('/api/student', isAuthenticated, authorizeRole('student'), studentRoutes
 
 // Secretariat specific API routes - protected (Νέα γραμμή)
 app.use('/api/secretariat', isAuthenticated, authorizeRole('secretariat'), secretariatRoutes);
+
+app.use('/api', announcementRoutes);
 
 // Public route for root, redirects to login
 app.get('/', (req, res) => {

@@ -120,7 +120,7 @@ UPDATE users SET password = '$2b$10$zrMvAI997gsYzu4OSu0T5.CW5AWB9MB3dw5evrV3uRqD
 
 -- Fixes
 update users set email = replace(email, "@ac.upatras.gr", "@prof.upatras.gr") where email like "%@ac.upatras.gr%";
-update users set email = replace(email, "@prof.upatras.gr", "@ac.upatras.gr") where email like "%@prof.upatras.gr%";
+update users set email = replace(email, "@prof.upatras.gr", "@ac.upatras.gr") where role="student";
 
 select * from users where role="professor";
 select * from users where role="student";

@@ -24,16 +24,122 @@
         </div>
     </div>
     <div class="announcements-container">
-        <h2>Ανακοινώσεις</h2>
-        <div class="announcement">
-            <h3>Τίτλος Ανακοίνωσης 1</h3>
-            <p>Κείμενο ανακοίνωσης...</p>
+        <div style="display: flex; align-items: center; justify-content: space-between;">
+            <h2>Ανακοινώσεις</h2>
+            <button class="date-picker-btn" onclick="toggleDatePicker()">Επιλογή Ημ/νιας</button>
         </div>
-        <div class="announcement">
-            <h3>Τίτλος Ανακοίνωσης 2</h3>
-            <p>Κείμενο ανακοίνωσης...</p>
+        <div id="datePickerContainer" style="display: none; text-align: center; margin: 20px 0;">
+            <label for="datePicker" style="font-size: 1rem; color: #333; font-weight: 600;">Επιλέξτε Ημερομηνία:</label>
+            <input type="date" id="datePicker" class="styled-date-picker" onchange="filterAnnouncementsByDate(this.value)">
         </div>
-        <!-- Περισσότερες ανακοινώσεις εδώ -->
     </div>
+    <script>
+        let currentPage = 1; 
+        const limit = 2; 
+
+        async function fetchAnnouncements(page = 1) {
+            try {
+                const response = await fetch(`/api/announcements?page=${page}&limit=${limit}`);
+                const data = await response.json();
+
+                const container = document.querySelector('.announcements-container');
+                container.innerHTML = `
+                    <div style="display: flex; align-items: center; justify-content: space-between;">
+                        <h2>Ανακοινώσεις</h2>
+                        <button class="date-picker-btn" onclick="toggleDatePicker()">Επιλογή Ημ/νιας</button>
+                    </div>
+                    <input type="date" id="datePicker" style="display: none;" onchange="filterAnnouncementsByDate(this.value)">
+                `;
+
+                data.announcements.forEach(announcement => {
+                    const announcementDiv = document.createElement('div');
+                    announcementDiv.classList.add('announcement');
+                    announcementDiv.innerHTML = `
+                        <h3>${announcement.title}</h3>
+                        <p><strong>Ημερομηνία:</strong> ${new Date(announcement.announcement_date).toLocaleDateString('el-GR')}</p>
+                        <p><strong>Ώρα:</strong> ${announcement.announcement_time}</p>
+                        <p>${announcement.announcement_text}</p>
+                    `;
+                    container.appendChild(announcementDiv);
+                });
+
+                // pagination
+                const paginationContainer = document.createElement('div');
+                paginationContainer.classList.add('pagination-container');
+
+                if (page > 1) {
+                    const prevButton = document.createElement('button');
+                    prevButton.textContent = 'Προηγούμενη';
+                    prevButton.onclick = () => {
+                        currentPage = page - 1;
+                        fetchAnnouncements(currentPage);
+                    };
+                    paginationContainer.appendChild(prevButton);
+                }
+
+                const pageInfo = document.createElement('p');
+                pageInfo.classList.add('page-info');
+                pageInfo.textContent = `Σελίδα ${page} από ${data.totalPages}`;
+                paginationContainer.appendChild(pageInfo);
+
+                if (page < data.totalPages) {
+                    const nextButton = document.createElement('button');
+                    nextButton.textContent = 'Επόμενη';
+                    nextButton.onclick = () => {
+                        currentPage = page + 1;
+                        fetchAnnouncements(currentPage);
+                    };
+                    paginationContainer.appendChild(nextButton);
+                }
+
+                container.appendChild(paginationContainer);
+            } catch (error) {
+                console.error('Error fetching announcements:', error);
+            }
+        }
+
+        function toggleDatePicker() {
+            const datePicker = document.getElementById('datePicker');
+            datePicker.style.display = datePicker.style.display === 'none' ? 'block' : 'none';
+        }
+
+        async function filterAnnouncementsByDate(date) {
+            try {
+                const response = await fetch(`/api/announcements?date=${date}`);
+                const data = await response.json();
+
+                const container = document.querySelector('.announcements-container');
+                container.innerHTML = `
+                    <div style="display: flex; align-items: center; justify-content: space-between;">
+                        <h2>Ανακοινώσεις</h2>
+                        <button class="date-picker-btn" onclick="toggleDatePicker()">Επιλογή Ημ/νιας</button>
+                    </div>
+                    <input type="date" id="datePicker" style="display: none;" onchange="filterAnnouncementsByDate(this.value)">
+                `;
+
+                if (data.announcements.length === 0) {
+                    container.innerHTML += '<p>Δεν βρέθηκαν ανακοινώσεις για την επιλεγμένη ημερομηνία.</p>';
+                    return;
+                }
+
+                data.announcements.forEach(announcement => {
+                    const announcementDiv = document.createElement('div');
+                    announcementDiv.classList.add('announcement');
+                    announcementDiv.innerHTML = `
+                        <h3>${announcement.title}</h3>
+                        <p><strong>Ημερομηνία:</strong> ${new Date(announcement.announcement_date).toLocaleDateString('el-GR')}</p>
+                        <p><strong>Ώρα:</strong> ${announcement.announcement_time}</p>
+                        <p>${announcement.announcement_text}</p>
+                    `;
+                    container.appendChild(announcementDiv);
+                });
+            } catch (error) {
+                console.error('Error filtering announcements:', error);
+            }
+        }
+
+        // Fetch announcements on page load
+        document.addEventListener('DOMContentLoaded', () => fetchAnnouncements(currentPage));
+    </script>
 </body>
 </html>
