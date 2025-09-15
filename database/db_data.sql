@@ -109,9 +109,9 @@ VALUES
 (15, '2025-09-28', '11:30:00', 'Δημόσια Παρουσίαση - AI Applications', 'Την 28/09/2025 και ώρα 11:30 θα παρουσιαστεί η διπλωματική εργασία με θέμα "Εφαρμογές Τεχνητής Νοημοσύνης".');
 
 -- hashed passwords
-UPDATE users SET password = '$2b$10$.phBLQOdyHiTGvOxIes98u4hC3ENbLO0o0cpGCQG5exn6BnLiKk/m' WHERE email LIKE '%@ac.upatras.gr';
-UPDATE users SET password = '$2b$10$qzNAm2uCEQgU/gg2gGu7ROXoh1fWlF7iNwwfFMzoPC6/mtJCFFpI.' WHERE email LIKE '%@prof.upatras.gr';
-UPDATE users SET password = '$2b$10$2RDoofjgJ7zqys2PrE3.k.nAZXUaB2HJSq2zZj15UxC2M0DQ.c9MC' WHERE email LIKE '%@sec.upatras.gr';
+UPDATE users SET password = '$2b$10$AOwZx.dAt.NgXCZAK/B8wOgywp1VMZu0ys.Ds64sHewC60rMGmAse' WHERE email LIKE '%@ac.upatras.gr';
+UPDATE users SET password = '$2b$10$gxzu5j1GFzpq31xJgNF9zORlyZmRnD1mRIT4tfpYyNSC5yMbV6Rum' WHERE email LIKE '%@prof.upatras.gr';
+UPDATE users SET password = '$2b$10$zrMvAI997gsYzu4OSu0T5.CW5AWB9MB3dw5evrV3uRqDLmvji0uEW' WHERE email LIKE '%@sec.upatras.gr';
 
 -- passwords:
 -- Student Password: student123
