@@ -15,4 +15,12 @@ router.post('/invite-committee-member', studentController.inviteProfessorToCommi
 router.delete('/invitations/:invitationId', studentController.cancelCommitteeInvitation); // Ακύρωση πρόσκλησης
 router.post('/check-activate-thesis', studentController.checkAndActivateThesis); // Έλεγχος και ενεργοποίηση
 
+// 4) Διαχείριση διπλωματικής εργασίας - Ενεργή (Σημειώματα Προόδου)
+router.post('/thesis/:thesisId/progress-notes', studentController.createProgressNote); // Υποβολή σημειώματος
+router.get('/thesis/:thesisId/progress-notes', studentController.getProgressNotesForThesis); // Ανάκτηση σημειωμάτων
+
+// 5) Διαχείριση διπλωματικής εργασίας - Υπό Εξέταση (Ορισμός Παρουσίασης)
+router.post('/thesis/:thesisId/presentation-details', studentController.submitPresentationDetails);
+
+
 module.exports = router;

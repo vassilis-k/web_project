@@ -122,7 +122,7 @@ class Thesis {
         try {
             const [rows] = await pool.execute(
                 `SELECT
-                    t.id, t.title, t.description, t.description_pdf_url, t.status, t.assignment_date, t.presentation_date, t.repository_url,
+                    t.*,
                     s.name AS supervisor_name, s.surname AS supervisor_surname, s.email AS supervisor_email
                 FROM thesis t
                 JOIN users s ON t.supervisor_id = s.id
@@ -156,7 +156,7 @@ class Thesis {
         try {
             const [thesisRows] = await pool.execute(
                 `SELECT
-                    t.id, t.title, t.description, t.description_pdf_url, t.status, t.assignment_date, t.presentation_date, t.repository_url,
+                    t.*,
                     sup.id AS supervisor_id, sup.name AS supervisor_name, sup.surname AS supervisor_surname, sup.email AS supervisor_email,
                     stu.id AS student_id, stu.name AS student_name, stu.surname AS student_surname, stu.email AS student_email
                 FROM thesis t
@@ -196,6 +196,35 @@ class Thesis {
             return thesis;
         } catch (error) {
             console.error('Error fetching thesis details with committee:', error);
+            throw error;
+        }
+    }
+
+    // Νέα μέθοδος: Ενημέρωση λεπτομερειών παρουσίασης
+    static async updatePresentationDetails(thesisId, details) {
+        try {
+            const [result] = await pool.execute(
+                `UPDATE thesis SET
+                    presentation_date = ?,
+                    presentation_mode = ?,
+                    presentation_location = ?,
+                    draft_file_url = ?,
+                    extra_material_url = ?,
+                    presentation_details_locked = ?
+                WHERE id = ? AND status = 'under_review'`,
+                [
+                    details.presentation_date,
+                    details.presentation_mode,
+                    details.presentation_location,
+                    details.draft_file_url,
+                    details.extra_material_url,
+                    details.presentation_details_locked,
+                    thesisId
+                ]
+            );
+            return result.affectedRows > 0;
+        } catch (error) {
+            console.error('Error updating presentation details:', error);
             throw error;
         }
     }

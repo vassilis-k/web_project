@@ -35,6 +35,10 @@ CREATE TABLE thesis (
     cancellation_reason TEXT,
     presentation_date DATETIME,
     presentation_location VARCHAR(255),
+    presentation_mode ENUM('in_person', 'remote'),
+    draft_file_url VARCHAR(500),
+    extra_material_url VARCHAR(500),
+    presentation_details_locked BOOLEAN DEFAULT FALSE,
     final_grade INT CHECK (final_grade BETWEEN 0 AND 10), -- Renamed from 'grade'
     repository_url VARCHAR(500),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -116,11 +120,11 @@ DELIMITER ;
 CREATE TABLE progress_notes (
     id INT PRIMARY KEY AUTO_INCREMENT,
     thesis_id INT NOT NULL,
-    author_id INT NOT NULL,
-    note TEXT NOT NULL,
+    date DATE NOT NULL,
+    description TEXT NOT NULL,
+    file_url VARCHAR(500),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (thesis_id) REFERENCES thesis(id),
-    FOREIGN KEY (author_id) REFERENCES users(id)
+    FOREIGN KEY (thesis_id) REFERENCES thesis(id)
 );
 
 CREATE TABLE thesis_announcements (
@@ -130,6 +134,18 @@ CREATE TABLE thesis_announcements (
     announcement_time TIME NOT NULL,
     title VARCHAR(255) NOT NULL,
     announcement_text TEXT NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (thesis_id) REFERENCES thesis(id)
+);
+
+DROP TABLE progress_notes;
+
+CREATE TABLE progress_notes (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    thesis_id INT NOT NULL,
+    date DATE NOT NULL,
+    description TEXT NOT NULL,
+    file_url VARCHAR(500),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (thesis_id) REFERENCES thesis(id)
 );

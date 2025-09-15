@@ -173,14 +173,34 @@
                 committeeHtml = '<p>Δεν έχουν οριστεί ακόμα μέλη επιτροπής.</p>';
             }
 
+            let gradeHtml = '';
+            if ((thesis.status === 'completed' || thesis.status === 'under_review') && thesis.final_grade) {
+                gradeHtml = `<p><strong>Βαθμός:</strong> ${escapeHtml(thesis.final_grade)}</p>`;
+            }
+
+            let presentationDetailsHtml = '';
+            if (thesis.status === 'under_review' || thesis.status === 'completed') {
+                presentationDetailsHtml = `
+                    <h4>Λεπτομέρειες Παρουσίασης</h4>
+                    <p><strong>Ημερομηνία & Ώρα:</strong> ${thesis.presentation_date ? new Date(thesis.presentation_date).toLocaleString('el-GR') : 'Δεν έχει οριστεί'}</p>
+                    <p><strong>Τρόπος:</strong> ${thesis.presentation_mode === 'in_person' ? 'Από κοντά' : (thesis.presentation_mode === 'remote' ? 'Εξ αποστάσεως' : 'Δεν έχει οριστεί')}</p>
+                    <p><strong>Τοποθεσία/Link:</strong> ${escapeHtml(thesis.presentation_location) || 'Δεν έχει οριστεί'}</p>
+                    ${thesis.draft_file_url ? `<p><strong>Πρόχειρο Κείμενο:</strong> <a href="${escapeHtml(thesis.draft_file_url)}" target="_blank">Λήψη</a></p>` : ''}
+                    ${thesis.extra_material_url ? `<p><strong>Επιπλέον Υλικό:</strong> <a href="${escapeHtml(thesis.extra_material_url)}" target="_blank">Σύνδεσμος</a></p>` : ''}
+                `;
+            }
+
+
             thesisDetailsDiv.innerHTML = `
                 <h3>${escapeHtml(thesis.title)}</h3>
                 <p><strong>Κατάσταση:</strong> ${translateThesisStatus(thesis.status)}</p>
+                ${gradeHtml}
                 <p><strong>Επιβλέπων Καθηγητής:</strong> ${escapeHtml(thesis.supervisor_name)} ${escapeHtml(thesis.supervisor_surname)}</p>
                 <p><strong>Περιγραφή:</strong> ${escapeHtml(thesis.description)}</p>
                 ${thesis.description_pdf_url ? `<p><strong>Αναλυτική Περιγραφή:</strong> <a href="${escapeHtml(thesis.description_pdf_url)}" target="_blank">PDF</a></p>` : ''}
                 ${thesis.assignment_date ? `<p><strong>Ημερομηνία Ανάθεσης:</strong> ${new Date(thesis.assignment_date).toLocaleDateString('el-GR')}</p>` : ''}
                 ${committeeHtml}
+                ${presentationDetailsHtml}
             `;
         }
 
@@ -254,8 +274,171 @@
                     <button onclick="checkAndActivateThesis(${thesis.id})" style="margin-top: 20px;">Έλεγχος και Ενεργοποίηση Διπλωματικής</button>
                     <p id="inviteMessage" class="error-message" style="margin-top: 10px;"></p>
                 `;
+            } else if (thesis.status === 'active') {
+                thesisActionsDiv.innerHTML = `
+                    <h4>Υποβολή Σημειώματος Προόδου</h4>
+                    <form id="progressNoteForm" class="profile-form" onsubmit="handleProgressNoteSubmit(event, ${thesis.id})">
+                        <div class="form-group">
+                            <label for="progress_date">Ημερομηνία:</label>
+                            <input type="date" id="progress_date" name="progress_date" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="progress_description">Περιγραφή:</label>
+                            <textarea id="progress_description" name="progress_description" rows="4" required></textarea>
+                        </div>
+                        <div class="form-group">
+                            <label for="progress_file">Αρχείο (προαιρετικό):</label>
+                            <input type="file" id="progress_file" name="progress_file">
+                        </div>
+                        <button type="submit">Υποβολή</button>
+                        <p id="progressNoteMessage" class="error-message"></p>
+                    </form>
+                    <div id="progressNotesList">
+                        <h4>Ιστορικό Σημειωμάτων Προόδου</h4>
+                        <!-- Τα σημειώματα θα φορτωθούν εδώ -->
+                    </div>
+                `;
+                fetchAndRenderProgressNotes(thesis.id);
+            } else if (thesis.status === 'under_review') {
+                if (thesis.presentation_details_locked) {
+                    thesisActionsDiv.innerHTML = `
+                        <h4>Λεπτομέρειες Παρουσίασης</h4>
+                        <p>Έχετε οριστικοποιήσει τις λεπτομέρειες της παρουσίασης. Η επιτροπή θα προχωρήσει στη βαθμολόγηση.</p>
+                        <p>Μπορείτε να δείτε τις λεπτομέρειες που υποβάλατε παραπάνω, στην ενότητα "Η Διπλωματική μου".</p>
+                    `;
+                } else {
+                    thesisActionsDiv.innerHTML = `
+                        <h4>Ορισμός Λεπτομερειών Παρουσίασης</h4>
+                        <p>Συμπληρώστε τα παρακάτω στοιχεία για την παρουσίαση της διπλωματικής σας. Μετά την υποβολή, τα στοιχεία κλειδώνουν και ξεκινά η διαδικασία βαθμολόγησης.</p>
+                        <form id="presentationDetailsForm" class="profile-form" onsubmit="handlePresentationDetailsSubmit(event, ${thesis.id})">
+                            <div class="form-group">
+                                <label for="presentation_date">Ημερομηνία & Ώρα Παρουσίασης:</label>
+                                <input type="datetime-local" id="presentation_date" name="presentation_date" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="presentation_mode">Τρόπος Παρουσίασης:</label>
+                                <select id="presentation_mode" name="presentation_mode" required>
+                                    <option value="in_person">Από κοντά</option>
+                                    <option value="remote">Εξ αποστάσεως</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="presentation_location">Αίθουσα ή Σύνδεσμος (URL):</label>
+                                <input type="text" id="presentation_location" name="presentation_location" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="draft_file">Πρόχειρο Κείμενο Διπλωματικής (PDF, DOC, DOCX, ZIP):</label>
+                                <input type="file" id="draft_file" name="draft_file" accept=".pdf,.doc,.docx,.zip,.rar" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="extra_material_url">Σύνδεσμος σε Άλλο Υλικό (π.χ. GitHub, προαιρετικό):</label>
+                                <input type="url" id="extra_material_url" name="extra_material_url">
+                            </div>
+                            <button type="submit">Υποβολή και Κλείδωμα</button>
+                            <p id="presentationMessage" class="error-message"></p>
+                        </form>
+                    `;
+                }
+            } else if (thesis.status === 'completed') {
+                thesisActionsDiv.innerHTML = '<p>Η διπλωματική σας έχει ολοκληρωθεί. Συγχαρητήρια!</p>';
+            } else if (thesis.status === 'cancelled') {
+                thesisActionsDiv.innerHTML = '<p style="color: red;">Η διπλωματική σας έχει ακυρωθεί.</p>';
             }
-            // Προσθήκη άλλων ενεργειών βάσει κατάστασης αργότερα
+        }
+
+        async function fetchAndRenderProgressNotes(thesisId) {
+            try {
+                const response = await fetch(`/api/student/thesis/${thesisId}/progress-notes`);
+                const notesListDiv = document.getElementById('progressNotesList');
+                if (response.ok) {
+                    const notes = await response.json();
+                    if (notes.length > 0) {
+                        let notesHtml = '<ul>';
+                        notes.forEach(note => {
+                            notesHtml += `
+                                <li>
+                                    <strong>${new Date(note.date).toLocaleDateString('el-GR')}:</strong> ${escapeHtml(note.description)}
+                                    ${note.file_url ? ` <a href="${escapeHtml(note.file_url)}" target="_blank">[Αρχείο]</a>` : ''}
+                                </li>`;
+                        });
+                        notesHtml += '</ul>';
+                        notesListDiv.innerHTML += notesHtml;
+                    } else {
+                        notesListDiv.innerHTML += '<p>Δεν υπάρχουν ακόμη σημειώματα προόδου.</p>';
+                    }
+                } else {
+                    notesListDiv.innerHTML += '<p style="color: red;">Σφάλμα φόρτωσης σημειωμάτων προόδου.</p>';
+                }
+            } catch (error) {
+                console.error('Error fetching progress notes:', error);
+                document.getElementById('progressNotesList').innerHTML += '<p style="color: red;">Αδυναμία επικοινωνίας με τον server.</p>';
+            }
+        }
+
+        async function handleProgressNoteSubmit(event, thesisId) {
+            event.preventDefault();
+            const form = document.getElementById('progressNoteForm');
+            const formData = new FormData(form);
+            const messageElement = document.getElementById('progressNoteMessage');
+
+            try {
+                const response = await fetch(`/api/student/thesis/${thesisId}/progress-notes`, {
+                    method: 'POST',
+                    body: formData // Δεν θέτουμε Content-Type, το αφήνουμε στον browser να το χειριστεί για multipart/form-data
+                });
+
+                const result = await response.json();
+
+                if (response.ok) {
+                    messageElement.textContent = result.message;
+                    messageElement.style.color = 'green';
+                    form.reset();
+                    // Ανανέωση της λίστας σημειωμάτων
+                    const notesListDiv = document.getElementById('progressNotesList');
+                    notesListDiv.innerHTML = '<h4>Ιστορικό Σημειωμάτων Προόδου</h4>'; // Καθαρισμός
+                    fetchAndRenderProgressNotes(thesisId);
+                } else {
+                    messageElement.textContent = result.message || 'Σφάλμα κατά την υποβολή.';
+                    messageElement.style.color = 'red';
+                }
+            } catch (error) {
+                console.error('Error submitting progress note:', error);
+                messageElement.textContent = 'Αδυναμία επικοινωνίας με τον server.';
+                messageElement.style.color = 'red';
+            }
+        }
+
+        async function handlePresentationDetailsSubmit(event, thesisId) {
+            event.preventDefault();
+            if (!confirm('Είστε σίγουροι ότι θέλετε να υποβάλετε και να κλειδώσετε τις λεπτομέρειες της παρουσίασης; Δεν θα μπορείτε να τις αλλάξετε αργότερα.')) {
+                return;
+            }
+
+            const form = document.getElementById('presentationDetailsForm');
+            const formData = new FormData(form);
+            const messageElement = document.getElementById('presentationMessage');
+
+            try {
+                const response = await fetch(`/api/student/thesis/${thesisId}/presentation-details`, {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const result = await response.json();
+
+                if (response.ok) {
+                    messageElement.textContent = result.message;
+                    messageElement.style.color = 'green';
+                    fetchStudentThesis(); // Ανανέωση για να εμφανιστούν οι κλειδωμένες πληροφορίες
+                } else {
+                    messageElement.textContent = result.message || 'Σφάλμα κατά την υποβολή.';
+                    messageElement.style.color = 'red';
+                }
+            } catch (error) {
+                console.error('Error submitting presentation details:', error);
+                messageElement.textContent = 'Αδυναμία επικοινωνίας με τον server.';
+                messageElement.style.color = 'red';
+            }
         }
 
         async function inviteProfessor(thesisId, professorId) {

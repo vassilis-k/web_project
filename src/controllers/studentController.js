@@ -1,6 +1,62 @@
 const User = require('../models/userModel');
 const Thesis = require('../models/thesisModel');
 const CommitteeInvitation = require('../models/committeeInvitationModel');
+const ProgressNote = require('../models/progressNoteModel');
+const multer = require('multer');
+const path = require('path');
+
+// Ρύθμιση του Multer για αποθήκευση αρχείων προόδου
+const progressNoteStorage = multer.diskStorage({
+    destination: (req, file, cb) => {
+        cb(null, 'uploads/progress_notes/');
+    },
+    filename: (req, file, cb) => {
+        // Δημιουργία μοναδικού ονόματος αρχείου για αποφυγή συγκρούσεων
+        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+        cb(null, `thesis_${req.params.thesisId}_${uniqueSuffix}${path.extname(file.originalname)}`);
+    }
+});
+
+const uploadProgressNote = multer({
+    storage: progressNoteStorage,
+    fileFilter: (req, file, cb) => {
+        // Αποδοχή μόνο συγκεκριμένων τύπων αρχείων (π.χ. PDF, Word, ZIP)
+        const allowedTypes = /pdf|doc|docx|zip|rar/;
+        const mimetype = allowedTypes.test(file.mimetype);
+        const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase());
+        if (mimetype && extname) {
+            return cb(null, true);
+        }
+        cb(new Error('Τύπος αρχείου μη επιτρεπτός. Επιτρέπονται μόνο: PDF, DOC, DOCX, ZIP, RAR.'));
+    },
+    limits: { fileSize: 10 * 1024 * 1024 } // Όριο μεγέθους αρχείου 10MB
+}).single('progress_file'); // Το όνομα του πεδίου στη φόρμα
+
+// Ρύθμιση του Multer για αποθήκευση πρόχειρων κειμένων διπλωματικής
+const thesisDraftStorage = multer.diskStorage({
+    destination: (req, file, cb) => {
+        cb(null, 'uploads/thesis_drafts/');
+    },
+    filename: (req, file, cb) => {
+        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+        cb(null, `thesis_${req.params.thesisId}_draft_${uniqueSuffix}${path.extname(file.originalname)}`);
+    }
+});
+
+const uploadThesisDraft = multer({
+    storage: thesisDraftStorage,
+    fileFilter: (req, file, cb) => {
+        const allowedTypes = /pdf|doc|docx|zip|rar/;
+        const mimetype = allowedTypes.test(file.mimetype);
+        const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase());
+        if (mimetype && extname) {
+            return cb(null, true);
+        }
+        cb(new Error('Τύπος αρχείου μη επιτρεπτός για το πρόχειρο κείμενο. Επιτρέπονται: PDF, DOC, DOCX, ZIP, RAR.'));
+    },
+    limits: { fileSize: 20 * 1024 * 1024 } // Όριο 20MB για το πρόχειρο
+}).single('draft_file');
+
 
 // 1) Προβολή θέματος
 exports.getStudentThesis = async (req, res) => {
@@ -19,6 +75,112 @@ exports.getStudentThesis = async (req, res) => {
         res.status(500).json({ message: 'Σφάλμα server κατά την ανάκτηση της διπλωματικής.' });
     }
 };
+
+// 4) Διαχείριση διπλωματικής εργασίας - Ενεργή (Σημειώματα Προόδου)
+exports.createProgressNote = (req, res) => {
+    uploadProgressNote(req, res, async (err) => {
+        if (err) {
+            // Handle multer errors (e.g., file type, size limit)
+            return res.status(400).json({ message: err.message });
+        }
+
+        const { thesisId } = req.params;
+        const studentId = req.session.userId;
+        const { progress_date, progress_description } = req.body;
+        const file_url = req.file ? `/uploads/progress_notes/${req.file.filename}` : null;
+
+        if (!progress_date || !progress_description) {
+            return res.status(400).json({ message: 'Η ημερομηνία και η περιγραφή είναι υποχρεωτικά.' });
+        }
+
+        try {
+            const studentThesis = await Thesis.getThesisByStudentId(studentId);
+            if (!studentThesis || studentThesis.id != thesisId || studentThesis.status !== 'active') {
+                return res.status(403).json({ message: 'Δεν έχετε δικαίωμα να προσθέσετε πρόοδο σε αυτή τη διπλωματική ή δεν είναι ενεργή.' });
+            }
+
+            const noteId = await ProgressNote.create({
+                thesis_id: thesisId,
+                date: progress_date,
+                description: progress_description,
+                file_url: file_url
+            });
+
+            res.status(201).json({ message: 'Το σημείωμα προόδου υποβλήθηκε επιτυχώς!', noteId });
+
+        } catch (error) {
+            console.error('Error creating progress note:', error);
+            res.status(500).json({ message: 'Σφάλμα server κατά την υποβολή του σημειώματος προόδου.' });
+        }
+    });
+};
+
+exports.getProgressNotesForThesis = async (req, res) => {
+    const { thesisId } = req.params;
+    const studentId = req.session.userId;
+
+    try {
+        // Έλεγχος αν ο φοιτητής έχει πρόσβαση σε αυτή τη διπλωματική
+        const studentThesis = await Thesis.getThesisByStudentId(studentId);
+        if (!studentThesis || studentThesis.id != thesisId) {
+            return res.status(403).json({ message: 'Δεν έχετε δικαίωμα προβολής για αυτή τη διπλωματική.' });
+        }
+
+        const notes = await ProgressNote.findByThesisId(thesisId);
+        res.status(200).json(notes);
+
+    } catch (error) {
+        console.error('Error fetching progress notes:', error);
+        res.status(500).json({ message: 'Σφάλμα server κατά την ανάκτηση των σημειωμάτων προόδου.' });
+    }
+};
+
+// 5) Διαχείριση διπλωματικής εργασίας - Υπό Εξέταση (Ορισμός Παρουσίασης)
+exports.submitPresentationDetails = (req, res) => {
+    uploadThesisDraft(req, res, async (err) => {
+        if (err) {
+            return res.status(400).json({ message: err.message });
+        }
+
+        const { thesisId } = req.params;
+        const studentId = req.session.userId;
+        const { presentation_date, presentation_mode, presentation_location, extra_material_url } = req.body;
+        const draft_file_url = req.file ? `/uploads/thesis_drafts/${req.file.filename}` : null;
+
+        if (!presentation_date || !presentation_mode || !presentation_location || !draft_file_url) {
+            return res.status(400).json({ message: 'Όλα τα πεδία (εκτός του έξτρα υλικού) είναι υποχρεωτικά.' });
+        }
+
+        try {
+            const studentThesis = await Thesis.getThesisByStudentId(studentId);
+            if (!studentThesis || studentThesis.id != thesisId || studentThesis.status !== 'under_review' || studentThesis.presentation_details_locked) {
+                return res.status(403).json({ message: 'Δεν έχετε δικαίωμα να ορίσετε λεπτομέρειες παρουσίασης για αυτή τη διπλωματική ή είναι ήδη κλειδωμένες.' });
+            }
+
+            const details = {
+                presentation_date,
+                presentation_mode,
+                presentation_location,
+                draft_file_url,
+                extra_material_url: extra_material_url || null,
+                presentation_details_locked: true // Κλειδώνουμε τις λεπτομέρειες μετά την υποβολή
+            };
+
+            const isUpdated = await Thesis.updatePresentationDetails(thesisId, details);
+
+            if (isUpdated) {
+                res.status(200).json({ message: 'Οι λεπτομέρειες της παρουσίασης υποβλήθηκαν και κλειδώθηκαν επιτυχώς!' });
+            } else {
+                res.status(400).json({ message: 'Αδυναμία ενημέρωσης των λεπτομερειών.' });
+            }
+
+        } catch (error) {
+            console.error('Error submitting presentation details:', error);
+            res.status(500).json({ message: 'Σφάλμα server κατά την υποβολή των λεπτομερειών.' });
+        }
+    });
+};
+
 
 // 2) Επεξεργασία Προφίλ
 exports.getStudentProfile = async (req, res) => {
