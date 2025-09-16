@@ -1,7 +1,7 @@
 const Thesis = require('../models/thesisModel');
 const User = require('../models/userModel');
-const CommitteeInvitation = require('../models/committeeInvitationModel'); // Νέο import
-const ProgressNote = require('../models/progressNoteModel'); // Νέο import
+const CommitteeInvitation = require('../models/committeeInvitationModel');
+const ProfessorNote = require('../models/professorNoteModel'); // Replaced ProgressNote
 const json2csv = require('json2csv').Parser; // Για εξαγωγή CSV
 
 // 1) Προβολή και Δημιουργία θεμάτων προς ανάθεση
@@ -17,7 +17,8 @@ exports.getProfessorTopics = async (req, res) => {
 };
 
 exports.createProfessorTopic = async (req, res) => {
-    const { title, description, description_pdf_url } = req.body;
+    const { title, description } = req.body;
+    const description_pdf_filename = req.file ? req.file.filename : null;
     const supervisor_id = req.session.userId;
 
     if (!title || !description) {
@@ -25,7 +26,7 @@ exports.createProfessorTopic = async (req, res) => {
     }
 
     try {
-        const newTopic = await Thesis.createTopic(title, description, description_pdf_url, supervisor_id);
+        const newTopic = await Thesis.createTopic(title, description, description_pdf_filename, supervisor_id);
         res.status(201).json({ message: 'Το θέμα δημιουργήθηκε επιτυχώς!', topic: newTopic });
     } catch (error) {
         console.error('Error in createProfessorTopic:', error);
@@ -35,7 +36,8 @@ exports.createProfessorTopic = async (req, res) => {
 
 exports.updateProfessorTopic = async (req, res) => {
     const { id } = req.params;
-    const { title, description, description_pdf_url } = req.body;
+    const { title, description } = req.body;
+    const description_pdf_filename = req.file ? req.file.filename : req.body.description_pdf_url; // Keep existing if no new file
     const supervisor_id = req.session.userId;
 
     if (!title || !description) {
@@ -43,7 +45,7 @@ exports.updateProfessorTopic = async (req, res) => {
     }
 
     try {
-        const isUpdated = await Thesis.updateTopic(id, supervisor_id, title, description, description_pdf_url);
+        const isUpdated = await Thesis.updateTopic(id, supervisor_id, title, description, description_pdf_filename);
         if (isUpdated) {
             res.status(200).json({ message: 'Το θέμα ενημερώθηκε επιτυχώς!' });
         } else {
@@ -64,6 +66,17 @@ exports.searchStudents = async (req, res) => {
     } catch (error) {
         console.error('Error searching students:', error);
         res.status(500).json({ message: 'Σφάλμα server κατά την αναζήτηση φοιτητών.' });
+    }
+};
+
+exports.getUnderAssignmentTheses = async (req, res) => {
+    try {
+        const supervisor_id = req.session.userId;
+        const theses = await Thesis.getUnderAssignmentBySupervisor(supervisor_id);
+        res.status(200).json(theses);
+    } catch (error) {
+        console.error('Error in getUnderAssignmentTheses:', error);
+        res.status(500).json({ message: 'Σφάλμα server κατά την ανάκτηση θεμάτων υπό ανάθεση.' });
     }
 };
 
@@ -131,14 +144,31 @@ exports.getSingleThesisDetails = async (req, res) => {
         if (!thesisDetails) {
             return res.status(404).json({ message: 'Η διπλωματική δεν βρέθηκε ή δεν έχετε πρόσβαση.' });
         }
-
-        thesisDetails.my_notes = thesisDetails.all_notes.filter(note => note.author_id === professorId);
-        delete thesisDetails.all_notes;
-
         res.status(200).json(thesisDetails);
     } catch (error) {
         console.error('Error fetching single thesis details:', error);
         res.status(500).json({ message: 'Σφάλμα server κατά την ανάκτηση λεπτομερειών διπλωματικής.' });
+    }
+};
+
+exports.addProfessorNote = async (req, res) => {
+    const { thesisId } = req.params;
+    const { note } = req.body;
+    const professorId = req.session.userId;
+
+    if (!note || note.trim() === '') {
+        return res.status(400).json({ message: 'Η σημείωση δεν μπορεί να είναι κενή.' });
+    }
+    if (note.length > 300) {
+        return res.status(400).json({ message: 'Η σημείωση δεν πρέπει να υπερβαίνει τους 300 χαρακτήρες.' });
+    }
+
+    try {
+        const noteId = await ProfessorNote.add(thesisId, professorId, note);
+        res.status(201).json({ message: 'Η σημείωση προστέθηκε επιτυχώς!', note: { id: noteId, note, created_at: new Date() } });
+    } catch (error) {
+        console.error('Error adding professor note:', error);
+        res.status(500).json({ message: 'Σφάλμα server κατά την προσθήκη της σημείωσης.' });
     }
 };
 

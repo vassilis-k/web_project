@@ -105,9 +105,17 @@
                     document.querySelectorAll('.student-section-content').forEach(section => {
                         section.style.display = 'none';
                     });
-                    const targetSection = document.getElementById(event.target.getAttribute('onclick').match(/'([^']+)'/)[1]);
+                    const sectionId = event.target.getAttribute('onclick').match(/'([^']+)'/)[1];
+                    const targetSection = document.getElementById(sectionId);
                     if (targetSection) {
                         targetSection.style.display = 'block';
+                    }
+
+                    // Refresh data when navigating to a section
+                    if (sectionId === 'thesis-section') {
+                        fetchStudentThesis();
+                    } else if (sectionId === 'profile-section') {
+                        fetchStudentProfile();
                     }
                 });
             });
@@ -154,53 +162,197 @@
 
         function renderStudentThesis(thesis) {
             const thesisDetailsDiv = document.getElementById('thesisDetails');
+            
+            // Υπολογισμός χρόνου από ανάθεση
+            let timeFromAssignmentHtml = '';
+            if (thesis.assignment_date) {
+                const assignmentDate = new Date(thesis.assignment_date);
+                const now = new Date();
+                const diffTime = Math.abs(now - assignmentDate);
+                const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+                const diffMonths = Math.floor(diffDays / 30.44);
+                const remainingDays = Math.floor(diffDays % 30.44);
+                
+                let timeText = '';
+                if (diffMonths > 0) {
+                    timeText = `${diffMonths} μήνας${diffMonths > 1 ? 'ες' : ''}`;
+                    if (remainingDays > 0) {
+                        timeText += ` και ${remainingDays} ημέρα${remainingDays > 1 ? 'ες' : ''}`;
+                    }
+                } else {
+                    timeText = `${diffDays} ημέρα${diffDays > 1 ? 'ες' : ''}`;
+                }
+                
+                timeFromAssignmentHtml = `<p><strong>Χρόνος από την επίσημη ανάθεση:</strong> ${timeText}</p>`;
+            }
+
+            // Status με χρωματική κωδικοποίηση
+            let statusClass = '';
+            switch(thesis.status) {
+                case 'under_assignment': statusClass = 'status-under-assignment'; break;
+                case 'active': statusClass = 'status-active'; break;
+                case 'under_review': statusClass = 'status-under-review'; break;
+                case 'completed': statusClass = 'status-completed'; break;
+                case 'cancelled': statusClass = 'status-cancelled'; break;
+                default: statusClass = 'status-default';
+            }
+
+            // Επιτροπή - Βελτιωμένη εμφάνιση με τρέχοντα μέλη
             let committeeHtml = '';
-            if (thesis.committee_members && thesis.committee_members.length > 0) {
+            if (thesis.status === 'under_assignment') {
+                // Για διπλωματικές υπό ανάθεση, δείχνουμε τον επιβλέπων και τις αποδεκτές προσκλήσεις
+                let committeeMembers = [];
+                
+                // Προσθήκη επιβλέποντα
+                committeeMembers.push({
+                    name: thesis.supervisor_name,
+                    surname: thesis.supervisor_surname,
+                    role: 'supervisor',
+                    status: 'confirmed'
+                });
+                
+                // Προσθήκη αποδεκτών προσκλήσεων (μέχρι 2)
+                if (thesis.committee_invitations && thesis.committee_invitations.length > 0) {
+                    const acceptedInvitations = thesis.committee_invitations
+                        .filter(inv => inv.invitation_status === 'accepted')
+                        .slice(0, 2); // Παίρνουμε μόνο τις πρώτες 2 αποδοχές
+                    
+                    acceptedInvitations.forEach(inv => {
+                        committeeMembers.push({
+                            name: inv.name,
+                            surname: inv.surname,
+                            role: 'member',
+                            status: 'confirmed'
+                        });
+                    });
+                }
+                
+                const acceptedCount = committeeMembers.length - 1; // Αφαιρούμε τον επιβλέπων
+                    const remainingNeeded = 2 - acceptedCount;
+                
+                    // Προσκλήσεις σε αναμονή
+                    const pendingInvitations = thesis.committee_invitations ? 
+                        thesis.committee_invitations.filter(inv => inv.invitation_status === 'pending') : [];
+                
+                    let pendingInvitationsHtml = '';
+                    if (pendingInvitations.length > 0) {
+                        pendingInvitationsHtml = `
+                            <div class="pending-invitations-section">
+                                <h5><i class="icon">⏳</i> Προσκλήσεις σε αναμονή:</h5>
+                                <div class="pending-invitations-grid">
+                                    ${pendingInvitations.map(inv => `
+                                        <div class="pending-invitation-card">
+                                            <div class="invitation-info">
+                                                <div class="member-name">${escapeHtml(inv.name)} ${escapeHtml(inv.surname)}</div>
+                                                <div class="invitation-status">Περιμένει απάντηση</div>
+                                            </div>
+                                            <button class="cancel-invitation-btn" onclick="cancelInvitation(${inv.id})" title="Ακύρωση πρόσκλησης">
+                                                <i class="icon">❌</i>
+                                            </button>
+                                        </div>
+                                    `).join('')}
+                                </div>
+                            </div>
+                        `;
+                    }
+                
                 committeeHtml = `
-                    <h4>Μέλη Επιτροπής:</h4>
-                    <ul class="committee-list">
-                        ${thesis.committee_members.map(m => `<li>${escapeHtml(m.name)} ${escapeHtml(m.surname)} (${m.role === 'supervisor' ? 'Επιβλέπων' : 'Μέλος'})</li>`).join('')}
-                    </ul>
+                    <div class="committee-section current-committee">
+                        <h4><i class="icon">👥</i> Τρέχουσα Σύνθεση Επιτροπής</h4>
+                        <div class="committee-grid">
+                            ${committeeMembers.map(member => `
+                                <div class="committee-member-card ${member.role}">
+                                    <div class="member-info">
+                                        <div class="member-name">${escapeHtml(member.name)} ${escapeHtml(member.surname)}</div>
+                                        <div class="member-role">${member.role === 'supervisor' ? 'Επιβλέπων' : 'Μέλος'}</div>
+                                    </div>
+                                    <div class="member-status confirmed">✓</div>
+                                </div>
+                            `).join('')}
+                            ${remainingNeeded > 0 ? Array(remainingNeeded).fill(0).map((_, i) => `
+                                <div class="committee-member-card placeholder">
+                                    <div class="member-info">
+                                        <div class="member-name">Κενή Θέση ${acceptedCount + i + 1}</div>
+                                        <div class="member-role">Μέλος</div>
+                                    </div>
+                                    <div class="member-status pending">⏳</div>
+                                </div>
+                            `).join('') : ''}
+                        </div>
+                        <div class="committee-progress">
+                            <div class="progress-bar">
+                                <div class="progress-fill" style="width: ${((3 - remainingNeeded) / 3) * 100}%"></div>
+                            </div>
+                            <div class="progress-text">
+                                ${3 - remainingNeeded}/3 μέλη επιτροπής
+                                ${remainingNeeded > 0 ? ` (${remainingNeeded} απαιτούνται ακόμη)` : ' (Πλήρης επιτροπή!)'}
+                            </div>
+                        </div>
+                            ${pendingInvitationsHtml}
+                    </div>
                 `;
-            } else if (thesis.committee_invitations && thesis.committee_invitations.length > 0) {
-                 committeeHtml = `
-                    <h4>Προσκλήσεις Επιτροπής σε αναμονή:</h4>
-                    <ul class="committee-list">
-                        ${thesis.committee_invitations.map(inv => `<li>${escapeHtml(inv.name)} ${escapeHtml(inv.surname)} (${inv.invitation_status === 'pending' ? 'Σε αναμονή' : 'Αποδεκτή'})</li>`).join('')}
-                    </ul>
+            } else if (thesis.committee_members && thesis.committee_members.length > 0) {
+                // Για ενεργές διπλωματικές και άνω, δείχνουμε τα επίσημα μέλη
+                committeeHtml = `
+                    <div class="committee-section">
+                        <h4><i class="icon">👥</i> Μέλη Επιτροπής</h4>
+                        <div class="committee-grid">
+                            ${thesis.committee_members.map(member => `
+                                <div class="committee-member-card ${member.role}">
+                                    <div class="member-info">
+                                        <div class="member-name">${escapeHtml(member.name)} ${escapeHtml(member.surname)}</div>
+                                        <div class="member-role">${member.role === 'supervisor' ? 'Επιβλέπων' : 'Μέλος'}</div>
+                                    </div>
+                                    <div class="member-status confirmed">✓</div>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
                 `;
             } else {
-                committeeHtml = '<p>Δεν έχουν οριστεί ακόμα μέλη επιτροπής.</p>';
+                committeeHtml = '<div class="committee-section"><p class="no-committee">Δεν έχουν οριστεί ακόμα μέλη επιτροπής.</p></div>';
             }
 
             let gradeHtml = '';
             if ((thesis.status === 'completed' || thesis.status === 'under_review') && thesis.final_grade) {
-                gradeHtml = `<p><strong>Βαθμός:</strong> ${escapeHtml(thesis.final_grade)}</p>`;
+                gradeHtml = `<div class="grade-section"><p><strong>Βαθμός:</strong> <span class="final-grade">${escapeHtml(thesis.final_grade)}</span></p></div>`;
             }
 
             let presentationDetailsHtml = '';
             if (thesis.status === 'under_review' || thesis.status === 'completed') {
                 presentationDetailsHtml = `
-                    <h4>Λεπτομέρειες Παρουσίασης</h4>
-                    <p><strong>Ημερομηνία & Ώρα:</strong> ${thesis.presentation_date ? new Date(thesis.presentation_date).toLocaleString('el-GR') : 'Δεν έχει οριστεί'}</p>
-                    <p><strong>Τρόπος:</strong> ${thesis.presentation_mode === 'in_person' ? 'Από κοντά' : (thesis.presentation_mode === 'remote' ? 'Εξ αποστάσεως' : 'Δεν έχει οριστεί')}</p>
-                    <p><strong>Τοποθεσία/Link:</strong> ${escapeHtml(thesis.presentation_location) || 'Δεν έχει οριστεί'}</p>
-                    ${thesis.draft_file_url ? `<p><strong>Πρόχειρο Κείμενο:</strong> <a href="${escapeHtml(thesis.draft_file_url)}" target="_blank">Λήψη</a></p>` : ''}
-                    ${thesis.extra_material_url ? `<p><strong>Επιπλέον Υλικό:</strong> <a href="${escapeHtml(thesis.extra_material_url)}" target="_blank">Σύνδεσμος</a></p>` : ''}
+                    <div class="presentation-section">
+                        <h4>Λεπτομέρειες Παρουσίασης</h4>
+                        <div class="presentation-details">
+                            <p><strong>Ημερομηνία & Ώρα:</strong> ${thesis.presentation_date ? new Date(thesis.presentation_date).toLocaleString('el-GR') : '<span class="not-set">Δεν έχει οριστεί</span>'}</p>
+                            <p><strong>Τρόπος:</strong> ${thesis.presentation_mode === 'in_person' ? 'Από κοντά' : (thesis.presentation_mode === 'remote' ? 'Εξ αποστάσεως' : '<span class="not-set">Δεν έχει οριστεί</span>')}</p>
+                            <p><strong>Τοποθεσία/Link:</strong> ${thesis.presentation_location ? escapeHtml(thesis.presentation_location) : '<span class="not-set">Δεν έχει οριστεί</span>'}</p>
+                            ${thesis.draft_file_url ? `<p><strong>Πρόχειρο Κείμενο:</strong> <a href="${escapeHtml(thesis.draft_file_url)}" target="_blank" class="file-link">Λήψη</a></p>` : ''}
+                            ${thesis.extra_material_url ? `<p><strong>Επιπλέον Υλικό:</strong> <a href="${escapeHtml(thesis.extra_material_url)}" target="_blank" class="file-link">Σύνδεσμος</a></p>` : ''}
+                        </div>
+                    </div>
                 `;
             }
 
-
             thesisDetailsDiv.innerHTML = `
-                <h3>${escapeHtml(thesis.title)}</h3>
-                <p><strong>Κατάσταση:</strong> ${translateThesisStatus(thesis.status)}</p>
-                ${gradeHtml}
-                <p><strong>Επιβλέπων Καθηγητής:</strong> ${escapeHtml(thesis.supervisor_name)} ${escapeHtml(thesis.supervisor_surname)}</p>
-                <p><strong>Περιγραφή:</strong> ${escapeHtml(thesis.description)}</p>
-                ${thesis.description_pdf_url ? `<p><strong>Αναλυτική Περιγραφή:</strong> <a href="${escapeHtml(thesis.description_pdf_url)}" target="_blank">PDF</a></p>` : ''}
-                ${thesis.assignment_date ? `<p><strong>Ημερομηνία Ανάθεσης:</strong> ${new Date(thesis.assignment_date).toLocaleDateString('el-GR')}</p>` : ''}
-                ${committeeHtml}
-                ${presentationDetailsHtml}
+                <div class="thesis-overview">
+                    <div class="thesis-header">
+                        <h3 class="thesis-title">${escapeHtml(thesis.title)}</h3>
+                        <div class="status-badge ${statusClass}">${translateThesisStatus(thesis.status)}</div>
+                    </div>
+                    
+                    <div class="thesis-basic-info">
+                        <p><strong>Επιβλέπων Καθηγητής:</strong> <span class="supervisor-name">${escapeHtml(thesis.supervisor_name)} ${escapeHtml(thesis.supervisor_surname)}</span></p>
+                        <p><strong>Περιγραφή:</strong> <span class="thesis-description">${escapeHtml(thesis.description)}</span></p>
+                        ${thesis.description_pdf_url ? `<p><strong>Αναλυτική Περιγραφή:</strong> <a href="${escapeHtml(thesis.description_pdf_url)}" target="_blank" class="file-link">PDF</a></p>` : ''}
+                        ${thesis.assignment_date ? `<p><strong>Ημερομηνία Ανάθεσης:</strong> <span class="assignment-date">${new Date(thesis.assignment_date).toLocaleDateString('el-GR')}</span></p>` : ''}
+                        ${timeFromAssignmentHtml}
+                    </div>
+
+                    ${gradeHtml}
+                    ${committeeHtml}
+                    ${presentationDetailsHtml}
+                </div>
             `;
         }
 
@@ -236,14 +388,19 @@
 
                         if (availableProfessors.length > 0) {
                             professorsListHtml = `
-                                <ul class="professor-list">
+                                <div class="professors-grid">
                                     ${availableProfessors.map(p => `
-                                        <li>
-                                            ${escapeHtml(p.name)} ${escapeHtml(p.surname)} (${escapeHtml(p.email)})
-                                            <button onclick="inviteProfessor(${thesis.id}, ${p.id})">Πρόσκληση</button>
-                                        </li>
+                                        <div class="professor-card">
+                                            <div class="professor-info">
+                                                <div class="professor-name">${escapeHtml(p.name)} ${escapeHtml(p.surname)}</div>
+                                                <div class="professor-email">${escapeHtml(p.email)}</div>
+                                            </div>
+                                            <button class="action-btn invite-btn" onclick="inviteProfessor(${thesis.id}, ${p.id})">
+                                                <i class="icon">👤</i> Πρόσκληση
+                                            </button>
+                                        </div>
                                     `).join('')}
-                                </ul>
+                                </div>
                             `;
                         } else {
                             professorsListHtml = '<p>Δεν υπάρχουν διαθέσιμοι καθηγητές για πρόσκληση.</p>';
@@ -256,91 +413,163 @@
                     professorsListHtml = '<p style="color: red;">Αδυναμία επικοινωνίας με τον server για τους καθηγητές.</p>';
                 }
 
+                // Έλεγχος αν μπορεί να ενεργοποιηθεί η διπλωματική
+                const acceptedCount = thesis.committee_invitations ? 
+                    thesis.committee_invitations.filter(inv => inv.invitation_status === 'accepted').length : 0;
+                const canActivate = acceptedCount >= 2;
+
                 thesisActionsDiv.innerHTML = `
-                    <h4>Διαχείριση Επιτροπής (Υπό Ανάθεση)</h4>
-                    <p>Προσκαλέστε δύο επιπλέον καθηγητές να συμμετάσχουν στην τριμελή επιτροπή.</p>
-                    <div id="pendingInvitations">
-                        <h5>Προσκλήσεις σε εκκρεμότητα/αποδοχή:</h5>
-                        ${(thesis.committee_invitations && thesis.committee_invitations.length > 0)
-                            ? `<ul class="committee-list">${thesis.committee_invitations.map(inv => `
-                                <li>
-                                    ${escapeHtml(inv.name)} ${escapeHtml(inv.surname)} (${escapeHtml(inv.email)}) - ${inv.invitation_status === 'pending' ? 'Σε αναμονή' : 'Αποδεκτή'}
-                                    ${inv.invitation_status === 'pending' ? `<button onclick="cancelInvitation(${inv.id})">Ακύρωση</button>` : ''}
-                                </li>`).join('')}</ul>`
-                            : '<p>Δεν έχουν σταλεί προσκλήσεις.</p>'}
+                    <div class="thesis-actions-container">
+                        <div class="actions-header">
+                            <h4><i class="icon">�</i> Διαθέσιμοι Καθηγητές για Πρόσκληση</h4>
+                            <p class="actions-description">Επιλέξτε καθηγητές για να συμπληρώσετε την τριμελή επιτροπή σας.</p>
+                        </div>
+                        
+                        <div class="professors-section">
+                            ${professorsListHtml}
+                        </div>
+
+                        ${canActivate ? `
+                            <div class="activation-section success">
+                                <div class="activation-header">
+                                    <i class="icon">🎉</i>
+                                    <h5>Έτοιμο για ενεργοποίηση!</h5>
+                                </div>
+                                <p>Έχετε συγκεντρώσει τις απαραίτητες αποδοχές. Μπορείτε να ενεργοποιήσετε την διπλωματική σας.</p>
+                                <button class="action-btn primary large" onclick="checkAndActivateThesis(${thesis.id})">
+                                    <i class="icon">⚡</i> Ενεργοποίηση Διπλωματικής
+                                </button>
+                            </div>
+                        ` : `
+                            <div class="activation-section pending">
+                                <div class="activation-header">
+                                    <i class="icon">⏳</i>
+                                    <h5>Συγκεντρώστε αποδοχές για ενεργοποίηση</h5>
+                                </div>
+                                <p>Χρειάζεστε ακόμη ${2 - acceptedCount} αποδοχ${2 - acceptedCount > 1 ? 'ές' : 'ή'} για να ενεργοποιηθεί η διπλωματική.</p>
+                            </div>
+                        `}
+
+                        <div id="inviteMessage" class="message-area"></div>
                     </div>
-                    <h5>Διαθέσιμοι Καθηγητές για Πρόσκληση:</h5>
-                    ${professorsListHtml}
-                    <button onclick="checkAndActivateThesis(${thesis.id})" style="margin-top: 20px;">Έλεγχος και Ενεργοποίηση Διπλωματικής</button>
-                    <p id="inviteMessage" class="error-message" style="margin-top: 10px;"></p>
                 `;
             } else if (thesis.status === 'active') {
                 thesisActionsDiv.innerHTML = `
-                    <h4>Υποβολή Σημειώματος Προόδου</h4>
-                    <form id="progressNoteForm" class="profile-form" onsubmit="handleProgressNoteSubmit(event, ${thesis.id})">
-                        <div class="form-group">
-                            <label for="progress_date">Ημερομηνία:</label>
-                            <input type="date" id="progress_date" name="progress_date" required>
+                    <div class="thesis-actions-container">
+                        <div class="actions-header">
+                            <h4><i class="icon">📝</i> Υποβολή Σημειώματος Προόδου</h4>
+                            <p class="actions-description">Καταγράψτε την πρόοδο της διπλωματικής σας εργασίας.</p>
                         </div>
-                        <div class="form-group">
-                            <label for="progress_description">Περιγραφή:</label>
-                            <textarea id="progress_description" name="progress_description" rows="4" required></textarea>
+                        <div class="form-section">
+                            <form id="progressNoteForm" class="modern-form" onsubmit="handleProgressNoteSubmit(event, ${thesis.id})">
+                                <div class="form-grid">
+                                    <div class="form-group">
+                                        <label for="progress_date"><i class="icon">📅</i> Ημερομηνία:</label>
+                                        <input type="date" id="progress_date" name="progress_date" required>
+                                    </div>
+                                    <div class="form-group full-width">
+                                        <label for="progress_description"><i class="icon">📄</i> Περιγραφή Προόδου:</label>
+                                        <textarea id="progress_description" name="progress_description" rows="4" required placeholder="Περιγράψτε την εργασία που έχετε ολοκληρώσει..."></textarea>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="progress_file"><i class="icon">📎</i> Αρχείο (προαιρετικό):</label>
+                                        <input type="file" id="progress_file" name="progress_file">
+                                    </div>
+                                </div>
+                                <button type="submit" class="action-btn primary large">
+                                    <i class="icon">📤</i> Υποβολή Σημειώματος
+                                </button>
+                                <div id="progressNoteMessage" class="message-area"></div>
+                            </form>
                         </div>
-                        <div class="form-group">
-                            <label for="progress_file">Αρχείο (προαιρετικό):</label>
-                            <input type="file" id="progress_file" name="progress_file">
+                        <div id="progressNotesList" class="progress-notes-section">
+                            <h5><i class="icon">📋</i> Ιστορικό Σημειωμάτων Προόδου</h5>
+                            <div class="loading-message">Φόρτωση σημειωμάτων...</div>
                         </div>
-                        <button type="submit">Υποβολή</button>
-                        <p id="progressNoteMessage" class="error-message"></p>
-                    </form>
-                    <div id="progressNotesList">
-                        <h4>Ιστορικό Σημειωμάτων Προόδου</h4>
-                        <!-- Τα σημειώματα θα φορτωθούν εδώ -->
                     </div>
                 `;
                 fetchAndRenderProgressNotes(thesis.id);
             } else if (thesis.status === 'under_review') {
                 if (thesis.presentation_details_locked) {
                     thesisActionsDiv.innerHTML = `
-                        <h4>Λεπτομέρειες Παρουσίασης</h4>
-                        <p>Έχετε οριστικοποιήσει τις λεπτομέρειες της παρουσίασης. Η επιτροπή θα προχωρήσει στη βαθμολόγηση.</p>
-                        <p>Μπορείτε να δείτε τις λεπτομέρειες που υποβάλατε παραπάνω, στην ενότητα "Η Διπλωματική μου".</p>
+                        <div class="thesis-actions-container">
+                            <div class="actions-header completed">
+                                <h4><i class="icon">✅</i> Παρουσίαση Οριστικοποιημένη</h4>
+                                <p class="actions-description">Έχετε υποβάλει όλα τα απαραίτητα στοιχεία. Η επιτροπή αξιολογεί την εργασία σας.</p>
+                            </div>
+                            <div class="info-message">
+                                <i class="icon">ℹ️</i> Μπορείτε να δείτε τις λεπτομέρειες που υποβάλατε παραπάνω, στην ενότητα "Η Διπλωματική μου".
+                            </div>
+                        </div>
                     `;
                 } else {
                     thesisActionsDiv.innerHTML = `
-                        <h4>Ορισμός Λεπτομερειών Παρουσίασης</h4>
-                        <p>Συμπληρώστε τα παρακάτω στοιχεία για την παρουσίαση της διπλωματικής σας. Μετά την υποβολή, τα στοιχεία κλειδώνουν και ξεκινά η διαδικασία βαθμολόγησης.</p>
-                        <form id="presentationDetailsForm" class="profile-form" onsubmit="handlePresentationDetailsSubmit(event, ${thesis.id})">
-                            <div class="form-group">
-                                <label for="presentation_date">Ημερομηνία & Ώρα Παρουσίασης:</label>
-                                <input type="datetime-local" id="presentation_date" name="presentation_date" required>
+                        <div class="thesis-actions-container">
+                            <div class="actions-header">
+                                <h4><i class="icon">🎯</i> Ορισμός Λεπτομερειών Παρουσίασης</h4>
+                                <p class="actions-description">Συμπληρώστε τα στοιχεία για την παρουσίαση της διπλωματικής σας. Μετά την υποβολή, τα στοιχεία κλειδώνουν και ξεκινά η διαδικασία βαθμολόγησης.</p>
                             </div>
-                            <div class="form-group">
-                                <label for="presentation_mode">Τρόπος Παρουσίασης:</label>
-                                <select id="presentation_mode" name="presentation_mode" required>
-                                    <option value="in_person">Από κοντά</option>
-                                    <option value="remote">Εξ αποστάσεως</option>
-                                </select>
+                            <div class="form-section">
+                                <form id="presentationDetailsForm" class="modern-form" onsubmit="handlePresentationDetailsSubmit(event, ${thesis.id})">
+                                    <div class="form-grid">
+                                        <div class="form-group">
+                                            <label for="presentation_date"><i class="icon">📅</i> Ημερομηνία & Ώρα Παρουσίασης:</label>
+                                            <input type="datetime-local" id="presentation_date" name="presentation_date" required>
+                                        </div>
+                                        <div class="form-group">
+                                            <label for="presentation_mode"><i class="icon">🎥</i> Τρόπος Παρουσίασης:</label>
+                                            <select id="presentation_mode" name="presentation_mode" required>
+                                                <option value="">Επιλέξτε τρόπο παρουσίασης</option>
+                                                <option value="in_person">Από κοντά</option>
+                                                <option value="remote">Εξ αποστάσεως</option>
+                                            </select>
+                                        </div>
+                                        <div class="form-group full-width">
+                                            <label for="presentation_location"><i class="icon">📍</i> Αίθουσα ή Σύνδεσμος:</label>
+                                            <input type="text" id="presentation_location" name="presentation_location" required 
+                                                placeholder="π.χ. Αίθουσα Α123 ή https://zoom.us/...">
+                                        </div>
+                                        <div class="form-group">
+                                            <label for="draft_file"><i class="icon">📄</i> Πρόχειρο Κείμενο:</label>
+                                            <input type="file" id="draft_file" name="draft_file" 
+                                                accept=".pdf,.doc,.docx,.zip,.rar" required>
+                                            <small>Αποδεκτά: PDF, DOC, DOCX, ZIP</small>
+                                        </div>
+                                        <div class="form-group">
+                                            <label for="extra_material_url"><i class="icon">🔗</i> Επιπλέον Υλικό (προαιρετικό):</label>
+                                            <input type="url" id="extra_material_url" name="extra_material_url" 
+                                                placeholder="π.χ. GitHub repository, demo site...">
+                                        </div>
+                                    </div>
+                                    <button type="submit" class="action-btn primary large">
+                                        <i class="icon">🔒</i> Υποβολή και Κλείδωμα
+                                    </button>
+                                    <div id="presentationMessage" class="message-area"></div>
+                                </form>
                             </div>
-                            <div class="form-group">
-                                <label for="presentation_location">Αίθουσα ή Σύνδεσμος (URL):</label>
-                                <input type="text" id="presentation_location" name="presentation_location" required>
-                            </div>
-                            <div class="form-group">
-                                <label for="draft_file">Πρόχειρο Κείμενο Διπλωματικής (PDF, DOC, DOCX, ZIP):</label>
-                                <input type="file" id="draft_file" name="draft_file" accept=".pdf,.doc,.docx,.zip,.rar" required>
-                            </div>
-                            <div class="form-group">
-                                <label for="extra_material_url">Σύνδεσμος σε Άλλο Υλικό (π.χ. GitHub, προαιρετικό):</label>
-                                <input type="url" id="extra_material_url" name="extra_material_url">
-                            </div>
-                            <button type="submit">Υποβολή και Κλείδωμα</button>
-                            <p id="presentationMessage" class="error-message"></p>
-                        </form>
+                        </div>
                     `;
                 }
             } else if (thesis.status === 'completed') {
-                thesisActionsDiv.innerHTML = '<p>Η διπλωματική σας έχει ολοκληρωθεί. Συγχαρητήρια!</p>';
+                thesisActionsDiv.innerHTML = `
+                    <div class="thesis-actions-container">
+                        <div class="actions-header completed">
+                            <h4><i class="icon">🎓</i> Διπλωματική Ολοκληρωμένη</h4>
+                            <p class="actions-description">Συγχαρητήρια! Η διπλωματική σας εργασία έχει ολοκληρωθεί επιτυχώς.</p>
+                        </div>
+                        <div class="completion-details">
+                            ${thesis.final_grade ? `
+                                <div class="final-grade-display">
+                                    <h5><i class="icon">⭐</i> Τελικός Βαθμός:</h5>
+                                    <div class="grade-value">${thesis.final_grade}/10</div>
+                                </div>
+                            ` : ''}
+                            <div class="info-message">
+                                <i class="icon">ℹ️</i> Μπορείτε πάντα να ανατρέχετε στις πληροφορίες της διπλωματικής σας από αυτή τη σελίδα.
+                            </div>
+                        </div>
+                    </div>
+                `;
             } else if (thesis.status === 'cancelled') {
                 thesisActionsDiv.innerHTML = '<p style="color: red;">Η διπλωματική σας έχει ακυρωθεί.</p>';
             }
@@ -512,6 +741,86 @@
                 console.error('Error checking and activating thesis:', error);
                 document.getElementById('inviteMessage').textContent = 'Αδυναμία επικοινωνίας με τον server.';
                 document.getElementById('inviteMessage').style.color = 'red';
+            }
+        }
+
+        // Helper function για λήψη πληροφοριών βαθμολόγησης επιτροπής
+        async function getCommitteeGradesInfo(thesisId) {
+            try {
+                const response = await fetch(`/api/student/thesis/${thesisId}/committee-grades`);
+                if (response.ok) {
+                    const grades = await response.json();
+                    let gradeInfoHtml = '<div class="grades-info">';
+                    
+                    if (grades && grades.length > 0) {
+                        gradeInfoHtml += '<div class="grades-list">';
+                        grades.forEach(grade => {
+                            const statusClass = grade.grade !== null ? 'completed' : 'pending';
+                            gradeInfoHtml += `
+                                <div class="grade-item ${statusClass}">
+                                    <span class="member-name">${escapeHtml(grade.name)} ${escapeHtml(grade.surname)}</span>
+                                    <span class="grade-status">
+                                        ${grade.grade !== null ? 
+                                            `<strong>${grade.grade}/10</strong>` : 
+                                            '<em>Σε αναμονή</em>'
+                                        }
+                                    </span>
+                                </div>
+                            `;
+                        });
+                        gradeInfoHtml += '</div>';
+                    } else {
+                        gradeInfoHtml += '<div class="info-message">Η βαθμολόγηση δεν έχει ξεκινήσει ακόμη.</div>';
+                    }
+                    
+                    gradeInfoHtml += '</div>';
+                    return gradeInfoHtml;
+                } else {
+                    return '<div class="error-message">Σφάλμα φόρτωσης πληροφοριών βαθμολόγησης.</div>';
+                }
+            } catch (error) {
+                console.error('Error fetching committee grades:', error);
+                return '<div class="error-message">Αδυναμία φόρτωσης πληροφοριών βαθμολόγησης.</div>';
+            }
+        }
+
+        // Handler για καταχώρηση repository URL
+        async function handleRepositorySubmit(event, thesisId) {
+            event.preventDefault();
+            const form = event.target;
+            const formData = new FormData(form);
+            const messageElement = document.getElementById('repositoryMessage');
+            const repository_url = formData.get('repository_url');
+
+            if (!repository_url) {
+                messageElement.textContent = 'Παρακαλώ εισάγετε έγκυρο URL αποθετηρίου.';
+                messageElement.className = 'message-area error';
+                return;
+            }
+
+            try {
+                const response = await fetch(`/api/student/thesis/${thesisId}/repository-url`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ repository_url })
+                });
+
+                const result = await response.json();
+
+                if (response.ok) {
+                    messageElement.textContent = result.message;
+                    messageElement.className = 'message-area success';
+                    setTimeout(() => {
+                        fetchStudentThesis(); // Ανανέωση για να εμφανιστεί ο σύνδεσμος
+                    }, 1500);
+                } else {
+                    messageElement.textContent = result.message || 'Σφάλμα κατά την καταχώρηση.';
+                    messageElement.className = 'message-area error';
+                }
+            } catch (error) {
+                console.error('Error submitting repository URL:', error);
+                messageElement.textContent = 'Αδυναμία επικοινωνίας με τον server.';
+                messageElement.className = 'message-area error';
             }
         }
 

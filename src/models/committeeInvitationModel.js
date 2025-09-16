@@ -70,56 +70,87 @@ class CommitteeInvitation {
 
     // Νέα μέθοδος: Ενημέρωση κατάστασης πρόσκλησης
     static async updateInvitationStatus(invitationId, newStatus, professorId) {
+        const connection = await pool.getConnection();
         try {
-            await pool.query('START TRANSACTION');
+            await connection.beginTransaction();
 
-            const [result] = await pool.execute(
-                'UPDATE committee_invitations SET status = ?, response_date = NOW() WHERE id = ? AND invited_professor_id = ?',
+            const [result] = await connection.execute(
+                'UPDATE committee_invitations SET status = ?, response_date = NOW() WHERE id = ? AND invited_professor_id = ? AND status = "pending"',
                 [newStatus, invitationId, professorId]
             );
 
             if (result.affectedRows === 0) {
-                throw new Error('Invitation not found or professor not authorized.');
+                throw new Error('Invitation not found, not pending, or professor not authorized.');
             }
 
-            // If invitation is accepted, add professor to committee_members
-            if (newStatus === 'accepted') {
-                const [invitationInfo] = await pool.execute('SELECT thesis_id FROM committee_invitations WHERE id = ?', [invitationId]);
-                if (invitationInfo.length > 0) {
-                    const thesisId = invitationInfo[0].thesis_id;
-                    await pool.execute(
-                        'INSERT INTO committee_members (thesis_id, professor_id, role) VALUES (?, ?, "member")',
-                        [thesisId, professorId]
-                    );
+            const [invitationInfo] = await connection.execute('SELECT thesis_id FROM committee_invitations WHERE id = ?', [invitationId]);
+            const thesisId = invitationInfo[0].thesis_id;
 
-                    // Check if 2 members have accepted and if so, activate thesis
-                    const [acceptedCount] = await pool.execute(
-                        `SELECT COUNT(*) AS count FROM committee_invitations WHERE thesis_id = ? AND status = 'accepted'`,
+            // Log the action
+            const ThesisLog = require('./thesisLogModel'); // Local require to avoid circular dependency
+            const [prof] = await connection.execute('SELECT name, surname FROM users WHERE id = ?', [professorId]);
+            const profName = prof.length > 0 ? `${prof[0].name} ${prof[0].surname}` : `ID: ${professorId}`;
+            const actionDetail = `Ο/Η ${profName} ${newStatus === 'accepted' ? 'αποδέχθηκε' : 'απέρριψε'} την πρόσκληση συμμετοχής στην επιτροπή.`;
+            await ThesisLog.add(thesisId, professorId, `INVITATION_${newStatus.toUpperCase()}`, actionDetail, connection);
+
+            // New Logic: If the invitation is accepted, check if the committee is full
+            if (newStatus === 'accepted') {
+                const [acceptedCountResult] = await connection.execute(
+                    'SELECT COUNT(*) AS accepted_count FROM committee_invitations WHERE thesis_id = ? AND status = "accepted"',
+                    [thesisId]
+                );
+                const acceptedCount = acceptedCountResult[0].accepted_count;
+
+                // If committee is full (2 members + supervisor), activate thesis and finalize committee
+                if (acceptedCount >= 2) {
+                    // 1. Delete other pending invitations
+                    await connection.execute(
+                        'DELETE FROM committee_invitations WHERE thesis_id = ? AND status = "pending"',
                         [thesisId]
                     );
-                    if (acceptedCount[0].count >= 2) {
-                        // Activate thesis and clean up other invitations for this thesis
-                        const [thesisActivationResult] = await pool.execute(
-                            `UPDATE thesis SET status = 'active' WHERE id = ? AND status = 'under_assignment'`,
+                    await ThesisLog.add(thesisId, null, 'AUTO_DELETE_INVITATIONS', 'Οι υπόλοιπες εκκρεμείς προσκλήσεις διαγράφηκαν αυτόματα λόγω συμπλήρωσης της επιτροπής.', connection);
+
+                    // 2. Check thesis status and activate if 'under_assignment'
+                    const [thesisStatusResult] = await connection.execute('SELECT status, supervisor_id FROM thesis WHERE id = ?', [thesisId]);
+                    if (thesisStatusResult.length > 0 && thesisStatusResult[0].status === 'under_assignment') {
+                        const supervisorId = thesisStatusResult[0].supervisor_id;
+
+                        // 2a. Activate the thesis
+                        await connection.execute('UPDATE thesis SET status = "active" WHERE id = ?', [thesisId]);
+                        await ThesisLog.add(thesisId, null, 'AUTO_ACTIVATE_THESIS', 'Η διπλωματική ενεργοποιήθηκε αυτόματα λόγω συμπλήρωσης της επιτροπής.', connection);
+
+                        // 2b. Get the professors who accepted
+                        const [acceptedMembers] = await connection.execute(
+                            'SELECT invited_professor_id FROM committee_invitations WHERE thesis_id = ? AND status = "accepted"',
                             [thesisId]
                         );
-                        if (thesisActivationResult.affectedRows > 0) {
-                            // Delete all pending/declined invitations for this thesis
-                            await pool.execute('DELETE FROM committee_invitations WHERE thesis_id = ? AND status != "accepted"', [thesisId]);
-                            // Also ensure only 2 members are added, and if more accepted, the first 2 are selected and others are removed.
-                            // This part of logic could be more complex depending on strictness.
-                            // For simplicity, we assume the frontend ensures no more than 2 are invited to accept.
+
+                        // 2c. Insert supervisor into the committee
+                        await connection.execute(
+                            'INSERT INTO committee_members (thesis_id, professor_id, role) VALUES (?, ?, "supervisor")',
+                            [thesisId, supervisorId]
+                        );
+
+                        // 2d. Insert members into the committee
+                        for (const member of acceptedMembers) {
+                            await connection.execute(
+                                'INSERT INTO committee_members (thesis_id, professor_id, role) VALUES (?, ?, "member")',
+                                [thesisId, member.invited_professor_id]
+                            );
                         }
+                        await ThesisLog.add(thesisId, null, 'COMMITTEE_FINALIZED', 'Η επιτροπή οριστικοποιήθηκε.', connection);
                     }
                 }
             }
 
-            await pool.query('COMMIT');
+            await connection.commit();
             return result.affectedRows > 0;
         } catch (error) {
-            await pool.query('ROLLBACK');
+            await connection.rollback();
             console.error('Error updating invitation status:', error);
             throw error;
+        } finally {
+            connection.release();
         }
     }
 }

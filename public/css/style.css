@@ -308,6 +308,12 @@ button:hover {
 .action-button.warning { background-color: #ffc107; color: #333; }
 .action-button.info { background-color: #17a2b8; color: white; }
 .action-button.success { background-color: #28a745; color: white; }
+.action-button.disabled { 
+    background-color: #6c757d; 
+    color: #ffffff; 
+    cursor: not-allowed; 
+    opacity: 0.6; 
+}
 .topic-list ul, .invitation-list ul, .student-results ul, .notes-list ul {
     list-style: none;
     padding: 0;
@@ -479,6 +485,39 @@ button:hover {
     border-left: 3px solid #007bff;
     font-size: 0.9em;
 }
+.action-log-container {
+    margin-top: 20px;
+    padding-top: 15px;
+    border-top: 1px solid #eee;
+}
+.action-log-list {
+    list-style: none;
+    padding: 0;
+    max-height: 200px;
+    overflow-y: auto;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    padding: 10px;
+    background-color: #fdfdfd;
+}
+.action-log-list li {
+    margin-bottom: 12px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid #f0f0f0;
+}
+.action-log-list li:last-child {
+    border-bottom: none;
+    margin-bottom: 0;
+}
+.log-details {
+    margin: 0 0 4px 0;
+    font-size: 0.9em;
+    color: #333;
+}
+.log-meta {
+    font-size: 0.8em;
+    color: #777;
+}
 #addNoteText {
     width: calc(100% - 22px);
     margin-bottom: 10px;
@@ -607,6 +646,673 @@ button:hover {
     margin-top: 10px;
 }
 /* --- End Student Dashboard Styles --- */
+
+/* --- Student Thesis Overview Styles --- */
+.thesis-overview {
+    background: #ffffff;
+    border-radius: 8px;
+    padding: 20px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    margin-bottom: 20px;
+}
+
+.thesis-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+    gap: 15px;
+}
+
+.thesis-title {
+    color: #7a2327;
+    margin: 0;
+    flex: 1;
+    min-width: 300px;
+}
+
+.status-badge {
+    padding: 8px 16px;
+    border-radius: 20px;
+    font-weight: 600;
+    font-size: 0.9em;
+    text-align: center;
+    min-width: 120px;
+}
+
+.status-under-assignment { background-color: #fff3cd; color: #856404; border: 2px solid #ffeaa7; }
+.status-active { background-color: #d1edff; color: #0c5aa6; border: 2px solid #74b9ff; }
+.status-under-review { background-color: #f8d7da; color: #721c24; border: 2px solid #f5c6cb; }
+.status-completed { background-color: #d4edda; color: #155724; border: 2px solid #c3e6cb; }
+.status-cancelled { background-color: #f1f1f1; color: #6c757d; border: 2px solid #d1ecf1; }
+.status-default { background-color: #e9ecef; color: #495057; border: 2px solid #ced4da; }
+
+.thesis-basic-info {
+    background-color: #f8f9fa;
+    padding: 15px;
+    border-radius: 6px;
+    margin-bottom: 20px;
+}
+
+.thesis-basic-info p {
+    margin: 8px 0;
+    line-height: 1.6;
+}
+
+.supervisor-name {
+    color: #7a2327;
+    font-weight: 600;
+}
+
+.thesis-description {
+    font-style: italic;
+    color: #555;
+}
+
+.assignment-date {
+    color: #0c5aa6;
+    font-weight: 600;
+}
+
+.committee-section {
+    border: 1px solid #e9ecef;
+    border-radius: 6px;
+    padding: 15px;
+    margin: 15px 0;
+    background-color: #fdfdfe;
+}
+
+.committee-section h4 {
+    color: #7a2327;
+    margin: 0 0 12px 0;
+    font-size: 1.1em;
+}
+
+.committee-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.committee-list li {
+    background-color: #ffffff;
+    border: 1px solid #dee2e6;
+    padding: 10px 15px;
+    margin-bottom: 8px;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+}
+
+.committee-list li.supervisor {
+    background-color: #e3f2fd;
+    border-color: #90caf9;
+    font-weight: 600;
+}
+
+.committee-list li.member {
+    background-color: #f3e5f5;
+    border-color: #ce93d8;
+}
+
+.committee-list li.invitation-pending {
+    background-color: #fff8e1;
+    border-color: #ffb74d;
+    font-style: italic;
+}
+
+.committee-list li.invitation-accepted {
+    background-color: #e8f5e8;
+    border-color: #81c784;
+}
+
+.no-committee {
+    color: #6c757d;
+    font-style: italic;
+    text-align: center;
+    padding: 20px;
+    background-color: #f8f9fa;
+    border-radius: 4px;
+}
+
+.grade-section {
+    background-color: #e8f5e8;
+    border: 2px solid #28a745;
+    border-radius: 6px;
+    padding: 15px;
+    margin: 15px 0;
+    text-align: center;
+}
+
+.final-grade {
+    font-size: 1.3em;
+    font-weight: 700;
+    color: #155724;
+}
+
+.presentation-section {
+    background-color: #f8f9fa;
+    border: 1px solid #dee2e6;
+    border-radius: 6px;
+    padding: 15px;
+    margin: 15px 0;
+}
+
+.presentation-section h4 {
+    color: #7a2327;
+    margin: 0 0 15px 0;
+    font-size: 1.1em;
+}
+
+.presentation-details p {
+    margin: 8px 0;
+    line-height: 1.6;
+}
+
+.not-set {
+    color: #6c757d;
+    font-style: italic;
+}
+
+.file-link {
+    color: #007bff;
+    text-decoration: none;
+    font-weight: 600;
+    padding: 4px 8px;
+    background-color: #e7f3ff;
+    border-radius: 4px;
+    border: 1px solid #b8daff;
+}
+
+.file-link:hover {
+    background-color: #cce7ff;
+    text-decoration: underline;
+}
+
+/* --- End Student Thesis Overview Styles --- */
+
+/* --- Student Thesis Actions Styles --- */
+.thesis-actions-container {
+    background: #ffffff;
+    border-radius: 8px;
+    padding: 25px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    margin-top: 20px;
+    border: 1px solid #e9ecef;
+}
+
+.actions-header {
+    margin-bottom: 25px;
+    padding-bottom: 15px;
+    border-bottom: 2px solid #f1f3f4;
+}
+
+.actions-header.completed {
+    background: linear-gradient(135deg, #e8f5e8 0%, #f0f9f0 100%);
+    padding: 20px;
+    border-radius: 8px;
+    border-bottom: none;
+    margin-bottom: 20px;
+}
+
+.actions-header h4 {
+    color: #7a2327;
+    margin: 0 0 8px 0;
+    font-size: 1.3em;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.actions-header.completed h4 {
+    color: #155724;
+}
+
+.actions-description {
+    color: #6c757d;
+    margin: 0;
+    line-height: 1.5;
+}
+
+.icon {
+    font-size: 1em;
+    margin-right: 4px;
+}
+
+/* Modern Action Buttons */
+.action-btn {
+    padding: 12px 20px;
+    border: none;
+    border-radius: 8px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    text-decoration: none;
+    font-size: 0.9em;
+    line-height: 1;
+}
+
+.action-btn.primary {
+    background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
+    color: white;
+    box-shadow: 0 2px 4px rgba(0, 123, 255, 0.3);
+}
+
+.action-btn.primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 123, 255, 0.4);
+}
+
+.action-btn.invite-btn {
+    background: linear-gradient(135deg, #28a745 0%, #1e7e34 100%);
+    color: white;
+    box-shadow: 0 2px 4px rgba(40, 167, 69, 0.3);
+}
+
+.action-btn.invite-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(40, 167, 69, 0.4);
+}
+
+.action-btn.cancel-btn {
+    background: linear-gradient(135deg, #dc3545 0%, #bd2130 100%);
+    color: white;
+    box-shadow: 0 2px 4px rgba(220, 53, 69, 0.3);
+}
+
+.action-btn.cancel-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(220, 53, 69, 0.4);
+}
+
+.action-btn.large {
+    padding: 16px 32px;
+    font-size: 1.1em;
+}
+
+/* Professor Cards Grid */
+.professors-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+    gap: 15px;
+    margin-top: 15px;
+}
+
+.professor-card {
+    background: #ffffff;
+    border: 2px solid #e9ecef;
+    border-radius: 8px;
+    padding: 15px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    transition: all 0.3s ease;
+}
+
+.professor-card:hover {
+    border-color: #007bff;
+    box-shadow: 0 4px 8px rgba(0, 123, 255, 0.15);
+}
+
+.professor-info {
+    flex: 1;
+}
+
+.professor-name {
+    font-weight: 600;
+    color: #495057;
+    margin-bottom: 4px;
+}
+
+.professor-email {
+    font-size: 0.9em;
+    color: #6c757d;
+}
+
+/* Invitations Status */
+.invitations-status {
+    margin: 20px 0;
+    padding: 20px;
+    background: #f8f9fa;
+    border-radius: 8px;
+    border: 1px solid #dee2e6;
+}
+
+.invitations-status h5,
+.invitations-status h6 {
+    margin: 0 0 15px 0;
+    color: #495057;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.invitations-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 12px;
+    margin-top: 12px;
+}
+
+.invitation-card {
+    padding: 12px 16px;
+    border-radius: 6px;
+    border: 2px solid;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.invitation-card.accepted {
+    background-color: #d4f6d4;
+    border-color: #28a745;
+}
+
+.invitation-card.pending {
+    background-color: #fff3cd;
+    border-color: #ffc107;
+}
+
+.invitation-status {
+    font-size: 0.9em;
+    font-weight: 600;
+}
+
+/* Activation Section */
+.activation-section {
+    margin: 25px 0;
+    padding: 20px;
+    border-radius: 8px;
+    border: 2px solid;
+    text-align: center;
+}
+
+.activation-section.success {
+    background-color: #d4f6d4;
+    border-color: #28a745;
+}
+
+.activation-section.pending {
+    background-color: #fff3cd;
+    border-color: #ffc107;
+}
+
+.activation-header {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    margin-bottom: 12px;
+}
+
+.activation-header h5 {
+    margin: 0;
+    font-size: 1.2em;
+}
+
+.activation-section.success h5 {
+    color: #155724;
+}
+
+.activation-section.pending h5 {
+    color: #856404;
+}
+
+.progress-indicator {
+    margin-top: 15px;
+}
+
+.progress-bar {
+    width: 100%;
+    height: 8px;
+    background-color: #e9ecef;
+    border-radius: 4px;
+    overflow: hidden;
+    margin-bottom: 8px;
+}
+
+.progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #ffc107 0%, #ff8c00 100%);
+    transition: width 0.3s ease;
+}
+
+.progress-text {
+    font-size: 0.9em;
+    font-weight: 600;
+    color: #856404;
+}
+
+/* Modern Forms */
+.form-section {
+    margin: 25px 0;
+}
+
+.modern-form {
+    background: #f8f9fa;
+    padding: 25px;
+    border-radius: 8px;
+    border: 1px solid #dee2e6;
+}
+
+.form-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 20px;
+    margin-bottom: 25px;
+}
+
+.form-group {
+    display: flex;
+    flex-direction: column;
+}
+
+.form-group.full-width {
+    grid-column: 1 / -1;
+}
+
+.form-group label {
+    font-weight: 600;
+    margin-bottom: 8px;
+    color: #495057;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.form-group input,
+.form-group textarea,
+.form-group select {
+    padding: 12px;
+    border: 2px solid #ced4da;
+    border-radius: 6px;
+    font-size: 1em;
+    transition: border-color 0.3s ease;
+    background-color: white;
+}
+
+.form-group input:focus,
+.form-group textarea:focus,
+.form-group select:focus {
+    outline: none;
+    border-color: #007bff;
+    box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.1);
+}
+
+.form-group small {
+    margin-top: 6px;
+    font-size: 0.8em;
+    color: #6c757d;
+}
+
+/* Message Areas */
+.message-area {
+    margin-top: 15px;
+    padding: 12px 16px;
+    border-radius: 6px;
+    font-weight: 500;
+    text-align: center;
+}
+
+.message-area.success {
+    background-color: #d4f6d4;
+    color: #155724;
+    border: 1px solid #28a745;
+}
+
+.message-area.error {
+    background-color: #f8d7da;
+    color: #721c24;
+    border: 1px solid #dc3545;
+}
+
+.loading-message,
+.info-message,
+.error-message {
+    padding: 15px;
+    border-radius: 6px;
+    text-align: center;
+    margin: 15px 0;
+}
+
+.loading-message {
+    background-color: #e7f3ff;
+    color: #0c5aa6;
+    border: 1px solid #b8daff;
+}
+
+.info-message {
+    background-color: #e2f3ff;
+    color: #0c5aa6;
+    border: 1px solid #9ec5fe;
+}
+
+.error-message {
+    background-color: #f8d7da;
+    color: #721c24;
+    border: 1px solid #f5c6cb;
+}
+
+/* Progress Notes Section */
+.progress-notes-section {
+    margin-top: 30px;
+    padding: 20px;
+    background: #f8f9fa;
+    border-radius: 8px;
+    border: 1px solid #dee2e6;
+}
+
+.progress-notes-section h5 {
+    margin: 0 0 20px 0;
+    color: #495057;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+/* Grades Information */
+.grades-info {
+    margin: 15px 0;
+}
+
+.grades-list {
+    display: grid;
+    gap: 10px;
+}
+
+.grade-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 16px;
+    border-radius: 6px;
+    border: 2px solid;
+}
+
+.grade-item.completed {
+    background-color: #d4f6d4;
+    border-color: #28a745;
+}
+
+.grade-item.pending {
+    background-color: #fff3cd;
+    border-color: #ffc107;
+}
+
+.member-name {
+    font-weight: 600;
+    color: #495057;
+}
+
+.grade-status strong {
+    color: #155724;
+    font-size: 1.1em;
+}
+
+.grade-status em {
+    color: #856404;
+}
+
+/* Repository Section */
+.repository-section {
+    margin: 20px 0;
+    padding: 20px;
+    background: #f8f9fa;
+    border-radius: 8px;
+    border: 1px solid #dee2e6;
+}
+
+.repository-section h5 {
+    margin: 0 0 15px 0;
+    color: #495057;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.repository-link {
+    text-align: center;
+}
+
+.repository-form {
+    max-width: 500px;
+    margin: 0 auto;
+}
+
+/* Completion Details */
+.completion-details {
+    padding: 20px 0;
+}
+
+.final-grade-display {
+    text-align: center;
+    margin: 20px 0;
+    padding: 20px;
+    background: linear-gradient(135deg, #d4f6d4 0%, #e8f5e8 100%);
+    border-radius: 8px;
+    border: 2px solid #28a745;
+}
+
+.final-grade-display h5 {
+    margin: 0 0 15px 0;
+    color: #155724;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+}
+
+.grade-value {
+    font-size: 2.5em;
+    font-weight: 700;
+    color: #155724;
+}
+
+/* --- End Student Thesis Actions Styles --- */
 
 /* --- Secretariat Dashboard Styles --- */
 .secretariat-dashboard-container {
@@ -799,4 +1505,317 @@ button:hover {
     border-color: #7a2327;
     box-shadow: 0 0 8px rgba(122, 35, 39, 0.2);
     outline: none;
+}
+
+/* --- Theses Table --- */
+.theses-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 20px;
+    font-size: 0.95rem;
+}
+
+.theses-table th,
+.theses-table td {
+    padding: 12px 15px; /* Αυξάνει το κενό μέσα σε κάθε κελί */
+    border-bottom: 1px solid #e0e0e0;
+    text-align: left;
+    vertical-align: middle;
+}
+
+.theses-table thead th {
+    background-color: #f7f7f7;
+    font-weight: 600;
+    color: #333;
+}
+
+.theses-table tbody tr:hover {
+    background-color: #f9f9f9;
+}
+
+.theses-table td button {
+    padding: 6px 12px;
+    font-size: 0.9rem;
+}
+
+/* --- Modal Action Styles --- */
+.modal-actions {
+    margin-top: 25px;
+    padding-top: 20px;
+    border-top: 1px solid #eee;
+}
+
+.action-form {
+    margin-bottom: 20px;
+    padding: 15px;
+    background-color: #f9f9f9;
+    border-radius: 6px;
+    border: 1px solid #eee;
+}
+
+.action-form h5 {
+    margin-top: 0;
+    margin-bottom: 15px;
+    color: #7a2327;
+}
+
+.danger-btn {
+    background-color: #dc3545;
+}
+.danger-btn:hover {
+    background-color: #c82333;
+}
+
+.small-notice {
+    font-size: 0.85rem;
+    color: #666;
+    margin-bottom: 15px;
+}
+
+#modalActionMessage {
+    margin-top: 15px;
+    padding: 10px;
+    border-radius: 4px;
+    text-align: center;
+}
+
+/* Committee Member Cards */
+.current-committee {
+    background: linear-gradient(135deg, #f8f9ff 0%, #e8f2ff 100%);
+    border: 2px solid #3498db;
+    border-radius: 12px;
+    padding: 20px;
+    margin-bottom: 20px;
+}
+
+.committee-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 15px;
+    margin-bottom: 20px;
+}
+
+.committee-member-card {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: #ffffff;
+    border: 2px solid #e3e3e3;
+    border-radius: 10px;
+    padding: 15px;
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+.committee-member-card.supervisor {
+    border-color: #27ae60;
+    background: linear-gradient(135deg, #ffffff 0%, #f0fff4 100%);
+}
+
+.committee-member-card.supervisor::before {
+    content: '⭐';
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    font-size: 14px;
+}
+
+.committee-member-card.placeholder {
+    border-style: dashed;
+    border-color: #bdc3c7;
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    opacity: 0.7;
+}
+
+.member-info {
+    flex: 1;
+}
+
+.member-name {
+    font-weight: 600;
+    color: #2c3e50;
+    font-size: 14px;
+    margin-bottom: 4px;
+}
+
+.member-role {
+    font-size: 12px;
+    color: #7f8c8d;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.member-status {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    font-size: 14px;
+    font-weight: bold;
+}
+
+.member-status.confirmed {
+    background: #27ae60;
+    color: white;
+}
+
+.member-status.pending {
+    background: #f39c12;
+    color: white;
+}
+
+.committee-progress {
+    margin-top: 15px;
+    padding-top: 15px;
+    border-top: 1px solid #e8f4f8;
+}
+
+.progress-bar {
+    height: 8px;
+    background: #ecf0f1;
+    border-radius: 4px;
+    overflow: hidden;
+    margin-bottom: 8px;
+}
+
+.progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #3498db 0%, #27ae60 100%);
+    transition: width 0.5s ease;
+}
+
+.progress-text {
+    font-size: 13px;
+    color: #34495e;
+    text-align: center;
+    font-weight: 500;
+}
+
+.activation-section {
+    margin-top: 25px;
+    padding: 20px;
+    border-radius: 12px;
+    text-align: center;
+}
+
+.activation-section.success {
+    background: linear-gradient(135deg, #d4edda 0%, #c3e6cb 100%);
+    border: 2px solid #28a745;
+}
+
+.activation-section.pending {
+    background: linear-gradient(135deg, #fff3cd 0%, #ffeeba 100%);
+    border: 2px solid #ffc107;
+}
+
+.activation-header {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    margin-bottom: 10px;
+}
+
+.activation-header h5 {
+    margin: 0;
+    font-size: 16px;
+}
+
+.activation-header .icon {
+    font-size: 18px;
+}
+
+.activation-section p {
+    margin-bottom: 15px;
+    color: #495057;
+}
+
+/* Pending Invitations Section */
+.pending-invitations-section {
+    margin-top: 20px;
+    padding-top: 15px;
+    border-top: 1px solid #e8f4f8;
+}
+
+.pending-invitations-section h5 {
+    font-size: 14px;
+    color: #e67e22;
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.pending-invitations-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.pending-invitation-card {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: #fff3cd;
+    border: 1px solid #ffc107;
+    border-radius: 8px;
+    padding: 12px;
+    transition: all 0.2s ease;
+}
+
+.pending-invitation-card:hover {
+    background: #ffeaa7;
+}
+
+.invitation-info {
+    flex: 1;
+}
+
+.invitation-status {
+    font-size: 11px;
+    color: #856404;
+    font-style: italic;
+    margin-top: 2px;
+}
+
+.cancel-invitation-btn {
+    background: #dc3545;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-size: 10px;
+}
+
+.cancel-invitation-btn:hover {
+    background: #c82333;
+    transform: scale(1.1);
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .committee-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .committee-member-card {
+        padding: 12px;
+    }
+    
+    .member-name {
+        font-size: 13px;
+    }
+    
+    .member-role {
+        font-size: 11px;
+    }
 }

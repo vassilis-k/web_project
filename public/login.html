@@ -36,7 +36,7 @@
                 <input type="password" id="password" name="password" required>
             </div>
             <button type="submit">Σύνδεση</button>
-            <p id="errorMessage" class="error-message" style="color: red;"></p>
+            <p id="errorMessage" class="error-message" style="color: red; display: none;"></p>
         </form>
     </div>
     <script>
@@ -61,11 +61,15 @@
                     window.location.href = successData.redirectTo;
                 } else {
                     const errorData = await response.json();
-                    document.getElementById('errorMessage').textContent = errorData.message || 'Σφάλμα σύνδεσης.';
+                    const errorElement = document.getElementById('errorMessage');
+                    errorElement.textContent = errorData.message || 'Σφάλμα σύνδεσης.';
+                    errorElement.style.display = 'block';
                 }
             } catch (error) {
                 console.error('Error during login fetch:', error);
-                document.getElementById('errorMessage').textContent = 'Αδυναμία σύνδεσης στον server.';
+                const errorElement = document.getElementById('errorMessage');
+                errorElement.textContent = 'Αδυναμία σύνδεσης στον server.';
+                errorElement.style.display = 'block';
             }
         });
     </script>

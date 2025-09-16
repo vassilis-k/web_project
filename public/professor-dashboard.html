@@ -50,8 +50,8 @@
                     <textarea id="newTopicDescription" name="description" rows="5" required></textarea>
                 </div>
                 <div class="form-group">
-                    <label for="newTopicPdfUrl">Σύνδεσμος PDF Αναλυτικής Περιγραφής:</label>
-                    <input type="url" id="newTopicPdfUrl" name="description_pdf_url">
+                    <label for="newTopicPdfFile">Αρχείο PDF Αναλυτικής Περιγραφής:</label>
+                    <input type="file" id="newTopicPdfFile" name="pdfFile" accept=".pdf">
                 </div>
                 <button type="submit">Δημιουργία Θέματος</button>
                 <p id="createTopicMessage" class="error-message"></p>
@@ -65,11 +65,11 @@
 
         <!-- 2) Αρχική ανάθεση θέματος σε φοιτητή -->
         <section id="assign-section" class="section-content" style="display: none;">
-            <h3>Ανάθεση Θεμάτων σε Φοιτητές</h3>
+            <h3>Ανάθεση Θέματος σε Φοιτητές</h3>
             <div class="student-search">
                 <h4>Αναζήτηση Φοιτητή</h4>
                 <div class="form-group">
-                    <input type="text" id="studentSearchTerm" placeholder="Αναζήτηση με όνομα, επώνυμο ή email">
+                    <input type="text" id="studentSearchTerm" placeholder="Αναζήτηση με ΑΜ, όνομα, επώνυμο ή email">
                     <button onclick="searchStudents()">Αναζήτηση</button>
                 </div>
                 <div id="studentSearchResults" class="student-results"></div>
@@ -89,6 +89,15 @@
                 </div>
                 <button onclick="assignTopic()" class="assign-btn">Ανάθεση Θέματος</button>
                 <p id="assignTopicMessage" class="error-message"></p>
+            </div>
+
+            <div class="unassign-section" style="margin-top: 40px;">
+                <h4>Προσωρινά Ανατεθειμένα Θέματα</h4>
+                <p>Λίστα με θέματα που έχουν ανατεθεί προσωρινά σε φοιτητές και εκκρεμεί η οριστικοποίησή τους.</p>
+                <div id="underAssignmentList" class="topic-list">
+                    <p>Φόρτωση λίστας...</p>
+                </div>
+                <p id="unassignMessage" class="error-message"></p>
             </div>
         </section>
 
@@ -114,7 +123,7 @@
                     <option value="member">Μέλος Επιτροπής</option>
                 </select>
 
-                <button class="filter-btn">Εφαρμογή Φίλτρων</button>
+                <button onclick="fetchProfessorTheses()" class="filter-btn">Εφαρμογή Φίλτρων</button>
                 <div class="export-buttons">
                     <button class="export-btn">Εξαγωγή σε JSON</button>
                     <button class="export-btn">Εξαγωγή σε CSV</button>
@@ -168,8 +177,9 @@
                         <textarea id="editTopicDescription" name="description" rows="5" required></textarea>
                     </div>
                     <div class="form-group">
-                        <label for="editTopicPdfUrl">Σύνδεσμος PDF Αναλυτικής Περιγραφής:</label>
-                        <input type="url" id="editTopicPdfUrl" name="description_pdf_url">
+                        <label for="editTopicPdfFile">Ανέβασμα Νέου Αρχείου PDF (προαιρετικό):</label>
+                        <input type="file" id="editTopicPdfFile" name="pdfFile" accept=".pdf">
+                        <p>Τρέχον αρχείο: <a id="currentPdfLink" href="#" target="_blank">Κανένα</a></p>
                     </div>
                     <button type="submit">Αποθήκευση Αλλαγών</button>
                     <p id="editTopicMessage" class="error-message"></p>
@@ -187,8 +197,16 @@
                 </div>
                 <div id="modalThesisActions" style="margin-top: 20px;">
                     <h4>Ενέργειες Διαχείρισης</h4>
+                    <p id="thesisActionMessage" class="error-message"></p> <!-- New element for messages -->
                     <!-- Dynamic action buttons based on status and role -->
                     <div id="thesisDynamicActions"></div>
+
+                    <!-- New: Invite Committee Member Form (for 'under_assignment' status) -->
+                    <div id="inviteMemberSection" class="action-form" style="display: none;">
+                        <h5>Πρόσκληση Νέου Μέλους Επιτροπής (λειτουργία φοιτητή)</h5>
+                        <p>Ο επιβλέπων μπορεί μόνο να δει τις προσκλήσεις που έχει στείλει ο φοιτητής.</p>
+                    </div>
+
 
                     <!-- Notes Section -->
                     <div style="margin-top: 20px;">
@@ -236,6 +254,7 @@
             fetchUserInfo();
             fetchProfessorTopics();
             fetchAvailableTopicsForAssignment(); // For the "Assign Topics" section
+            fetchUnderAssignmentTheses(); // For the new "Unassign" section
             fetchProfessorInvitations();
             fetchProfessorTheses(); // Initial load of the thesis list
 
@@ -259,6 +278,7 @@
                         fetchProfessorTopics();
                     } else if (event.target.getAttribute('href') === '#assign-section') {
                         fetchAvailableTopicsForAssignment();
+                        fetchUnderAssignmentTheses(); // Fetch the new list
                         document.getElementById('studentSearchResults').innerHTML = ''; // Clear search results
                         document.getElementById('selectedStudentInfo').textContent = 'Κανένας';
                         document.getElementById('selectedStudentId').value = '';
@@ -278,6 +298,10 @@
             // Filters for thesis list
             document.getElementById('thesisStatusFilter').addEventListener('change', fetchProfessorTheses);
             document.getElementById('thesisRoleFilter').addEventListener('change', fetchProfessorTheses);
+
+            // Export buttons
+            document.querySelector('.export-buttons button:nth-of-type(1)').addEventListener('click', () => exportTheses('json'));
+            document.querySelector('.export-buttons button:nth-of-type(2)').addEventListener('click', () => exportTheses('csv'));
         });
 
         async function fetchUserInfo() {
@@ -329,7 +353,7 @@
                     <div>
                         <h3>${escapeHtml(topic.title)}</h3>
                         <p>${escapeHtml(topic.description)}</p>
-                        ${topic.description_pdf_url ? `<p><a href="${escapeHtml(topic.description_pdf_url)}" target="_blank">Περιγραφή PDF</a></p>` : ''}
+                        ${topic.description_pdf_url ? `<p><a href="/uploads/thesis_pdfs/${escapeHtml(topic.description_pdf_url)}" target="_blank">Περιγραφή PDF</a></p>` : ''}
                         <p>Κατάσταση: <strong>${translateThesisStatus(topic.status)}</strong></p>
                     </div>
                     <div class="topic-actions">
@@ -345,16 +369,18 @@
             event.preventDefault();
             const form = event.target;
             const formData = new FormData(form);
-            const data = Object.fromEntries(formData.entries());
+            // No longer converting to JSON, sending as FormData
+            
+            const messageElement = document.getElementById('createTopicMessage');
+            messageElement.textContent = 'Δημιουργία θέματος...';
+            messageElement.style.color = 'blue';
 
             try {
                 const response = await fetch('/api/professor/topics', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(data)
+                    body: formData // Send as multipart/form-data
                 });
                 const result = await response.json();
-                const messageElement = document.getElementById('createTopicMessage');
 
                 if (response.ok) {
                     messageElement.textContent = result.message;
@@ -377,7 +403,17 @@
             document.getElementById('editTopicId').value = id;
             document.getElementById('editTopicTitle').value = title;
             document.getElementById('editTopicDescription').value = description;
-            document.getElementById('editTopicPdfUrl').value = pdfUrl;
+            
+            const pdfLink = document.getElementById('currentPdfLink');
+            if (pdfUrl && pdfUrl !== 'null') {
+                pdfLink.href = `/uploads/thesis_pdfs/${pdfUrl}`;
+                pdfLink.textContent = pdfUrl; // Show filename
+                pdfLink.style.display = 'inline';
+            } else {
+                pdfLink.textContent = 'Κανένα';
+                pdfLink.style.display = 'none';
+            }
+
             document.getElementById('editTopicMessage').textContent = ''; // Clear previous messages
             document.getElementById('editTopicModal').style.display = 'block';
         }
@@ -387,16 +423,17 @@
             const form = event.target;
             const topicId = document.getElementById('editTopicId').value;
             const formData = new FormData(form);
-            const data = Object.fromEntries(formData.entries());
+            
+            const messageElement = document.getElementById('editTopicMessage');
+            messageElement.textContent = 'Ενημέρωση...';
+            messageElement.style.color = 'blue';
 
             try {
                 const response = await fetch(`/api/professor/topics/${topicId}`, {
                     method: 'PUT',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(data)
+                    body: formData // Send as multipart/form-data
                 });
                 const result = await response.json();
-                const messageElement = document.getElementById('editTopicMessage');
 
                 if (response.ok) {
                     messageElement.textContent = result.message;
@@ -543,26 +580,50 @@
             }
         }
 
-        async function unassignTopic() {
-            const thesisId = document.getElementById('availableTopicsSelect').value;
-            const messageElement = document.getElementById('assignTopicMessage');
-            messageElement.textContent = '';
+        async function fetchUnderAssignmentTheses() {
+            try {
+                const response = await fetch('/api/professor/theses/under-assignment');
+                if (response.ok) {
+                    const theses = await response.json();
+                    renderUnderAssignmentList(theses);
+                } else {
+                    document.getElementById('underAssignmentList').innerHTML = `<p style="color: red;">Σφάλμα φόρτωσης λίστας.</p>`;
+                }
+            } catch (error) {
+                console.error('Error fetching under-assignment theses:', error);
+                document.getElementById('underAssignmentList').innerHTML = `<p style="color: red;">Αδυναμία επικοινωνίας με τον server.</p>`;
+            }
+        }
 
-            if (!thesisId) {
-                messageElement.textContent = 'Παρακαλώ επιλέξτε ένα θέμα προς αναίρεση ανάθεσης.';
-                messageElement.style.color = 'red';
+        function renderUnderAssignmentList(theses) {
+            const listDiv = document.getElementById('underAssignmentList');
+            listDiv.innerHTML = '';
+            if (theses.length === 0) {
+                listDiv.innerHTML = '<p>Δεν υπάρχουν θέματα υπό προσωρινή ανάθεση.</p>';
                 return;
             }
+            const ul = document.createElement('ul');
+            theses.forEach(thesis => {
+                const li = document.createElement('li');
+                li.innerHTML = `
+                    <div>
+                        <h3>${escapeHtml(thesis.title)}</h3>
+                        <p>Φοιτητής: <strong>${escapeHtml(thesis.student_name)} ${escapeHtml(thesis.student_surname)}</strong></p>
+                    </div>
+                    <div class="topic-actions">
+                        <button class="action-button danger" onclick="unassignTopic(${thesis.id})">Αναίρεση Ανάθεσης</button>
+                    </div>
+                `;
+                ul.appendChild(li);
+            });
+            listDiv.appendChild(ul);
+        }
 
-            // Optional: Confirm if the selected topic is actually 'under_assignment'
-            const selectedTopic = availableTopics.find(t => t.id == thesisId);
-            if (!selectedTopic || selectedTopic.status !== 'under_assignment') {
-                 messageElement.textContent = 'Μπορείτε να αναιρέσετε μόνο θέματα που είναι "Υπό Ανάθεση".';
-                 messageElement.style.color = 'red';
-                 return;
-            }
+        async function unassignTopic(thesisId) {
+            const messageElement = document.getElementById('unassignMessage');
+            messageElement.textContent = '';
 
-            if (!confirm('Είστε σίγουροι ότι θέλετε να αναιρέσετε την ανάθεση αυτού του θέματος;')) {
+            if (!confirm('Είστε σίγουροι ότι θέλετε να αναιρέσετε την ανάθεση αυτού του θέματος; Αυτή η ενέργεια θα διαγράψει και τυχόν προσκλήσεις επιτροπής.')) {
                 return;
             }
 
@@ -576,9 +637,10 @@
                 if (response.ok) {
                     messageElement.textContent = result.message;
                     messageElement.style.color = 'green';
-                    fetchAvailableTopicsForAssignment(); // Refresh available topics
+                    fetchUnderAssignmentTheses(); // Refresh this list
+                    fetchAvailableTopicsForAssignment(); // Refresh topics for assignment dropdown
                 } else {
-                    messageElement.textContent = result.message || 'Σφάλμα αναίρεσης ανάθεσης θέματος.';
+                    messageElement.textContent = result.message || 'Σφάλμα αναίρεσης ανάθεσης.';
                     messageElement.style.color = 'red';
                 }
             } catch (error) {
@@ -680,40 +742,60 @@
             const myNotesList = document.getElementById('myNotesList');
             const addNoteText = document.getElementById('addNoteText');
 
-            // Reset notes input
+            // Reset notes input and action messages
             addNoteText.value = '';
             document.getElementById('noteMessage').textContent = '';
+            document.getElementById('thesisActionMessage').textContent = ''; // Reset action messages
 
-            let committeeMembersHtml = '';
-            if (thesis.committee_members && thesis.committee_members.length > 0) {
-                committeeMembersHtml = `
-                    <h5>Μέλη Επιτροπής:</h5>
-                    <ul>
-                        ${thesis.committee_members.map(member => `
-                            <li>
-                                ${escapeHtml(member.name)} ${escapeHtml(member.surname)} (${escapeHtml(member.email)})
-                                ${member.grade !== null ? ` - Βαθμός: ${member.grade}` : ''}
-                                ${member.grade_details ? ` (${escapeHtml(member.grade_details)})` : ''}
-                                ${thesis.status === 'under_review' && member.professor_id === currentProfessorId ? `
-                                    <input type="number" min="0" max="10" class="grade-input" value="${member.grade !== null ? member.grade : ''}" id="gradeInput_${thesis.id}_${member.professor_id}">
-                                    <input type="text" placeholder="Λεπτομέρειες βαθμού" class="grade-input" value="${member.grade_details !== null ? escapeHtml(member.grade_details) : ''}" id="gradeDetailsInput_${thesis.id}_${member.professor_id}" style="width: 120px;">
-                                    <button class="grade-save-btn" onclick="saveProfessorGrade(${thesis.id}, ${member.professor_id})">Αποθήκευση Βαθμού</button>
-                                ` : ''}
-                            </li>
-                        `).join('')}
-                    </ul>
-                `;
-            } else if (thesis.committee_invitations && thesis.committee_invitations.length > 0) {
-                committeeMembersHtml = `
-                    <h5>Προσκλήσεις Επιτροπής (Υπό Ανάθεση):</h5>
-                    <ul>
-                        ${thesis.committee_invitations.map(inv => `
-                            <li>${escapeHtml(inv.name)} ${escapeHtml(inv.surname)} (${escapeHtml(inv.email)}) - ${translateInvitationStatus(inv.status)}</li>
-                        `).join('')}
-                    </ul>
-                `;
-            } else {
-                committeeMembersHtml = '<p>Δεν έχουν οριστεί/προσκληθεί μέλη επιτροπής.</p>';
+            // New logic for displaying committee members and invitations separately
+            let finalCommitteeHtml = '';
+            let pendingInvitationsHtml = '';
+
+            // Always show supervisor
+            const supervisorLi = `<li>${escapeHtml(thesis.supervisor_name)} ${escapeHtml(thesis.supervisor_surname)} (Επιβλέπων)</li>`;
+
+            if (thesis.status === 'active' || thesis.status === 'under_review' || thesis.status === 'completed') {
+                // For active theses, show the final committee from committee_members array
+                if (thesis.committee_members && thesis.committee_members.length > 0) {
+                    const membersLis = thesis.committee_members
+                        .filter(m => m.professor_id !== thesis.supervisor_id) // Exclude supervisor by ID
+                        .map(member => `<li>${escapeHtml(member.name)} ${escapeHtml(member.surname)} (Μέλος)</li>`)
+                        .join('');
+                    finalCommitteeHtml = `
+                        <div class="committee-container">
+                            <h5>Μέλη Επιτροπής</h5>
+                            <ul class="committee-list">${supervisorLi}${membersLis}</ul>
+                        </div>`;
+                }
+            } else if (thesis.status === 'under_assignment') {
+                // For theses under assignment, build committee from accepted invitations
+                const acceptedInvites = thesis.committee_invitations?.filter(inv => inv.status === 'accepted') || [];
+                const pendingInvites = thesis.committee_invitations?.filter(inv => inv.status === 'pending') || [];
+
+                const acceptedLis = acceptedInvites
+                    .map(inv => `<li>${escapeHtml(inv.name)} ${escapeHtml(inv.surname)} (Μέλος)</li>`)
+                    .join('');
+
+                finalCommitteeHtml = `
+                    <div class="committee-container">
+                        <h5>Μέλη Επιτροπής</h5>
+                        <ul class="committee-list">${supervisorLi}${acceptedLis}</ul>
+                    </div>`;
+
+                if (pendingInvites.length > 0) {
+                    pendingInvitationsHtml = `
+                        <div class="committee-container">
+                            <h5>Εκκρεμείς Προσκλήσεις Επιτροπής</h5>
+                            <ul class="committee-list">
+                                ${pendingInvites.map(invite => `
+                                    <li>
+                                        <p>${escapeHtml(invite.name)} ${escapeHtml(invite.surname)} - <strong>${translateInvitationStatus(invite.status)}</strong></p>
+                                    </li>
+                                `).join('')}
+                            </ul>
+                        </div>
+                    `;
+                }
             }
 
             let myNotesHtml = '';
@@ -733,13 +815,35 @@
             }
             myNotesList.innerHTML = myNotesHtml;
 
+            let actionLogHtml = '';
+            if (thesis.action_log && thesis.action_log.length > 0) {
+                actionLogHtml = `
+                    <div class="action-log-container">
+                        <h5>Χρονολόγιο Ενεργειών</h5>
+                        <ul class="action-log-list">
+                            ${thesis.action_log.map(log => `
+                                <li>
+                                    <p class="log-details">${escapeHtml(log.details)}</p>
+                                    <small class="log-meta">
+                                        ${new Date(log.timestamp).toLocaleString('el-GR')}
+                                        ${log.name ? ` από ${escapeHtml(log.name)} ${escapeHtml(log.surname)}` : ' (Από το σύστημα)'}
+                                    </small>
+                                </li>
+                            `).join('')}
+                        </ul>
+                    </div>
+                `;
+            } else {
+                actionLogHtml = '<p>Δεν υπάρχει ιστορικό ενεργειών για αυτή τη διπλωματική.</p>';
+            }
+
 
             detailsDiv.innerHTML = `
                 <p><strong>Φοιτητής:</strong> ${thesis.student_name ? `${escapeHtml(thesis.student_name)} ${escapeHtml(thesis.student_surname)} (${escapeHtml(thesis.student_email)})` : 'N/A'}</p>
                 <p><strong>Επιβλέπων:</strong> ${escapeHtml(thesis.supervisor_name)} ${escapeHtml(thesis.supervisor_surname)} (${escapeHtml(thesis.supervisor_email)})</p>
                 <p><strong>Τίτλος:</strong> ${escapeHtml(thesis.title)}</p>
                 <p><strong>Περιγραφή:</strong> ${escapeHtml(thesis.description)}</p>
-                ${thesis.description_pdf_url ? `<p><strong>Αναλυτική Περιγραφή:</strong> <a href="${escapeHtml(thesis.description_pdf_url)}" target="_blank">PDF</a></p>` : ''}
+                ${thesis.description_pdf_url ? `<p><strong>Αναλυτική Περιγραφή:</strong> <a href="/uploads/thesis_pdfs/${escapeHtml(thesis.description_pdf_url)}" target="_blank">PDF</a></p>` : ''}
                 <p><strong>Κατάσταση:</strong> ${translateThesisStatus(thesis.status)}</p>
                 ${thesis.assignment_date ? `<p><strong>Ημερομηνία Ανάθεσης:</strong> ${new Date(thesis.assignment_date).toLocaleDateString('el-GR')}</p>` : ''}
                 ${thesis.gs_approval_protocol ? `<p><strong>ΑΠ Γ.Σ. Ανάθεσης:</strong> ${escapeHtml(thesis.gs_approval_protocol)}</p>` : ''}
@@ -748,17 +852,41 @@
                 ${thesis.final_grade !== null ? `<p><strong>Τελικός Βαθμός:</strong> ${thesis.final_grade}</p>` : ''}
                 ${thesis.repository_url ? `<p><strong>Σύνδεσμος Αποθετηρίου:</strong> <a href="${escapeHtml(thesis.repository_url)}" target="_blank">View</a></p>` : ''}
                 ${thesis.cancellation_reason ? `<p style="color: red;"><strong>Ακυρωμένη:</strong> ${escapeHtml(thesis.cancellation_reason)}</p>` : ''}
-                ${committeeMembersHtml}
+                ${finalCommitteeHtml}
+                ${pendingInvitationsHtml}
+                ${actionLogHtml}
             `;
 
             actionsDiv.innerHTML = '';
-            // Dynamic actions based on thesis status and professor's role
-            if (thesis.status === 'active' && thesis.supervisor_id === currentProfessorId) {
-                actionsDiv.innerHTML += `<button class="action-button primary" onclick="setThesisUnderReview(${thesis.id})">Μεταφορά σε "Υπό Εξέταση"</button>`;
-                actionsDiv.innerHTML += `<button class="action-button danger" onclick="openCancelThesisBySupervisorModal(${thesis.id})">Ακύρωση Ανάθεσης (2ετία)</button>`;
-            } else if (thesis.status === 'under_review' && thesis.supervisor_id === currentProfessorId && thesis.presentation_date && thesis.presentation_location) {
-                actionsDiv.innerHTML += `<button class="action-button info" onclick="generatePresentationAnnouncement(${thesis.id})">Δημιουργία Ανακοίνωσης Παρουσίασης</button>`;
+            const inviteMemberSection = document.getElementById('inviteMemberSection');
+            inviteMemberSection.style.display = 'none'; // Hide by default
+
+            // Dynamic actions based on thesis status and professor's role            
+            if (parseInt(thesis.supervisor_id) === parseInt(currentProfessorId)) { // Only supervisor can perform these actions
+                if (thesis.status === 'active') {
+                    actionsDiv.innerHTML += `<button class="action-button primary" onclick="setThesisUnderReview(${thesis.id})">Μεταφορά σε "Υπό Εξέταση"</button>`;
+                    
+                    // Check if 2 years have passed since assignment
+                    const assignmentDate = new Date(thesis.assignment_date);
+                    const twoYearsAgo = new Date();
+                    twoYearsAgo.setFullYear(twoYearsAgo.getFullYear() - 2);
+                    
+                    if (assignmentDate <= twoYearsAgo) {
+                        // 2 years have passed - show active button
+                        actionsDiv.innerHTML += `<button class="action-button danger" onclick="openCancelThesisBySupervisorModal(${thesis.id}, '${thesis.assignment_date}')">Ακύρωση Ανάθεσης (2ετία)</button>`;
+                    } else {
+                        // Less than 2 years - show disabled button with explanation
+                        const monthsLeft = Math.ceil((twoYearsAgo - new Date()) / (30.44 * 24 * 60 * 60 * 1000) * -1);
+                        actionsDiv.innerHTML += `<button class="action-button disabled" disabled title="Η ακύρωση επιτρέπεται μόνο μετά από 2 χρόνια από την ανάθεση. Απομένουν περίπου ${monthsLeft} μήνες.">Ακύρωση Ανάθεσης (2ετία)</button>`;
+                    }
+                } else if (thesis.status === 'under_review' && thesis.presentation_date && thesis.presentation_location) {
+                    actionsDiv.innerHTML += `<button class="action-button info" onclick="generatePresentationAnnouncement(${thesis.id})">Δημιουργία Ανακοίνωσης Παρουσίασης</button>`;
+                }
             }
+
+            // Hide the invitation section as professors can no longer invite
+            inviteMemberSection.style.display = 'none';
+
             // Add note functionality is always available
             document.getElementById('addNoteText').dataset.thesisId = thesis.id; // Store thesis ID for note
             document.getElementById('thesisDetailsModal').style.display = 'block';
@@ -805,56 +933,109 @@
         }
 
         async function setThesisUnderReview(thesisId) {
-            if (!confirm('Είστε σίγουροι ότι θέλετε να μεταφέρετε τη διπλωματική σε κατάσταση "Υπό Εξέταση";')) {
-                return;
-            }
+            const messageElement = document.getElementById('thesisActionMessage');
+            messageElement.textContent = 'Μεταφορά σε "Υπό Εξέταση"...';
+            messageElement.style.color = 'blue';
+
             try {
                 const response = await fetch(`/api/professor/theses/${thesisId}/set-under-review`, {
-                    method: 'PUT',
-                    headers: { 'Content-Type': 'application/json' }
+                    method: 'PUT' // Corrected from POST to PUT
                 });
                 const result = await response.json();
-                alert(result.message);
                 if (response.ok) {
-                    closeModal('thesisDetailsModal');
-                    fetchProfessorTheses(); // Refresh main list
+                    messageElement.textContent = result.message;
+                    messageElement.style.color = 'green';
+                    setTimeout(() => {
+                        closeModal('thesisDetailsModal');
+                        fetchProfessorTheses(); // Refresh thesis list
+                    }, 1500);
+                } else {
+                    messageElement.textContent = result.message || 'Σφάλμα κατά την μεταφορά σε "Υπό Εξέταση".';
+                    messageElement.style.color = 'red';
                 }
             } catch (error) {
                 console.error('Error setting thesis under review:', error);
-                alert('Αδυναμία επικοινωνίας με τον server.');
+                messageElement.textContent = 'Αδυναμία επικοινωνίας με τον server.';
+                messageElement.style.color = 'red';
             }
         }
 
-        function openCancelThesisBySupervisorModal(thesisId) {
+        async function generatePresentationAnnouncement(thesisId) {
+            const messageElement = document.getElementById('thesisActionMessage');
+            messageElement.textContent = 'Δημιουργία ανακοίνωσης...';
+            messageElement.style.color = 'blue';
+
+            try {
+                const response = await fetch(`/api/professor/theses/${thesisId}/generate-announcement`, {
+                    method: 'POST'
+                });
+                const result = await response.json();
+                if (response.ok) {
+                    messageElement.textContent = result.message;
+                    messageElement.style.color = 'green';
+                    setTimeout(() => {
+                        closeModal('thesisDetailsModal');
+                        fetchProfessorTheses(); // Refresh thesis list
+                    }, 1500);
+                } else {
+                    messageElement.textContent = result.message || 'Σφάλμα κατά τη δημιουργία ανακοίνωσης.';
+                    messageElement.style.color = 'red';
+                }
+            } catch (error) {
+                console.error('Error generating presentation announcement:', error);
+                messageElement.textContent = 'Αδυναμία επικοινωνίας με τον server.';
+                messageElement.style.color = 'red';
+            }
+        }
+
+        function openCancelThesisBySupervisorModal(thesisId, assignmentDate) {
+            // Double-check the 2-year requirement
+            const assignmentDateObj = new Date(assignmentDate);
+            const twoYearsAgo = new Date();
+            twoYearsAgo.setFullYear(twoYearsAgo.getFullYear() - 2);
+            
+            if (assignmentDateObj > twoYearsAgo) {
+                const monthsLeft = Math.ceil((twoYearsAgo - new Date()) / (30.44 * 24 * 60 * 60 * 1000) * -1);
+                alert(`Η ακύρωση ανάθεσης επιτρέπεται μόνο μετά από 2 χρόνια από την ημερομηνία ανάθεσης. Απομένουν περίπου ${monthsLeft} μήνες.`);
+                return;
+            }
+            
             document.getElementById('cancelBySupervisorThesisId').value = thesisId;
-            document.getElementById('gsNumberSupervisorInput').value = '';
-            document.getElementById('gsYearSupervisorInput').value = new Date().getFullYear();
+            document.getElementById('cancelThesisBySupervisorForm').reset();
             document.getElementById('cancelBySupervisorMessage').textContent = '';
             document.getElementById('cancelThesisBySupervisorModal').style.display = 'block';
         }
 
         async function handleCancelThesisBySupervisorSubmit(event) {
             event.preventDefault();
+            const form = event.target;
             const thesisId = document.getElementById('cancelBySupervisorThesisId').value;
-            const gsNumber = document.getElementById('gsNumberSupervisorInput').value;
-            const gsYear = document.getElementById('gsYearSupervisorInput').value;
+            const gs_number = document.getElementById('gsNumberSupervisorInput').value;
+            const gs_year = document.getElementById('gsYearSupervisorInput').value;
             const messageElement = document.getElementById('cancelBySupervisorMessage');
+
+            messageElement.textContent = 'Επεξεργασία ακύρωσης...';
+            messageElement.style.color = 'blue';
 
             try {
                 const response = await fetch(`/api/professor/theses/${thesisId}/cancel-by-supervisor`, {
                     method: 'PUT',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ gs_number: gsNumber, gs_year: gsYear })
+                    body: JSON.stringify({ gs_number, gs_year })
                 });
+
                 const result = await response.json();
+
                 if (response.ok) {
                     messageElement.textContent = result.message;
                     messageElement.style.color = 'green';
-                    closeModal('cancelThesisBySupervisorModal');
-                    closeModal('thesisDetailsModal');
-                    fetchProfessorTheses();
+                    setTimeout(() => {
+                        closeModal('cancelThesisBySupervisorModal');
+                        closeModal('thesisDetailsModal');
+                        fetchProfessorTheses(); // Refresh the main list
+                    }, 2000);
                 } else {
-                    messageElement.textContent = result.message || 'Σφάλμα ακύρωσης διπλωματικής.';
+                    messageElement.textContent = result.message || 'Προέκυψε σφάλμα κατά την ακύρωση.';
                     messageElement.style.color = 'red';
                 }
             } catch (error) {
@@ -862,281 +1043,6 @@
                 messageElement.textContent = 'Αδυναμία επικοινωνίας με τον server.';
                 messageElement.style.color = 'red';
             }
-        }
-
-        async function saveProfessorGrade(thesisId, professorId) {
-            const gradeInput = document.getElementById(`gradeInput_${thesisId}_${professorId}`);
-            const gradeDetailsInput = document.getElementById(`gradeDetailsInput_${thesisId}_${professorId}`);
-            const grade = gradeInput ? parseInt(gradeInput.value) : null;
-            const gradeDetails = gradeDetailsInput ? gradeDetailsInput.value : null;
-
-            if (grade === null || isNaN(grade) || grade < 0 || grade > 10) {
-                alert('Παρακαλώ εισάγετε έναν έγκυρο βαθμό (0-10).');
-                return;
-            }
-
-            try {
-                const response = await fetch(`/api/professor/theses/${thesisId}/grade`, {
-                    method: 'PUT',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ grade, grade_details: gradeDetails })
-                });
-                const result = await response.json();
-                alert(result.message);
-                if (response.ok) {
-                    viewThesisDetails(thesisId); // Refresh modal content
-                    fetchProfessorTheses(); // Refresh main list
-                }
-            } catch (error) {
-                console.error('Error saving grade:', error);
-                alert('Αδυναμία επικοινωνίας με τον server κατά την αποθήκευση βαθμού.');
-            }
-        }
-
-        async function generatePresentationAnnouncement(thesisId) {
-            try {
-                const response = await fetch(`/api/professor/theses/${thesisId}/announcement`);
-                const result = await response.json();
-                if (response.ok) {
-                    alert(result.message);
-                    if (result.announcementUrl) {
-                        // In a real app, you'd open this URL to view/download the generated PDF
-                        // window.open(result.announcementUrl, '_blank');
-                    }
-                } else {
-                    alert(result.message || 'Σφάλμα κατά τη δημιουργία ανακοίνωσης.');
-                }
-            } catch (error) {
-                console.error('Error generating announcement:', error);
-                alert('Αδυναμία επικοινωνίας με τον server για δημιουργία ανακοίνωσης.');
-            }
-        }
-
-        async function exportTheses(format) {
-            const statusFilter = document.getElementById('thesisStatusFilter').value;
-            const roleFilter = document.getElementById('thesisRoleFilter').value;
-            try {
-                const response = await fetch(`/api/professor/theses/export?format=${format}&status=${statusFilter}&role=${roleFilter}`);
-                if (response.ok) {
-                    const blob = await response.blob();
-                    const contentDisposition = response.headers.get('Content-Disposition');
-                    let filename = `theses_export_${Date.now()}.${format}`;
-                    if (contentDisposition && contentDisposition.includes('filename=')) {
-                         filename = contentDisposition.split('filename=')[1].trim().replace(/"/g, '');
-                    }
-
-                    const url = window.URL.createObjectURL(blob);
-                    const a = document.createElement('a');
-                    a.href = url;
-                    a.download = filename;
-                    document.body.appendChild(a);
-                    a.click();
-                    a.remove();
-                    window.URL.revokeObjectURL(url);
-                    alert(`Οι διπλωματικές εξήχθησαν επιτυχώς σε ${format.toUpperCase()}!`);
-                } else {
-                    const errorData = await response.json();
-                    alert(`Σφάλμα εξαγωγής: ${errorData.message}`);
-                }
-            } catch (error) {
-                console.error('Error exporting theses:', error);
-                alert('Αδυναμία επικοινωνίας με τον server για εξαγωγή διπλωματικών.');
-            }
-        }
-
-        // --- 4) Προβολή προσκλήσεων συμμετοχής σε τριμελή ---
-        async function fetchProfessorInvitations() {
-            try {
-                const response = await fetch('/api/professor/invitations');
-                const invitationsDiv = document.getElementById('professorInvitations');
-                if (response.ok) {
-                    const invitations = await response.json();
-                    renderProfessorInvitations(invitations);
-                } else {
-                    const errorData = await response.json();
-                    invitationsDiv.innerHTML = `<p style="color: red;">Σφάλμα φόρτωσης προσκλήσεων: ${errorData.message}</p>`;
-                }
-            } catch (error) {
-                console.error('Error fetching professor invitations:', error);
-                document.getElementById('professorInvitations').innerHTML = `<p style="color: red;">Αδυναμία επικοινωνίας με τον server.</p>`;
-            }
-        }
-
-        function renderProfessorInvitations(invitations) {
-            const invitationsDiv = document.getElementById('professorInvitations');
-            invitationsDiv.innerHTML = '';
-
-            if (invitations.length === 0) {
-                invitationsDiv.innerHTML = '<p>Δεν υπάρχουν εκκρεμείς προσκλήσεις συμμετοχής σε τριμελή επιτροπή.</p>';
-                return;
-            }
-
-            const ul = document.createElement('ul');
-            invitations.forEach(invitation => {
-                const li = document.createElement('li');
-                li.innerHTML = `
-                    <div>
-                        <h4>Πρόσκληση για Διπλωματική: "${escapeHtml(invitation.thesis_title)}"</h4>
-                        <p>Φοιτητής: ${escapeHtml(invitation.student_name)} ${escapeHtml(invitation.student_surname)}</p>
-                        <p>Επιβλέπων: ${escapeHtml(invitation.supervisor_name)} ${escapeHtml(invitation.supervisor_surname)}</p>
-                        <p>Κατάσταση: <strong>${translateInvitationStatus(invitation.status)}</strong></p>
-                    </div>
-                    <div class="invitation-actions">
-                        <button class="action-button primary" onclick="acceptInvitation(${invitation.invitation_id})">Αποδοχή</button>
-                        <button class="action-button danger" onclick="declineInvitation(${invitation.invitation_id})">Απόρριψη</button>
-                    </div>
-                `;
-                ul.appendChild(li);
-            });
-            invitationsDiv.appendChild(ul);
-        }
-
-        function translateInvitationStatus(status) {
-            const statusMap = {
-                'pending': 'Σε αναμονή',
-                'accepted': 'Αποδεκτή',
-                'declined': 'Απορρίφθηκε'
-            };
-            return statusMap[status] || status;
-        }
-
-        async function acceptInvitation(invitationId) {
-            try {
-                const response = await fetch(`/api/professor/invitations/${invitationId}/accept`, {
-                    method: 'POST'
-                });
-                const result = await response.json();
-                const messageElement = document.getElementById('invitationActionMessage');
-                if (response.ok) {
-                    messageElement.textContent = result.message;
-                    messageElement.style.color = 'green';
-                    fetchProfessorInvitations(); // Refresh list
-                    fetchProfessorTheses(); // Also refresh thesis list as status might change
-                } else {
-                    messageElement.textContent = result.message || 'Σφάλμα αποδοχής πρόσκλησης.';
-                    messageElement.style.color = 'red';
-                }
-            } catch (error) {
-                console.error('Error accepting invitation:', error);
-                document.getElementById('invitationActionMessage').textContent = 'Αδυναμία επικοινωνίας με τον server.';
-                document.getElementById('invitationActionMessage').style.color = 'red';
-            }
-        }
-
-        async function declineInvitation(invitationId) {
-            try {
-                const response = await fetch(`/api/professor/invitations/${invitationId}/decline`, {
-                    method: 'POST'
-                });
-                const result = await response.json();
-                const messageElement = document.getElementById('invitationActionMessage');
-                if (response.ok) {
-                    messageElement.textContent = result.message;
-                    messageElement.style.color = 'green';
-                    fetchProfessorInvitations(); // Refresh list
-                } else {
-                    messageElement.textContent = result.message || 'Σφάλμα απόρριψης πρόσκλησης.';
-                    messageElement.style.color = 'red';
-                }
-            } catch (error) {
-                console.error('Error declining invitation:', error);
-                document.getElementById('invitationActionMessage').textContent = 'Αδυναμία επικοινωνίας με τον server.';
-                document.getElementById('invitationActionMessage').style.color = 'red';
-            }
-        }
-
-        // --- 5) Προβολή στατιστικών ---
-        async function fetchProfessorStatistics() {
-            try {
-                const response = await fetch('/api/professor/statistics');
-                if (response.ok) {
-                    const stats = await response.json();
-                    renderProfessorStatistics(stats);
-                } else {
-                    const errorData = await response.json();
-                    document.getElementById('professorStats').innerHTML = `<p style="color: red;">Σφάλμα φόρτωσης στατιστικών: ${errorData.message}</p>`;
-                }
-            } catch (error) {
-                console.error('Error fetching professor statistics:', error);
-                document.getElementById('professorStats').innerHTML = `<p style="color: red;">Αδυναμία επικοινωνίας με τον server για στατιστικά.</p>`;
-            }
-        }
-
-        function renderProfessorStatistics(stats) {
-            // Destroy previous charts if any
-            const destroyChart = (chartId) => {
-                const existingChart = Chart.getChart(chartId);
-                if (existingChart) existingChart.destroy();
-            };
-
-            // 1. Συνολικές Διπλωματικές (Pie)
-            destroyChart('thesesCountPieChart');
-            const thesesCountCtx = document.getElementById('thesesCountPieChart').getContext('2d');
-            new Chart(thesesCountCtx, {
-                type: 'pie',
-                data: {
-                    labels: ['Επιβλέπων', 'Μέλος Επιτροπής'],
-                    datasets: [{
-                        data: [
-                            stats?.total_supervised ? stats.total_supervised : 0,
-                            stats?.total_committee_member ? stats.total_committee_member : 0
-                        ],
-                        backgroundColor: ['rgba(75, 192, 192, 0.7)', 'rgba(153, 102, 255, 0.7)'],
-                        borderColor: ['rgba(75, 192, 192, 1)', 'rgba(153, 102, 255, 1)'],
-                        borderWidth: 2
-                    }]
-                },
-                options: {
-                    responsive: false,
-                    plugins: { legend: { position: 'bottom' } }
-                }
-            });
-
-            // 2. Μέσος Χρόνος Περάτωσης (Pie)
-            destroyChart('avgTimePieChart');
-            const avgTimeCtx = document.getElementById('avgTimePieChart').getContext('2d');
-            new Chart(avgTimeCtx, {
-                type: 'pie',
-                data: {
-                    labels: ['Επιβλέπων', 'Μέλος Επιτροπής'],
-                    datasets: [{
-                        data: [
-                            stats?.avg_time_supervised ? parseFloat(stats.avg_time_supervised) : 0,
-                            stats?.avg_time_committee_member ? parseFloat(stats.avg_time_committee_member) : 0
-                        ],
-                        backgroundColor: ['rgba(255, 159, 64, 0.7)', 'rgba(54, 162, 235, 0.7)'],
-                        borderColor: ['rgba(255, 159, 64, 1)', 'rgba(54, 162, 235, 1)'],
-                        borderWidth: 2
-                    }]
-                },
-                options: {
-                    responsive: false,
-                    plugins: { legend: { position: 'bottom' } }
-                }
-            });
-
-            // 3. Μέσος Βαθμός (Pie)
-            destroyChart('avgGradePieChart');
-            const avgGradeCtx = document.getElementById('avgGradePieChart').getContext('2d');
-            new Chart(avgGradeCtx, {
-                type: 'pie',
-                data: {
-                    labels: ['Επιβλέπων', 'Μέλος Επιτροπής'],
-                    datasets: [{
-                        data: [
-                            stats?.avg_grade_supervised ? parseFloat(stats.avg_grade_supervised) : 0,
-                            stats?.avg_grade_committee_member ? parseFloat(stats.avg_grade_committee_member) : 0
-                        ],
-                        backgroundColor: ['rgba(75, 192, 192, 0.7)', 'rgba(255, 99, 132, 0.7)'],
-                        borderColor: ['rgba(75, 192, 192, 1)', 'rgba(255, 99, 132, 1)'],
-                        borderWidth: 2
-                    }]
-                },
-                options: {
-                    responsive: false,
-                    plugins: { legend: { position: 'bottom' } }
-                }
-            });
         }
 
 
@@ -1169,6 +1075,15 @@
                 "'": '&#039;'
             };
             return text.replace(/[&<>"']/g, function(m) { return map[m]; });
+        }
+
+        function translateInvitationStatus(status) {
+            const translations = {
+                'pending': 'Εκκρεμεί',
+                'accepted': 'Αποδεκτή',
+                'declined': 'Απορριφθείσα'
+            };
+            return translations[status] || status;
         }
 
         async function logout() {
@@ -1210,6 +1125,87 @@
                 fetchProfessorTheses();
             } else if (sectionId === 'stats-section') {
                 fetchProfessorStatistics();
+            }
+        }
+
+        // Fetch and render professor invitations
+        async function fetchProfessorInvitations() {
+            const invitationsDiv = document.getElementById('professorInvitations');
+            invitationsDiv.innerHTML = '<p>Φόρτωση προσκλήσεων...</p>';
+
+            try {
+                const response = await fetch('/api/professor/invitations');
+                if (response.ok) {
+                    const invitations = await response.json();
+                    renderProfessorInvitations(invitations);
+                } else {
+                    const errorData = await response.json();
+                    invitationsDiv.innerHTML = `<p style="color: red;">Σφάλμα φόρτωσης προσκλήσεων: ${errorData.message}</p>`;
+                }
+            } catch (error) {
+                console.error('Error fetching professor invitations:', error);
+                invitationsDiv.innerHTML = `<p style="color: red;">Αδυναμία επικοινωνίας με τον server.</p>`;
+            }
+        }
+
+        function renderProfessorInvitations(invitations) {
+            const invitationsDiv = document.getElementById('professorInvitations');
+            invitationsDiv.innerHTML = '';
+
+            if (!invitations || invitations.length === 0) {
+                invitationsDiv.innerHTML = '<p>Δεν υπάρχουν εκκρεμείς προσκλήσεις συμμετοχής σε τριμελή επιτροπή.</p>';
+                return;
+            }
+
+            const ul = document.createElement('ul');
+            invitations.forEach(invitation => {
+                const li = document.createElement('li');
+                li.innerHTML = `
+                    <div>
+                        <h4>Πρόσκληση για Διπλωματική: "${escapeHtml(invitation.thesis_title)}"</h4>
+                        <p>Φοιτητής: ${escapeHtml(invitation.student_name)} ${escapeHtml(invitation.student_surname)}</p>
+                        <p>Επιβλέπων: ${escapeHtml(invitation.supervisor_name)} ${escapeHtml(invitation.supervisor_surname)}</p>
+                        <p>Κατάσταση: <strong>${translateInvitationStatus(invitation.status)}</strong></p>
+                    </div>
+                    <div class="invitation-actions">
+                        <button class="action-button primary" onclick="acceptInvitation(${invitation.invitation_id})">Αποδοχή</button>
+                        <button class="action-button danger" onclick="declineInvitation(${invitation.invitation_id})">Απόρριψη</button>
+                    </div>
+                `;
+                ul.appendChild(li);
+            });
+            invitationsDiv.appendChild(ul);
+        }
+
+        function acceptInvitation(invitationId) {
+            handleInvitationAction(invitationId, 'accept');
+        }
+
+        function declineInvitation(invitationId) {
+            handleInvitationAction(invitationId, 'decline');
+        }
+
+        async function handleInvitationAction(invitationId, action) {
+            const invitationsDiv = document.getElementById('professorInvitations');
+            const actionText = action === 'accept' ? 'Αποδοχή' : 'Απόρριψη';
+            
+            try {
+                const response = await fetch(`/api/professor/invitations/${invitationId}/${action}`, {
+                    method: 'POST'
+                });
+
+                const result = await response.json();
+
+                if (response.ok) {
+                    invitationsDiv.innerHTML = `<p style="color: green;">Η πρόσκληση ${actionText.toLowerCase()}θηκε επιτυχώς!</p>`;
+                    // Refresh invitations after a short delay
+                    setTimeout(fetchProfessorInvitations, 2000);
+                } else {
+                    invitationsDiv.innerHTML = `<p style="color: red;">Σφάλμα κατά την ενέργεια "${actionText}": ${result.message}</p>`;
+                }
+            } catch (error) {
+                console.error(`Error during invitation ${action}:`, error);
+                invitationsDiv.innerHTML = `<p style="color: red;">Αδυναμία επικοινωνίας με τον server κατά την ενέργεια "${actionText}".</p>`;
             }
         }
     </script>

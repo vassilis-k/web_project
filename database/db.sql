@@ -120,11 +120,13 @@ DELIMITER ;
 CREATE TABLE progress_notes (
     id INT PRIMARY KEY AUTO_INCREMENT,
     thesis_id INT NOT NULL,
+    author_id INT NOT NULL,
     date DATE NOT NULL,
     description TEXT NOT NULL,
     file_url VARCHAR(500),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (thesis_id) REFERENCES thesis(id)
+    FOREIGN KEY (thesis_id) REFERENCES thesis(id),
+    FOREIGN KEY (author_id) REFERENCES users(id)
 );
 
 CREATE TABLE thesis_announcements (
@@ -143,11 +145,34 @@ DROP TABLE progress_notes;
 CREATE TABLE progress_notes (
     id INT PRIMARY KEY AUTO_INCREMENT,
     thesis_id INT NOT NULL,
+    author_id INT NOT NULL,
     date DATE NOT NULL,
     description TEXT NOT NULL,
     file_url VARCHAR(500),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (thesis_id) REFERENCES thesis(id)
+    FOREIGN KEY (thesis_id) REFERENCES thesis(id),
+    FOREIGN KEY (author_id) REFERENCES users(id)
+);
+
+CREATE TABLE thesis_log (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    thesis_id INT NOT NULL,
+    user_id INT,
+    action VARCHAR(255) NOT NULL,
+    details TEXT,
+    timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (thesis_id) REFERENCES thesis(id) ON DELETE CASCADE,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL
+);
+
+CREATE TABLE professor_notes (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    thesis_id INT NOT NULL,
+    professor_id INT NOT NULL,
+    note TEXT NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (thesis_id) REFERENCES thesis(id) ON DELETE CASCADE,
+    FOREIGN KEY (professor_id) REFERENCES users(id) ON DELETE CASCADE
 );
 
 CREATE INDEX idx_thesis_announcements_date ON thesis_announcements(announcement_date);

@@ -124,3 +124,14 @@ update users set email = replace(email, "@prof.upatras.gr", "@ac.upatras.gr") wh
 
 select * from users where role="professor";
 select * from users where role="student";
+
+select * from thesis;
+
+-- test
+
+ALTER TABLE thesis
+ADD COLUMN presentation_mode ENUM('in_person', 'remote') AFTER presentation_location,
+ADD COLUMN draft_file_url VARCHAR(500) AFTER presentation_mode,
+ADD COLUMN extra_material_url VARCHAR(500) AFTER draft_file_url,
+ADD COLUMN presentation_details_locked BOOLEAN DEFAULT FALSE AFTER extra_material_url;
+

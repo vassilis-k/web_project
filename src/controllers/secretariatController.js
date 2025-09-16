@@ -1,13 +1,59 @@
 const Thesis = require('../models/thesisModel');
-const User = require('../models/userModel'); // Για μελλοντική εισαγωγή χρηστών
+const User = require('../models/userModel');
+const bcrypt = require('bcryptjs');
+
+// 2) Εισαγωγή δεδομένων: Δίνεται η δυνατότητα εισαγωγής αρχείου JSON που περιλαμβάνει τις προσωπικές πληροφορίες των φοιτητών και διδασκόντων.
+exports.importUsers = async (req, res) => {
+    if (!req.file) {
+        return res.status(400).json({ message: 'Δεν επιλέχθηκε αρχείο.' });
+    }
+
+    try {
+        const fileContent = req.file.buffer.toString('utf8');
+        const users = JSON.parse(fileContent);
+
+        if (!Array.isArray(users)) {
+            return res.status(400).json({ message: 'Το αρχείο JSON πρέπει να περιέχει έναν πίνακα χρηστών.' });
+        }
+
+        // Hash passwords before inserting
+        const usersToInsert = await Promise.all(users.map(async (user) => {
+            if (!user.password) {
+                // You might want to assign a default password or skip the user
+                console.warn(`User ${user.email} has no password. Skipping password hashing.`);
+                return user;
+            }
+            const salt = await bcrypt.genSalt(10);
+            const hashedPassword = await bcrypt.hash(user.password, salt);
+            return {
+                ...user,
+                password: hashedPassword,
+            };
+        }));
+
+        const result = await User.bulkInsertOrUpdate(usersToInsert);
+
+        res.status(201).json({ 
+            message: `Η εισαγωγή ολοκληρώθηκε. ${result.inserted} νέοι χρήστες προστέθηκαν, ${result.updated} χρήστεes ενημερώθηκαν.`,
+            ...result 
+        });
+
+    } catch (error) {
+        console.error('Error importing users:', error);
+        if (error instanceof SyntaxError) {
+            return res.status(400).json({ message: 'Μη έγκυρη μορφή JSON.' });
+        }
+        res.status(500).json({ message: 'Σφάλμα server κατά την εισαγωγή των χρηστών.' });
+    }
+};
 
 // 1) Προβολή ΔΕ: Προβάλλονται όλες οι ΔΕ που είναι σε κατάσταση «Ενεργή» και «Υπό Εξέταση».
-exports.getSecretariatTheses = async (req, res) => {
+exports.getThesesForOverview = async (req, res) => {
     try {
-        const theses = await Thesis.getSecretariatTheses();
+        const theses = await Thesis.getSecretariatThesesWithDetails();
         res.status(200).json(theses);
     } catch (error) {
-        console.error('Error in getSecretariatTheses:', error);
+        console.error('Error in getThesesForOverview:', error);
         res.status(500).json({ message: 'Σφάλμα server κατά την ανάκτηση διπλωματικών.' });
     }
 };
@@ -72,11 +118,4 @@ exports.completeThesis = async (req, res) => {
         console.error('Error in completeThesis:', error);
         res.status(500).json({ message: 'Σφάλμα server κατά την ολοκλήρωση της διπλωματικής.' });
     }
-};
-
-// 2) Εισαγωγή δεδομένων: placeholder για αργότερα
-exports.importUserData = async (req, res) => {
-    // Η λογική για την εισαγωγή JSON θα έρθει εδώ
-    // Θα περιλαμβάνει διάβασμα αρχείου JSON, επικύρωση και εισαγωγή χρηστών στη βάση.
-    res.status(501).json({ message: 'Η λειτουργία εισαγωγής δεδομένων δεν έχει υλοποιηθεί ακόμα.' });
 };
