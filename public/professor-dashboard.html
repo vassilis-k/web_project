@@ -125,8 +125,8 @@
 
                 <button onclick="fetchProfessorTheses()" class="filter-btn">Εφαρμογή Φίλτρων</button>
                 <div class="export-buttons">
-                    <button class="export-btn">Εξαγωγή σε JSON</button>
-                    <button class="export-btn">Εξαγωγή σε CSV</button>
+                    <button class="export-btn" type="button" onclick="exportTable('json')">Εξαγωγή σε JSON</button>
+                    <button class="export-btn" type="button" onclick="exportTable('csv')">Εξαγωγή σε CSV</button>
                 </div>
             </div>
             <div id="professorThesesList" class="thesis-list-table">
@@ -143,20 +143,20 @@
             <p id="invitationActionMessage" class="error-message"></p>
         </section>
 
-        <section id="stats-section" class="section-content" style="display: none;">
+        <section id="stats-section" class="section-content">
             <h3>Στατιστικά</h3>
             <div class="stats-charts-row">
                 <div class="stats-chart-box">
                     <h4>Συνολικές Διπλωματικές</h4>
-                    <canvas id="thesesCountPieChart" width="300" height="300"></canvas>
+                    <canvas id="totalThesesChart"></canvas>
                 </div>
                 <div class="stats-chart-box">
                     <h4>Μέσος Χρόνος Περάτωσης (Ημέρες)</h4>
-                    <canvas id="avgTimePieChart" width="300" height="300"></canvas>
+                    <canvas id="avgCompletionTimeChart"></canvas>
                 </div>
                 <div class="stats-chart-box stats-chart-box-center">
                     <h4>Μέσος Βαθμός</h4>
-                    <canvas id="avgGradePieChart" width="300" height="300"></canvas>
+                    <canvas id="avgGradeChart"></canvas>
                 </div>
             </div>
         </section>
@@ -699,18 +699,14 @@
                     ${theses.map(thesis => `
                         <tr>
                             <td>${escapeHtml(thesis.title)}</td>
-                            <td>${thesis.student_name ? `${escapeHtml(thesis.student_name)} ${escapeHtml(thesis.student_surname)}` : 'N/A'}</td>
-                            <td>${escapeHtml(thesis.supervisor_name)} ${escapeHtml(thesis.supervisor_surname)}</td>
-                            <td>${thesis.committee_members_parsed.map(m => `${escapeHtml(m.name)}`).join(', ') || 'N/A'}</td>
-                            <td>${thesis.committee_invitations_full ? thesis.committee_invitations_full.split(',').map(inv => {
-                                const parts = inv.split(':');
-                                if (parts.length === 3) return `${escapeHtml(parts[1])} (${translateInvitationStatus(parts[2])})`;
-                                return 'Invalid Invitation Data'; // Fallback for malformed data
-                            }).join(', ') : 'N/A'}</td>
+                            <td>${thesis.student_name || 'N/A'}</td>
+                            <td>${thesis.supervisor_name}</td>
+                            <td>${thesis.committee_members || 'N/A'}</td>
+                            <td>${thesis.committee_status === 'completed' ? 'Ολοκληρωμένες' : 'Εκκρεμείς'}</td>
                             <td>${translateThesisStatus(thesis.status)}</td>
                             <td>${thesis.final_grade !== null ? thesis.final_grade : 'N/A'}</td>
                             <td>
-                                <button class="action-button info" onclick="viewThesisDetails(${thesis.id})">Προβολή</button>
+                                <button class="action-button info" onclick="viewThesisDetails(${thesis.thesis_id})">Προβολή</button>
                             </td>
                         </tr>
                     `).join('')}
@@ -1208,6 +1204,89 @@
                 invitationsDiv.innerHTML = `<p style="color: red;">Αδυναμία επικοινωνίας με τον server κατά την ενέργεια "${actionText}".</p>`;
             }
         }
+
+        // Function to export theses
+        async function exportTheses(format) {
+            const statusFilter = document.getElementById('thesisStatusFilter').value;
+            const roleFilter = document.getElementById('thesisRoleFilter').value;
+
+            try {
+                const response = await fetch(`/api/professor/export-theses?format=${format}&status=${statusFilter}&role=${roleFilter}`);
+
+                if (!response.ok) {
+                    throw new Error('Failed to export theses');
+                }
+
+                const blob = await response.blob();
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `theses_export_${Date.now()}.${format}`;
+                document.body.appendChild(a);
+                a.click();
+                a.remove();
+            } catch (error) {
+                console.error('Error exporting theses:', error);
+                // alert('Σφάλμα κατά την εξαγωγή των διπλωματικών.');
+            }
+        }
+
+        function exportTable(format, event) {
+    if (event) {
+        event.preventDefault(); // Prevent default behavior if triggered by a form or link
+    }
+
+    const table = document.querySelector('#professorThesesList table');
+    if (!table) {
+        alert('Δεν υπάρχουν δεδομένα για εξαγωγή.');
+        return;
+    }
+
+    // Extract table headers and rows
+    const headers = Array.from(table.querySelectorAll('thead th'))
+        .map(th => th.textContent.trim())
+        .filter(header => header !== 'Ενέργειες'); // Exclude "Ενέργειες" column
+
+    const rows = Array.from(table.querySelectorAll('tbody tr')).map(row => {
+        return Array.from(row.querySelectorAll('td'))
+            .map((td, index) => {
+                // Skip the "Ενέργειες" column
+                if (headers[index] === 'Ενέργειες') return null;
+                return td.textContent.trim();
+            })
+            .filter(cell => cell !== null);
+    });
+
+    if (format === 'csv') {
+        // Convert to CSV
+        const csvContent = [headers.join(','), ...rows.map(row => row.join(','))].join('\n');
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `theses_export_${Date.now()}.csv`;
+        a.click();
+        URL.revokeObjectURL(url);
+    } else if (format === 'json') {
+        // Convert to JSON
+        const jsonContent = rows.map(row => {
+            const obj = {};
+            headers.forEach((header, index) => {
+                obj[header] = row[index];
+            });
+            return obj;
+        });
+        const blob = new Blob([JSON.stringify(jsonContent, null, 2)], { type: 'application/json;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `theses_export_${Date.now()}.json`;
+        a.click();
+        URL.revokeObjectURL(url);
+    } else {
+        alert('Μη υποστηριζόμενη μορφή εξαγωγής.');
+    }
+}
     </script>
 </body>
 </html>

@@ -26,12 +26,13 @@
     <div class="announcements-container">
         <div style="display: flex; align-items: center; justify-content: space-between;">
             <h2>Ανακοινώσεις</h2>
+            <div id="datePickerContainer">
+                <input type="date" id="datePicker" onchange="filterAnnouncementsByDate(this.value)">
+            </div>
+            <br>
             <button class="date-picker-btn" onclick="toggleDatePicker()">Επιλογή Ημ/νιας</button>
         </div>
-        <div id="datePickerContainer" style="display: none; text-align: center; margin: 20px 0;">
-            <label for="datePicker" style="font-size: 1rem; color: #333; font-weight: 600;">Επιλέξτε Ημερομηνία:</label>
-            <input type="date" id="datePicker" class="styled-date-picker" onchange="filterAnnouncementsByDate(this.value)">
-        </div>
+        
     </div>
     <script>
         let currentPage = 1; 

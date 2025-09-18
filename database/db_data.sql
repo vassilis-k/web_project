@@ -61,11 +61,11 @@ update thesis set supervisor_id = 4, student_id = 13 where id = 9;
 -- completed
 INSERT INTO thesis (title, description, status, supervisor_id, student_id, assignment_date, final_grade)
 VALUES
-('Ανάπτυξη Web Εφαρμογής', 'Υλοποίηση web εφαρμογής για διαχείριση δεδομένων.', 'completed', 14, 5, CURDATE(), 9),
-('Βελτιστοποίηση Αλγορίθμων', 'Μελέτη και βελτιστοποίηση αλγορίθμων ταξινόμησης.', 'completed', 15, 6, CURDATE(), 10),
+('Ανάπτυξη Web Εφαρμογής', 'Υλοποίηση web εφαρμογής για διαχείριση δεδομένων.', 'completed', 11, 5, CURDATE(), 9),
+('Βελτιστοποίηση Αλγορίθμων', 'Μελέτη και βελτιστοποίηση αλγορίθμων ταξινόμησης.', 'completed', 11, 6, CURDATE(), 10),
 ('Ανάπτυξη Εφαρμογής Android', 'Σχεδίαση και υλοποίηση εφαρμογής Android για εκπαιδευτικούς σκοπούς.', 'completed', 11, 8, CURDATE(), 8),
 ('Ανάλυση Δικτύων Κοινωνικής Δικτύωσης', 'Μελέτη και ανάλυση δεδομένων από κοινωνικά δίκτυα.', 'completed', 12, 9, CURDATE(), 9),
-('Σχεδίαση Αλγορίθμων Βελτιστοποίησης', 'Ανάπτυξη και αξιολόγηση αλγορίθμων βελτιστοποίησης.', 'completed', 13, 10, CURDATE(), 10),
+('Σχεδίαση Αλγορίθμων Βελτιστοποίησης', 'Ανάπτυξη και αξιολόγηση αλγορίθμων βελτιστοποίησης.', 'completed', 11, 10, CURDATE(), 10),
 ('Αυτόματη Εξαγωγή Πληροφορίας', 'Υλοποίηση συστήματος αυτόματης εξαγωγής πληροφορίας από κείμενα.', 'completed', 14, 3, CURDATE(), 8),
 ('Εφαρμογές Τεχνητής Νοημοσύνης', 'Ανάπτυξη εφαρμογών τεχνητής νοημοσύνης για ανάλυση δεδομένων.', 'completed', 15, 4, CURDATE(), 9);
 
@@ -135,3 +135,33 @@ ADD COLUMN draft_file_url VARCHAR(500) AFTER presentation_mode,
 ADD COLUMN extra_material_url VARCHAR(500) AFTER draft_file_url,
 ADD COLUMN presentation_details_locked BOOLEAN DEFAULT FALSE AFTER extra_material_url;
 
+update thesis 
+set supervisor_id = 11
+where final_grade = 8;
+
+update thesis 
+set supervisor_id = 11
+where final_grade = 10;
+
+INSERT INTO committee_members (thesis_id, professor_id, role)
+VALUES
+(9, 12, 'member'), -- Member 1
+(9, 13, 'member'), -- Member 2
+(9, 14, 'member'), -- Member 3
+
+(10, 12, 'member'), -- Member 1
+(10, 13, 'member'), -- Member 2
+(10, 15, 'member'), -- Member 3
+
+(11, 12, 'member'), -- Member 1
+(11, 14, 'member'), -- Member 2
+(11, 15, 'member'), -- Member 3
+
+(13, 13, 'member'), -- Member 1
+(13, 14, 'member'), -- Member 2
+(13, 15, 'member'); -- Member 3
+
+INSERT INTO committee_members (thesis_id, professor_id, role)
+VALUES
+(12, 11, 'member'), 
+(14, 11, 'member');

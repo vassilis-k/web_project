@@ -134,6 +134,7 @@ button:hover {
 .error-message {
     color: red;
     margin-top: 10px;
+    background-color: transparent; 
 }
 
 .login-header-btn,
@@ -345,6 +346,7 @@ button:hover {
 .error-message {
     color: red;
     margin-top: 10px;
+    background-color: transparent; /* Ensure no background color */
 }
 .thesis-list-table table {
     width: 100%;
@@ -1192,9 +1194,9 @@ button:hover {
 }
 
 .error-message {
-    background-color: #f8d7da;
-    color: #721c24;
-    border: 1px solid #f5c6cb;
+    background-color: transparent; /* Ensure no background color */
+    color: red;
+    margin-top: 10px;
 }
 
 /* Progress Notes Section */
@@ -1818,4 +1820,39 @@ button:hover {
     .member-role {
         font-size: 11px;
     }
+}
+
+#datePickerContainer {
+    display: flex;
+    padding: 10px 15px;
+    border: 1px solid whitesmoke;
+    border-radius: 4px;
+    justify-content: center;
+    margin-top: 30px;
+}
+
+input[type="date"] {
+    background-color: rgba(122, 35, 39, 0.5);
+    padding: 15px;
+    position: center;
+    top: 50%;
+    left: 50%;
+    font-family: 'Open Sans', Arial, sans-serif !important;
+    color: #000000;
+    font-size: 18px;
+    border: none;
+    outline: none;
+    border-radius: 5px;
+}
+
+#datePicker:focus {
+    background-color: whitesmoke;
+    box-shadow: 0 0 8px rgba(124, 50, 50, 0.3);
+}
+
+::-webkit-calendar-picker-indicator {
+    background-color: #ffffff;
+    padding: 5px;
+    cursor: pointer;
+    border-radius: 3px;
 }

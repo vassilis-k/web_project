@@ -28,7 +28,7 @@ router.post('/unassign-topic', professorController.unassignTopic);
 // 3) Προβολή λίστας διπλωματικών (φιλτραρισμένες)
 router.get('/theses', professorController.getProfessorThesesList); // Χρησιμοποιεί το getProfessorRelatedThesesDetailed με filters
 router.get('/theses/:thesisId', professorController.getSingleThesisDetails); // Λεπτομέρειες για μία διπλωματική
-router.get('/theses/export', professorController.exportTheses); // Εξαγωγή
+// router.get('/theses/export', professorController.exportTheses); // Εξαγωγή
 
 // 4) Προβολή προσκλήσεων συμμετοχής σε τριμελή
 router.get('/invitations', professorController.getProfessorInvitations);
