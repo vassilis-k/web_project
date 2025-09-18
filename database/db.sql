@@ -1,3 +1,4 @@
+DROP DATABASE project_web_local;
 CREATE DATABASE IF NOT EXISTS project_web_local DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
 USE project_web_local;
@@ -138,20 +139,6 @@ CREATE TABLE thesis_announcements (
     announcement_text TEXT NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (thesis_id) REFERENCES thesis(id)
-);
-
-DROP TABLE progress_notes;
-
-CREATE TABLE progress_notes (
-    id INT PRIMARY KEY AUTO_INCREMENT,
-    thesis_id INT NOT NULL,
-    author_id INT NOT NULL,
-    date DATE NOT NULL,
-    description TEXT NOT NULL,
-    file_url VARCHAR(500),
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (thesis_id) REFERENCES thesis(id),
-    FOREIGN KEY (author_id) REFERENCES users(id)
 );
 
 CREATE TABLE thesis_log (

@@ -84,7 +84,7 @@
                     <input type="text" id="country" name="country">
                 </div>
                 <button type="submit">Αποθήκευση Προφίλ</button>
-                <p id="profileMessage" class="error-message"></p>
+                <p id="profileMessage" class="error-message" style="display: none;"></p>
             </form>
         </section>
     </div>
@@ -175,7 +175,7 @@
                 
                 let timeText = '';
                 if (diffMonths > 0) {
-                    timeText = `${diffMonths} μήνας${diffMonths > 1 ? 'ες' : ''}`;
+                    timeText = `${diffMonths} μήν${diffMonths > 1 ? 'ες' : 'ας'}`;
                     if (remainingDays > 0) {
                         timeText += ` και ${remainingDays} ημέρα${remainingDays > 1 ? 'ες' : ''}`;
                     }
@@ -454,41 +454,9 @@
                     </div>
                 `;
             } else if (thesis.status === 'active') {
-                thesisActionsDiv.innerHTML = `
-                    <div class="thesis-actions-container">
-                        <div class="actions-header">
-                            <h4><i class="icon">📝</i> Υποβολή Σημειώματος Προόδου</h4>
-                            <p class="actions-description">Καταγράψτε την πρόοδο της διπλωματικής σας εργασίας.</p>
-                        </div>
-                        <div class="form-section">
-                            <form id="progressNoteForm" class="modern-form" onsubmit="handleProgressNoteSubmit(event, ${thesis.id})">
-                                <div class="form-grid">
-                                    <div class="form-group">
-                                        <label for="progress_date"><i class="icon">📅</i> Ημερομηνία:</label>
-                                        <input type="date" id="progress_date" name="progress_date" required>
-                                    </div>
-                                    <div class="form-group full-width">
-                                        <label for="progress_description"><i class="icon">📄</i> Περιγραφή Προόδου:</label>
-                                        <textarea id="progress_description" name="progress_description" rows="4" required placeholder="Περιγράψτε την εργασία που έχετε ολοκληρώσει..."></textarea>
-                                    </div>
-                                    <div class="form-group">
-                                        <label for="progress_file"><i class="icon">📎</i> Αρχείο (προαιρετικό):</label>
-                                        <input type="file" id="progress_file" name="progress_file">
-                                    </div>
-                                </div>
-                                <button type="submit" class="action-btn primary large">
-                                    <i class="icon">📤</i> Υποβολή Σημειώματος
-                                </button>
-                                <div id="progressNoteMessage" class="message-area"></div>
-                            </form>
-                        </div>
-                        <div id="progressNotesList" class="progress-notes-section">
-                            <h5><i class="icon">📋</i> Ιστορικό Σημειωμάτων Προόδου</h5>
-                            <div class="loading-message">Φόρτωση σημειωμάτων...</div>
-                        </div>
-                    </div>
-                `;
-                fetchAndRenderProgressNotes(thesis.id);
+                // Σύμφωνα με τις προδιαγραφές, δεν εμφανίζουμε UI για σημειώματα προόδου.
+                // Στην αρχική φόρτωση θέλουμε να φαίνονται μόνο οι λεπτομέρειες της διπλωματικής.
+                thesisActionsDiv.innerHTML = '';
             } else if (thesis.status === 'under_review') {
                 if (thesis.presentation_details_locked) {
                     thesisActionsDiv.innerHTML = `
@@ -579,6 +547,10 @@
             try {
                 const response = await fetch(`/api/student/thesis/${thesisId}/progress-notes`);
                 const notesListDiv = document.getElementById('progressNotesList');
+                if (!notesListDiv) {
+                    // Το UI για σημειώματα δεν είναι ενεργό - δεν κάνουμε τίποτα.
+                    return;
+                }
                 if (response.ok) {
                     const notes = await response.json();
                     if (notes.length > 0) {

@@ -1,0 +1,55 @@
+/* =================
+   STATISTICS CHARTS STYLING
+   ================= */
+.stats-charts-row {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 25px;
+    margin-top: 25px;
+}
+
+.stats-chart-box {
+    background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
+    border: 1px solid #e0e0e0;
+    border-radius: 12px;
+    padding: 25px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    transition: all 0.3s ease;
+}
+
+.stats-chart-box:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 16px rgba(0,0,0,0.12);
+}
+
+.stats-chart-box h4 {
+    color: #7a2327;
+    font-size: 1.1rem;
+    font-weight: 600;
+    margin-bottom: 20px;
+    text-align: center;
+}
+
+.stats-chart-box canvas {
+    max-height: 250px;
+    width: 100% !important;
+    height: auto !important;
+}
+
+.stats-chart-box-center {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+}
+
+@media (max-width: 768px) {
+    .stats-charts-row {
+        grid-template-columns: 1fr;
+        gap: 20px;
+    }
+    
+    .stats-chart-box canvas {
+        max-height: 200px;
+    }
+}

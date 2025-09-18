@@ -3,7 +3,6 @@ const User = require('../models/userModel');
 const CommitteeInvitation = require('../models/committeeInvitationModel');
 const ProfessorNote = require('../models/professorNoteModel'); // Replaced ProgressNote
 const json2csv = require('json2csv').Parser; // Για εξαγωγή CSV
-const db = require('../config/db'); 
 
 // 1) Προβολή και Δημιουργία θεμάτων προς ανάθεση
 exports.getProfessorTopics = async (req, res) => {
@@ -173,7 +172,32 @@ exports.addProfessorNote = async (req, res) => {
     }
 };
 
+exports.exportTheses = async (req, res) => {
+    const { format, status, role } = req.query;
+    const professorId = req.session.userId;
 
+    try {
+        const theses = await Thesis.getProfessorRelatedThesesDetailed(professorId, { status, role });
+
+        if (format === 'csv') {
+            const fields = ['id', 'title', 'status', 'student_name', 'student_surname', 'supervisor_name', 'supervisor_surname', 'final_grade'];
+            const json2csvParser = new json2csv({ fields });
+            const csv = json2csvParser.parse(theses);
+            res.header('Content-Type', 'text/csv');
+            res.attachment(`theses_export_${Date.now()}.csv`);
+            return res.send(csv);
+        } else if (format === 'json') {
+            res.header('Content-Type', 'application/json');
+            res.attachment(`theses_export_${Date.now()}.json`);
+            return res.send(JSON.stringify(theses, null, 2));
+        } else {
+            return res.status(400).json({ message: 'Μη υποστηριζόμενη μορφή εξαγωγής. Επιλέξτε "csv" ή "json".' });
+        }
+    } catch (error) {
+        console.error('Error exporting theses:', error);
+        res.status(500).json({ message: 'Σφάλμα server κατά την εξαγωγή διπλωματικών.' });
+    }
+};
 
 // 4) Προβολή προσκλήσεων συμμετοχής σε τριμελή
 exports.getProfessorInvitations = async (req, res) => {
@@ -283,15 +307,33 @@ exports.cancelThesisBySupervisor = async (req, res) => {
 
 exports.saveProfessorGrade = async (req, res) => {
     const { thesisId } = req.params;
-    const { grade, grade_details } = req.body;
+    const { grade, gradeDetails } = req.body;
     const professorId = req.session.userId;
 
-    if (grade === undefined || grade < 0 || grade > 10) {
+    // Check for required parameters
+    if (!thesisId) {
+        return res.status(400).json({ message: 'Το ID της διπλωματικής είναι απαιτούμενο.' });
+    }
+
+    if (!professorId) {
+        return res.status(400).json({ message: 'Το ID του καθηγητή είναι απαιτούμενο.' });
+    }
+
+    if (grade === undefined || grade === null || grade === '' || isNaN(grade)) {
+        return res.status(400).json({ message: 'Ο βαθμός είναι υποχρεωτικός και πρέπει να είναι αριθμός.' });
+    }
+
+    const numericGrade = parseFloat(grade);
+    if (numericGrade < 0 || numericGrade > 10) {
         return res.status(400).json({ message: 'Ο βαθμός πρέπει να είναι μεταξύ 0 και 10.' });
     }
 
+    if (!gradeDetails || !gradeDetails.trim()) {
+        return res.status(400).json({ message: 'Οι λεπτομέρειες βαθμολογίας είναι υποχρεωτικές.' });
+    }
+
     try {
-        const isSaved = await Thesis.saveCommitteeMemberGrade(thesisId, professorId, grade, grade_details);
+        const isSaved = await Thesis.saveCommitteeMemberGrade(thesisId, professorId, numericGrade, gradeDetails.trim());
         if (isSaved) {
             res.status(200).json({ message: 'Ο βαθμός καταχωρήθηκε επιτυχώς!' });
         } else {
@@ -299,7 +341,7 @@ exports.saveProfessorGrade = async (req, res) => {
         }
     } catch (error) {
         console.error('Error saving professor grade:', error);
-        res.status(500).json({ message: 'Σφάλμα server κατά την καταχώριση βαθμού.' });
+        res.status(500).json({ message: error.message || 'Σφάλμα server κατά την καταχώριση βαθμού.' });
     }
 };
 
@@ -325,146 +367,11 @@ exports.generatePresentationAnnouncement = async (req, res) => {
 // 5) Προβολή στατιστικών
 exports.getProfessorStatistics = async (req, res) => {
     const professorId = req.session.userId;
-
     try {
-        const query = `
-            SELECT 
-                AVG(DATEDIFF(t.completion_date, t.assignment_date)) AS avg_completion_time_supervisor,
-                AVG(cm.grade) AS avg_grade_supervisor,
-                COUNT(t.id) AS total_theses_supervisor
-            FROM thesis t
-            LEFT JOIN committee_members cm ON t.id = cm.thesis_id
-            WHERE t.supervisor_id = ? AND t.status = 'completed';
-
-            SELECT 
-                AVG(DATEDIFF(t.completion_date, t.assignment_date)) AS avg_completion_time_member,
-                AVG(cm.grade) AS avg_grade_member,
-                COUNT(DISTINCT t.id) AS total_theses_member
-            FROM committee_members cm
-            LEFT JOIN thesis t ON cm.thesis_id = t.id
-            WHERE cm.professor_id = ? AND t.status = 'completed';
-        `;
-
-        const [supervisorStats, memberStats] = await db.query(query, [professorId, professorId]);
-
-        res.status(200).json({
-            avg_completion_time_supervisor: supervisorStats[0]?.avg_completion_time_supervisor || 0,
-            avg_grade_supervisor: supervisorStats[0]?.avg_grade_supervisor || 0,
-            total_theses_supervisor: supervisorStats[0]?.total_theses_supervisor || 0,
-            avg_completion_time_member: memberStats[0]?.avg_completion_time_member || 0,
-            avg_grade_member: memberStats[0]?.avg_grade_member || 0,
-            total_theses_member: memberStats[0]?.total_theses_member || 0,
-        });
+        const stats = await Thesis.getProfessorStatistics(professorId);
+        res.status(200).json(stats);
     } catch (error) {
         console.error('Error fetching professor statistics:', error);
         res.status(500).json({ message: 'Σφάλμα server κατά την ανάκτηση στατιστικών.' });
     }
 };
-
-exports.getProfessorTheses = async (req, res) => {
-    const { status, role } = req.query;
-    const professorId = req.session.userId;
-
-    try {
-        const query = `
-            SELECT 
-                t.id AS thesis_id,
-                t.title,
-                CONCAT(s.name, ' ', s.surname) AS student_name,
-                CONCAT(p.name, ' ', p.surname) AS supervisor_name,
-                GROUP_CONCAT(CONCAT(cm_prof.name, ' ', cm_prof.surname) SEPARATOR ', ') AS committee_members,
-                COUNT(cm.id) AS committee_count
-            FROM thesis t
-            LEFT JOIN users s ON t.student_id = s.id
-            LEFT JOIN users p ON t.supervisor_id = p.id
-            LEFT JOIN committee_members cm ON t.id = cm.thesis_id
-            LEFT JOIN users cm_prof ON cm.professor_id = cm_prof.id
-            WHERE t.supervisor_id = ?
-            GROUP BY t.id
-        `;
-
-        const params = [professorId];
-        if (status && status !== 'all') params.push(status);
-
-        const theses = await db.query(query, params);
-
-        const formattedTheses = theses.map(thesis => ({
-            ...thesis,
-            committee_status: thesis.committee_count >= 3 ? 'completed' : 'incomplete',
-        }));
-
-        res.status(200).json(formattedTheses);
-    } catch (error) {
-        console.error('Error fetching professor theses:', error);
-        res.status(500).json({ message: 'Σφάλμα server κατά την ανάκτηση διπλωματικών.' });
-    }
-};
-
-async function fetchProfessorStatistics() {
-    try {
-        const response = await fetch('/api/professor/statistics');
-        if (response.ok) {
-            const stats = await response.json();
-
-            // Render Total Theses Chart
-            const totalThesesCtx = document.getElementById('totalThesesChart').getContext('2d');
-            new Chart(totalThesesCtx, {
-                type: 'pie',
-                data: {
-                    labels: ['Επιβλέπων', 'Μέλος Επιτροπής'],
-                    datasets: [{
-                        data: [stats.total_theses_supervisor, stats.total_theses_member],
-                        backgroundColor: ['#007bff', '#28a745'],
-                    }]
-                },
-                options: {
-                    plugins: {
-                        legend: { display: true, position: 'bottom' }
-                    }
-                }
-            });
-
-            // Render Average Completion Time Chart
-            const avgCompletionTimeCtx = document.getElementById('avgCompletionTimeChart').getContext('2d');
-            new Chart(avgCompletionTimeCtx, {
-                type: 'pie',
-                data: {
-                    labels: ['Επιβλέπων', 'Μέλος Επιτροπής'],
-                    datasets: [{
-                        data: [stats.avg_completion_time_supervisor, stats.avg_completion_time_member],
-                        backgroundColor: ['#ffc107', '#17a2b8'],
-                    }]
-                },
-                options: {
-                    plugins: {
-                        legend: { display: true, position: 'bottom' }
-                    }
-                }
-            });
-
-            // Render Average Grade Chart
-            const avgGradeCtx = document.getElementById('avgGradeChart').getContext('2d');
-            new Chart(avgGradeCtx, {
-                type: 'pie',
-                data: {
-                    labels: ['Επιβλέπων', 'Μέλος Επιτροπής'],
-                    datasets: [{
-                        data: [stats.avg_grade_supervisor, stats.avg_grade_member],
-                        backgroundColor: ['#6f42c1', '#dc3545'],
-                    }]
-                },
-                options: {
-                    plugins: {
-                        legend: { display: true, position: 'bottom' }
-                    }
-                }
-            });
-        } else {
-            console.error('Error fetching statistics:', await response.json());
-            alert('Σφάλμα φόρτωσης στατιστικών.');
-        }
-    } catch (error) {
-        console.error('Error fetching statistics:', error);
-        alert('Αδυναμία επικοινωνίας με τον server.');
-    }
-}

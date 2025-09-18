@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Καθηγητής - Dashboard</title>
     <link rel="stylesheet" href="/css/style.css">
+    <link rel="stylesheet" href="/css/statistics.css">
     <!-- Chart.js for statistics -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     
@@ -24,20 +25,20 @@
             <div class="subtitle">Πανεπιστήμιο Πατρών</div>
         </div>
     </div>
-    <div class="dashboard-container">
-        <div class="dashboard-header">
+    <div class="student-dashboard-container">
+        <div class="student-dashboard-header">
             <h2 id="welcomeMessage">Καλωσήρθατε!</h2>
         </div>
-        <nav class="dashboard-nav">
-            <button class="dashboard-nav-btn" onclick="showSection('topics-section')">Διαχείριση Θεμάτων</button>
-            <button class="dashboard-nav-btn" onclick="showSection('assign-section')">Ανάθεση Θεμάτων</button>
-            <button class="dashboard-nav-btn" onclick="showSection('theses-list-section')">Οι Διπλωματικές μου</button>
-            <button class="dashboard-nav-btn" onclick="showSection('invitations-section')">Προσκλήσεις Επιτροπής</button>
-            <button class="dashboard-nav-btn" onclick="showSection('stats-section')">Στατιστικά</button>
+        <nav class="student-dashboard-nav">
+            <button class="student-dashboard-nav-btn" onclick="showSection('topics-section')">Διαχείριση Θεμάτων</button>
+            <button class="student-dashboard-nav-btn" onclick="showSection('assign-section')">Ανάθεση Θεμάτων</button>
+            <button class="student-dashboard-nav-btn" onclick="showSection('theses-list-section')">Οι Διπλωματικές μου</button>
+            <button class="student-dashboard-nav-btn" onclick="showSection('invitations-section')">Προσκλήσεις Επιτροπής</button>
+            <button class="student-dashboard-nav-btn" onclick="showSection('stats-section')">Στατιστικά</button>
         </nav>
 
         <!-- 1) Διαχείριση Θεμάτων (Δημιουργία/Προβολή/Επεξεργασία) -->
-        <section id="topics-section" class="section-content">
+        <section id="topics-section" class="student-section-content">
             <h3>Διαχείριση Θεμάτων προς Ανάθεση</h3>
             <h4>Δημιουργία Νέου Θέματος</h4>
             <form id="createTopicForm" class="topic-form">
@@ -54,7 +55,7 @@
                     <input type="file" id="newTopicPdfFile" name="pdfFile" accept=".pdf">
                 </div>
                 <button type="submit">Δημιουργία Θέματος</button>
-                <p id="createTopicMessage" class="error-message"></p>
+                <p id="createTopicMessage" class="error-message" style="display: none;"></p>
             </form>
 
             <h4>Υπάρχοντα Θέματα</h4>
@@ -64,7 +65,7 @@
         </section>
 
         <!-- 2) Αρχική ανάθεση θέματος σε φοιτητή -->
-        <section id="assign-section" class="section-content" style="display: none;">
+        <section id="assign-section" class="student-section-content" style="display: none;">
             <h3>Ανάθεση Θέματος σε Φοιτητές</h3>
             <div class="student-search">
                 <h4>Αναζήτηση Φοιτητή</h4>
@@ -73,7 +74,7 @@
                     <button onclick="searchStudents()">Αναζήτηση</button>
                 </div>
                 <div id="studentSearchResults" class="student-results"></div>
-                <p id="studentSearchMessage" class="error-message"></p>
+                <p id="studentSearchMessage" class="error-message" style="display: none;"></p>
             </div>
 
             <div class="assign-form">
@@ -88,7 +89,7 @@
                     <input type="hidden" id="selectedStudentId">
                 </div>
                 <button onclick="assignTopic()" class="assign-btn">Ανάθεση Θέματος</button>
-                <p id="assignTopicMessage" class="error-message"></p>
+                <p id="assignTopicMessage" class="error-message" style="display: none;"></p>
             </div>
 
             <div class="unassign-section" style="margin-top: 40px;">
@@ -97,18 +98,17 @@
                 <div id="underAssignmentList" class="topic-list">
                     <p>Φόρτωση λίστας...</p>
                 </div>
-                <p id="unassignMessage" class="error-message"></p>
+                <p id="unassignMessage" class="error-message" style="display: none;"></p>
             </div>
         </section>
 
         <!-- 3) Προβολή λίστας διπλωματικών -->
-        <section id="theses-list-section" class="section-content" style="display: none;">
+        <section id="theses-list-section" class="student-section-content" style="display: none;">
             <h3>Οι Διπλωματικές μου Εργασίες</h3>
             <div class="filter-controls">
                 <label for="thesisStatusFilter">Κατάσταση:</label>
                 <select id="thesisStatusFilter">
                     <option value="all">Όλες</option>
-                    <option value="available">Διαθέσιμη</option>
                     <option value="under_assignment">Υπό Ανάθεση</option>
                     <option value="active">Ενεργή</option>
                     <option value="under_review">Υπό Εξέταση</option>
@@ -135,15 +135,15 @@
         </section>
 
         <!-- 4) Προβολή προσκλήσεων συμμετοχής σε τριμελή -->
-        <section id="invitations-section" class="section-content" style="display: none;">
+        <section id="invitations-section" class="student-section-content" style="display: none;">
             <h3>Προσκλήσεις Συμμετοχής σε Τριμελή Επιτροπή</h3>
             <div id="professorInvitations" class="invitation-list">
                 <p>Φόρτωση προσκλήσεων...</p>
             </div>
-            <p id="invitationActionMessage" class="error-message"></p>
+            <p id="invitationActionMessage" class="error-message" style="display: none;"></p>
         </section>
 
-        <section id="stats-section" class="section-content">
+        <section id="stats-section" class="student-section-content" style="display: none;">
             <h3>Στατιστικά</h3>
             <div class="stats-charts-row">
                 <div class="stats-chart-box">
@@ -182,7 +182,7 @@
                         <p>Τρέχον αρχείο: <a id="currentPdfLink" href="#" target="_blank">Κανένα</a></p>
                     </div>
                     <button type="submit">Αποθήκευση Αλλαγών</button>
-                    <p id="editTopicMessage" class="error-message"></p>
+                    <p id="editTopicMessage" class="error-message" style="display: none;"></p>
                 </form>
             </div>
         </div>
@@ -195,9 +195,9 @@
                 <div id="modalThesisDetails">
                     <!-- Dynamic content will be loaded here -->
                 </div>
-                <div id="modalThesisActions" style="margin-top: 20px;">
-                    <h4>Ενέργειες Διαχείρισης</h4>
-                    <p id="thesisActionMessage" class="error-message"></p> <!-- New element for messages -->
+                <div id="modalThesisActions" style="margin-top: 20px; display: none;">
+                    <h4 id="thesisActionsHeader">Ενέργειες</h4>
+                    <p id="thesisActionMessage" class="error-message" style="display: none;"></p> <!-- New element for messages -->
                     <!-- Dynamic action buttons based on status and role -->
                     <div id="thesisDynamicActions"></div>
 
@@ -207,13 +207,12 @@
                         <p>Ο επιβλέπων μπορεί μόνο να δει τις προσκλήσεις που έχει στείλει ο φοιτητής.</p>
                     </div>
 
-
                     <!-- Notes Section -->
                     <div style="margin-top: 20px;">
                         <h5>Σημειώσεις (Μόνο για εσάς)</h5>
                         <textarea id="addNoteText" rows="3" maxlength="300" placeholder="Προσθέστε μια σημείωση (μέγ. 300 χαρακτήρες)"></textarea>
                         <button class="action-button primary" onclick="addNoteToThesis()">Προσθήκη Σημείωσης</button>
-                        <p id="noteMessage" class="error-message"></p>
+                        <p id="noteMessage" class="error-message" style="display: none;"></p>
                         <ul id="myNotesList" class="notes-list" style="margin-top: 10px;"></ul>
                     </div>
                 </div>
@@ -237,8 +236,41 @@
                         <input type="number" id="gsYearSupervisorInput" name="gs_year" required>
                     </div>
                     <button type="submit" class="action-button danger">Οριστική Ακύρωση</button>
-                    <p id="cancelBySupervisorMessage" class="error-message"></p>
+                    <p id="cancelBySupervisorMessage" class="error-message" style="display: none;"></p>
                 </form>
+            </div>
+        </div>
+
+        <!-- Grade Modal -->
+        <div id="gradeModal" class="modal">
+            <div class="modal-content">
+                <span class="close-button" onclick="closeModal('gradeModal')">&times;</span>
+                <h3 id="gradeModalTitle">Καταχώριση Βαθμού</h3>
+                <form onsubmit="event.preventDefault(); submitGrade();">
+                    <input type="hidden" id="gradeThesisId">
+                    <input type="hidden" id="gradeRole">
+                    <div class="form-group">
+                        <label for="gradeValue">Βαθμός (0-10):</label>
+                        <input type="number" id="gradeValue" min="0" max="10" step="0.1" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="gradeDetails">Λεπτομέρειες Βαθμολογίας:</label>
+                        <textarea id="gradeDetails" rows="4" required placeholder="Αναλυτικός σχολιασμός της βαθμολογίας..."></textarea>
+                    </div>
+                    <button type="submit" class="action-button primary">Καταχώριση Βαθμού</button>
+                </form>
+                <p id="gradeMessage" class="error-message" style="display: none;"></p>
+            </div>
+        </div>
+
+        <!-- Committee Grades Modal -->
+        <div id="committeeGradesModal" class="modal">
+            <div class="modal-content">
+                <span class="close-button" onclick="closeModal('committeeGradesModal')">&times;</span>
+                <h3>Βαθμοί Επιτροπής</h3>
+                <div id="committeeGradesContent">
+                    <!-- Content will be populated dynamically -->
+                </div>
             </div>
         </div>
 
@@ -246,6 +278,42 @@
     </div>
 
     <script>
+        // Utility functions for message handling
+        function showErrorMessage(elementId, message) {
+            const element = document.getElementById(elementId);
+            if (element) {
+                element.textContent = message;
+                element.className = 'error-message show';
+                element.style.display = 'block';
+            }
+        }
+
+        function showSuccessMessage(elementId, message) {
+            const element = document.getElementById(elementId);
+            if (element) {
+                element.textContent = message;
+                element.className = 'success-message show';
+                element.style.display = 'block';
+            }
+        }
+
+        function hideMessage(elementId) {
+            const element = document.getElementById(elementId);
+            if (element) {
+                element.textContent = '';
+                element.className = 'error-message';
+                element.style.display = 'none';
+            }
+        }
+
+        function clearAllMessages() {
+            document.querySelectorAll('.error-message, .success-message').forEach(element => {
+                element.textContent = '';
+                element.className = element.classList.contains('success-message') ? 'success-message' : 'error-message';
+                element.style.display = 'none';
+            });
+        }
+
         let availableTopics = []; // Global array for available topics
         let currentProfessorId = null; // To store the current logged-in professor's ID
         let currentProfessorRole = null; // To store the current logged-in professor's role
@@ -299,9 +367,10 @@
             document.getElementById('thesisStatusFilter').addEventListener('change', fetchProfessorTheses);
             document.getElementById('thesisRoleFilter').addEventListener('change', fetchProfessorTheses);
 
-            // Export buttons
-            document.querySelector('.export-buttons button:nth-of-type(1)').addEventListener('click', () => exportTheses('json'));
-            document.querySelector('.export-buttons button:nth-of-type(2)').addEventListener('click', () => exportTheses('csv'));
+            // Export buttons handled inline via exportTable('json'|'csv') to match on-screen filtered data
+
+            // Ensure default visible section is Topics and hide all others (including stats) on load
+            showSection('topics-section');
         });
 
         async function fetchUserInfo() {
@@ -673,10 +742,12 @@
         }
 
         function renderProfessorThesesTable(theses) {
+            // Ensure 'available' theses are not displayed in this view
+            const safeTheses = (theses || []).filter(t => t.status !== 'available');
             const thesesListDiv = document.getElementById('professorThesesList');
             thesesListDiv.innerHTML = '';
 
-            if (theses.length === 0) {
+            if (safeTheses.length === 0) {
                 thesesListDiv.innerHTML = '<p>Δεν υπάρχουν διπλωματικές εργασίες με αυτά τα κριτήρια.</p>';
                 return;
             }
@@ -688,25 +759,21 @@
                         <th>Τίτλος</th>
                         <th>Φοιτητής</th>
                         <th>Επιβλέπων</th>
-                        <th>Μέλη Επιτροπής</th>
-                        <th>Προσκλήσεις Επιτροπής</th>
                         <th>Κατάσταση</th>
                         <th>Βαθμός</th>
-                        <th>Ενέργειες</th>
+                        <th>Λεπτομέρειες</th>
                     </tr>
                 </thead>
                 <tbody>
-                    ${theses.map(thesis => `
+                    ${safeTheses.map(thesis => `
                         <tr>
                             <td>${escapeHtml(thesis.title)}</td>
-                            <td>${thesis.student_name || 'N/A'}</td>
-                            <td>${thesis.supervisor_name}</td>
-                            <td>${thesis.committee_members || 'N/A'}</td>
-                            <td>${thesis.committee_status === 'completed' ? 'Ολοκληρωμένες' : 'Εκκρεμείς'}</td>
+                            <td>${thesis.student_name ? escapeHtml(thesis.student_name + ' ' + (thesis.student_surname || '')) : 'N/A'}</td>
+                            <td>${thesis.supervisor_name ? escapeHtml(thesis.supervisor_name + ' ' + (thesis.supervisor_surname || '')) : ''}</td>
                             <td>${translateThesisStatus(thesis.status)}</td>
                             <td>${thesis.final_grade !== null ? thesis.final_grade : 'N/A'}</td>
                             <td>
-                                <button class="action-button info" onclick="viewThesisDetails(${thesis.thesis_id})">Προβολή</button>
+                                <button class="action-button info" onclick="viewThesisDetails(${thesis.id})">Προβολή</button>
                             </td>
                         </tr>
                     `).join('')}
@@ -812,25 +879,29 @@
             myNotesList.innerHTML = myNotesHtml;
 
             let actionLogHtml = '';
-            if (thesis.action_log && thesis.action_log.length > 0) {
-                actionLogHtml = `
-                    <div class="action-log-container">
-                        <h5>Χρονολόγιο Ενεργειών</h5>
-                        <ul class="action-log-list">
-                            ${thesis.action_log.map(log => `
-                                <li>
-                                    <p class="log-details">${escapeHtml(log.details)}</p>
-                                    <small class="log-meta">
-                                        ${new Date(log.timestamp).toLocaleString('el-GR')}
-                                        ${log.name ? ` από ${escapeHtml(log.name)} ${escapeHtml(log.surname)}` : ' (Από το σύστημα)'}
-                                    </small>
-                                </li>
-                            `).join('')}
-                        </ul>
-                    </div>
-                `;
+            if (parseInt(thesis.supervisor_id) === parseInt(currentProfessorId)) {
+                if (thesis.action_log && thesis.action_log.length > 0) {
+                    actionLogHtml = `
+                        <div class="action-log-container">
+                            <h5>Χρονολόγιο Ενεργειών</h5>
+                            <ul class="action-log-list">
+                                ${thesis.action_log.slice().reverse().map(log => `
+                                    <li>
+                                        <p class="log-details">${escapeHtml(log.details)}</p>
+                                        <small class="log-meta">
+                                            ${new Date(log.timestamp).toLocaleString('el-GR')}
+                                            ${log.name ? ` από ${escapeHtml(log.name)} ${escapeHtml(log.surname)}` : ' (Από το σύστημα)'}
+                                        </small>
+                                    </li>
+                                `).join('')}
+                            </ul>
+                        </div>
+                    `;
+                } else {
+                    actionLogHtml = '<p>Δεν υπάρχει ιστορικό ενεργειών για αυτή τη διπλωματική.</p>';
+                }
             } else {
-                actionLogHtml = '<p>Δεν υπάρχει ιστορικό ενεργειών για αυτή τη διπλωματική.</p>';
+                actionLogHtml = '';
             }
 
 
@@ -846,7 +917,8 @@
                 ${thesis.status === 'under_review' && thesis.presentation_date ? `<p><strong>Ημερομηνία Παρουσίασης:</strong> ${new Date(thesis.presentation_date).toLocaleString('el-GR')}</p>` : ''}
                 ${thesis.status === 'under_review' && thesis.presentation_location ? `<p><strong>Τοποθεσία Παρουσίασης:</strong> ${escapeHtml(thesis.presentation_location)}</p>` : ''}
                 ${thesis.final_grade !== null ? `<p><strong>Τελικός Βαθμός:</strong> ${thesis.final_grade}</p>` : ''}
-                ${thesis.repository_url ? `<p><strong>Σύνδεσμος Αποθετηρίου:</strong> <a href="${escapeHtml(thesis.repository_url)}" target="_blank">View</a></p>` : ''}
+                ${thesis.repository_url ? `<p><strong>Σύνδεσμος Αποθετηρίου:</strong> <a href="${thesis.repository_url}" target="_blank">Προβολή</a></p>` : ''}
+                ${thesis.draft_file_url ? `<p><strong>Κείμενο Διπλωματικής:</strong> <a href="${thesis.draft_file_url}" target="_blank">Προβολή PDF</a></p>` : ''}
                 ${thesis.cancellation_reason ? `<p style="color: red;"><strong>Ακυρωμένη:</strong> ${escapeHtml(thesis.cancellation_reason)}</p>` : ''}
                 ${finalCommitteeHtml}
                 ${pendingInvitationsHtml}
@@ -857,31 +929,74 @@
             const inviteMemberSection = document.getElementById('inviteMemberSection');
             inviteMemberSection.style.display = 'none'; // Hide by default
 
-            // Dynamic actions based on thesis status and professor's role            
-            if (parseInt(thesis.supervisor_id) === parseInt(currentProfessorId)) { // Only supervisor can perform these actions
+            // Dynamic actions based on thesis status and professor's role
+            let canDoActions = false;
+            const isProfessorSupervisor = parseInt(thesis.supervisor_id) === parseInt(currentProfessorId);
+            const isProfessorCommitteeMember = thesis.committee_members?.some(m => parseInt(m.professor_id) === parseInt(currentProfessorId) && m.professor_id !== thesis.supervisor_id);
+
+            if (isProfessorSupervisor) {
                 if (thesis.status === 'active') {
+                    canDoActions = true;
                     actionsDiv.innerHTML += `<button class="action-button primary" onclick="setThesisUnderReview(${thesis.id})">Μεταφορά σε "Υπό Εξέταση"</button>`;
-                    
                     // Check if 2 years have passed since assignment
                     const assignmentDate = new Date(thesis.assignment_date);
                     const twoYearsAgo = new Date();
                     twoYearsAgo.setFullYear(twoYearsAgo.getFullYear() - 2);
-                    
                     if (assignmentDate <= twoYearsAgo) {
-                        // 2 years have passed - show active button
                         actionsDiv.innerHTML += `<button class="action-button danger" onclick="openCancelThesisBySupervisorModal(${thesis.id}, '${thesis.assignment_date}')">Ακύρωση Ανάθεσης (2ετία)</button>`;
                     } else {
-                        // Less than 2 years - show disabled button with explanation
                         const monthsLeft = Math.ceil((twoYearsAgo - new Date()) / (30.44 * 24 * 60 * 60 * 1000) * -1);
                         actionsDiv.innerHTML += `<button class="action-button disabled" disabled title="Η ακύρωση επιτρέπεται μόνο μετά από 2 χρόνια από την ανάθεση. Απομένουν περίπου ${monthsLeft} μήνες.">Ακύρωση Ανάθεσης (2ετία)</button>`;
                     }
-                } else if (thesis.status === 'under_review' && thesis.presentation_date && thesis.presentation_location) {
-                    actionsDiv.innerHTML += `<button class="action-button info" onclick="generatePresentationAnnouncement(${thesis.id})">Δημιουργία Ανακοίνωσης Παρουσίασης</button>`;
+                } else if (thesis.status === 'under_review') {
+                    canDoActions = true;
+                    // Supervisor can generate presentation announcement only if presentation details are provided
+                    if (thesis.presentation_date && thesis.presentation_location) {
+                        actionsDiv.innerHTML += `<button class="action-button info" onclick="generatePresentationAnnouncement(${thesis.id})">Δημιουργία Ανακοίνωσης Παρουσίασης</button>`;
+                    }
+                    // Supervisor can submit grade
+                    actionsDiv.innerHTML += `<button class="action-button primary" onclick="openGradeModal(${thesis.id}, 'supervisor')">Καταχώριση Βαθμού Επιβλέποντα</button>`;
+                    // Show other committee grades to supervisor
+                    if (thesis.committee_members && thesis.committee_members.length > 0) {
+                        actionsDiv.innerHTML += `<button class="action-button info" onclick="showCommitteeGrades(${thesis.id})">Προβολή Βαθμών Επιτροπής</button>`;
+                    }
+                }
+            }
+
+            // Committee member actions for under_review status
+            if (isProfessorCommitteeMember && thesis.status === 'under_review') {
+                canDoActions = true;
+                actionsDiv.innerHTML += `<button class="action-button primary" onclick="openGradeModal(${thesis.id}, 'member')">Καταχώριση Βαθμού Μέλους</button>`;
+                // Show other committee grades to member
+                if (thesis.committee_members && thesis.committee_members.length > 0) {
+                    actionsDiv.innerHTML += `<button class="action-button info" onclick="showCommitteeGrades(${thesis.id})">Προβολή Βαθμών Επιτροπής</button>`;
+                }
+            }
+
+            // All professors (supervisor or committee member) can view thesis document for under_review status
+            if ((isProfessorSupervisor || isProfessorCommitteeMember) && thesis.status === 'under_review') {
+                if (!canDoActions) canDoActions = true; // Ensure actions section is shown
+                console.log('Draft File URL:', thesis.draft_file_url); // Debug log
+                if (thesis.draft_file_url && thesis.draft_file_url.trim()) {
+                    // Use draft_file_url for thesis document viewing
+                    actionsDiv.innerHTML += `<button class="action-button info" onclick="window.open('${escapeUrl(thesis.draft_file_url)}', '_blank')">Προβολή Κειμένου Διπλωματικής</button>`;
+                } else {
+                    actionsDiv.innerHTML += `<button class="action-button disabled" disabled title="Ο φοιτητής δεν έχει ανεβάσει ακόμα το κείμενο της διπλωματικής.">Προβολή Κειμένου Διπλωματικής</button>`;
                 }
             }
 
             // Hide the invitation section as professors can no longer invite
             inviteMemberSection.style.display = 'none';
+
+            // Show or hide the actions section based on permissions
+            const modalThesisActions = document.getElementById('modalThesisActions');
+            const thesisActionsHeader = document.getElementById('thesisActionsHeader');
+            if (canDoActions) {
+                modalThesisActions.style.display = 'block';
+                thesisActionsHeader.style.display = 'block';
+            } else {
+                modalThesisActions.style.display = 'none';
+            }
 
             // Add note functionality is always available
             document.getElementById('addNoteText').dataset.thesisId = thesis.id; // Store thesis ID for note
@@ -1041,6 +1156,113 @@
             }
         }
 
+        // Functions for grading
+        function openGradeModal(thesisId, role) {
+            document.getElementById('gradeThesisId').value = thesisId;
+            document.getElementById('gradeRole').value = role;
+            document.getElementById('gradeValue').value = '';
+            document.getElementById('gradeDetails').value = '';
+            document.getElementById('gradeMessage').textContent = '';
+            document.getElementById('gradeModalTitle').textContent = role === 'supervisor' ? 'Καταχώριση Βαθμού Επιβλέποντα' : 'Καταχώριση Βαθμού Μέλους Επιτροπής';
+            document.getElementById('gradeModal').style.display = 'block';
+        }
+
+        async function submitGrade() {
+            const thesisId = document.getElementById('gradeThesisId').value;
+            const grade = document.getElementById('gradeValue').value;
+            const gradeDetails = document.getElementById('gradeDetails').value;
+            const messageElement = document.getElementById('gradeMessage');
+
+            // Clear previous messages
+            messageElement.textContent = '';
+
+            // Validation
+            if (!thesisId) {
+                messageElement.textContent = 'Σφάλμα: Δεν βρέθηκε το ID της διπλωματικής.';
+                messageElement.style.color = 'red';
+                return;
+            }
+
+            if (!grade || grade === '' || isNaN(grade)) {
+                messageElement.textContent = 'Ο βαθμός είναι υποχρεωτικός και πρέπει να είναι αριθμός.';
+                messageElement.style.color = 'red';
+                return;
+            }
+
+            const numericGrade = parseFloat(grade);
+            if (numericGrade < 0 || numericGrade > 10) {
+                messageElement.textContent = 'Ο βαθμός πρέπει να είναι από 0 έως 10.';
+                messageElement.style.color = 'red';
+                return;
+            }
+
+            if (!gradeDetails || !gradeDetails.trim()) {
+                messageElement.textContent = 'Οι λεπτομέρειες βαθμολογίας είναι υποχρεωτικές.';
+                messageElement.style.color = 'red';
+                return;
+            }
+
+            try {
+                const response = await fetch(`/api/professor/theses/${thesisId}/grade`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ grade: numericGrade, gradeDetails: gradeDetails.trim() })
+                });
+                const result = await response.json();
+                if (response.ok) {
+                    messageElement.textContent = result.message;
+                    messageElement.style.color = 'green';
+                    setTimeout(() => {
+                        closeModal('gradeModal');
+                        viewThesisDetails(thesisId); // Refresh thesis details
+                    }, 1500);
+                } else {
+                    messageElement.textContent = result.message || 'Σφάλμα καταχώρισης βαθμού.';
+                    messageElement.style.color = 'red';
+                }
+            } catch (error) {
+                console.error('Error submitting grade:', error);
+                messageElement.textContent = 'Αδυναμία επικοινωνίας με τον server.';
+                messageElement.style.color = 'red';
+            }
+        }
+
+        async function showCommitteeGrades(thesisId) {
+            try {
+                const response = await fetch(`/api/professor/theses/${thesisId}`);
+                if (response.ok) {
+                    const thesis = await response.json();
+                    let gradesHtml = '';
+                    
+                    if (thesis.committee_members && thesis.committee_members.length > 0) {
+                        gradesHtml = '<ul>';
+                        thesis.committee_members.forEach(member => {
+                            const role = member.professor_id == thesis.supervisor_id ? 'Επιβλέπων' : 'Μέλος';
+                            const gradeText = member.grade !== null ? `${member.grade}/10` : 'Δεν έχει καταχωρηθεί';
+                            const detailsText = member.grade_details || '';
+                            gradesHtml += `
+                                <li>
+                                    <strong>${escapeHtml(member.name)} ${escapeHtml(member.surname)} (${role}):</strong> ${gradeText}
+                                    ${detailsText ? `<br><small>${escapeHtml(detailsText)}</small>` : ''}
+                                </li>
+                            `;
+                        });
+                        gradesHtml += '</ul>';
+                    } else {
+                        gradesHtml = '<p>Δεν υπάρχουν μέλη επιτροπής.</p>';
+                    }
+                    
+                    document.getElementById('committeeGradesContent').innerHTML = gradesHtml;
+                    document.getElementById('committeeGradesModal').style.display = 'block';
+                } else {
+                    alert('Σφάλμα φόρτωσης βαθμών επιτροπής.');
+                }
+            } catch (error) {
+                console.error('Error loading committee grades:', error);
+                alert('Αδυναμία φόρτωσης βαθμών επιτροπής.');
+            }
+        }
+
 
         // --- Utility functions ---
         function translateThesisStatus(status) {
@@ -1080,6 +1302,12 @@
                 'declined': 'Απορριφθείσα'
             };
             return translations[status] || status;
+        }
+
+        function escapeUrl(url) {
+            if (!url) return '';
+            // Only escape single quotes for use in onclick handlers
+            return url.replace(/'/g, "\\'");
         }
 
         async function logout() {
@@ -1242,24 +1470,22 @@
         return;
     }
 
-    // Extract table headers and rows
-    const headers = Array.from(table.querySelectorAll('thead th'))
-        .map(th => th.textContent.trim())
-        .filter(header => header !== 'Ενέργειες'); // Exclude "Ενέργειες" column
+    // Build header list and an index map excluding the "Ενέργειες" column
+    const ths = Array.from(table.querySelectorAll('thead th'));
+    const included = ths
+        .map((th, idx) => ({ text: th.textContent.trim(), idx }))
+        .filter(h => h.text !== 'Ενέργειες');
+    const headers = included.map(h => h.text);
 
+    // Extract rows using the included column indices
     const rows = Array.from(table.querySelectorAll('tbody tr')).map(row => {
-        return Array.from(row.querySelectorAll('td'))
-            .map((td, index) => {
-                // Skip the "Ενέργειες" column
-                if (headers[index] === 'Ενέργειες') return null;
-                return td.textContent.trim();
-            })
-            .filter(cell => cell !== null);
+        const tds = Array.from(row.querySelectorAll('td'));
+        return included.map(h => (tds[h.idx] ? tds[h.idx].textContent.trim() : ''));
     });
 
     if (format === 'csv') {
         // Convert to CSV
-        const csvContent = [headers.join(','), ...rows.map(row => row.join(','))].join('\n');
+        const csvContent = [headers.join(','), ...rows.map(row => row.map(v => v?.includes(',') ? '"' + v.replaceAll('"','""') + '"' : v).join(','))].join('\n');
         const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
@@ -1286,6 +1512,151 @@
     } else {
         alert('Μη υποστηριζόμενη μορφή εξαγωγής.');
     }
+}
+
+// Statistics functionality
+async function fetchProfessorStatistics() {
+    try {
+        const response = await fetch('/api/professor/statistics');
+        if (response.ok) {
+            const stats = await response.json();
+            renderStatistics(stats);
+        } else {
+            console.error('Error fetching statistics');
+            document.querySelector('#stats-section').innerHTML += '<p style="color: red;">Σφάλμα φόρτωσης στατιστικών.</p>';
+        }
+    } catch (error) {
+        console.error('Error fetching statistics:', error);
+        document.querySelector('#stats-section').innerHTML += '<p style="color: red;">Αδυναμία επικοινωνίας με τον server για στατιστικά.</p>';
+    }
+}
+
+function renderStatistics(stats) {
+    // Clear any existing charts
+    Chart.getChart('totalThesesChart')?.destroy();
+    Chart.getChart('avgCompletionTimeChart')?.destroy();
+    Chart.getChart('avgGradeChart')?.destroy();
+
+    // Total Theses Chart (Pie Chart for status distribution)
+    const totalCtx = document.getElementById('totalThesesChart').getContext('2d');
+    const statusLabels = {
+        'under_assignment': 'Υπό Ανάθεση',
+        'active': 'Ενεργές',
+        'under_review': 'Υπό Εξέταση',
+        'completed': 'Ολοκληρωμένες',
+        'cancelled': 'Ακυρωμένες'
+    };
+    
+    const statusData = stats.statusCounts.map(item => ({
+        label: statusLabels[item.status] || item.status,
+        value: item.count
+    }));
+
+    new Chart(totalCtx, {
+        type: 'pie',
+        data: {
+            labels: statusData.map(item => item.label),
+            datasets: [{
+                data: statusData.map(item => item.value),
+                backgroundColor: [
+                    '#ffc107', // under_assignment - yellow
+                    '#007bff', // active - blue  
+                    '#fd7e14', // under_review - orange
+                    '#28a745', // completed - green
+                    '#dc3545'  // cancelled - red
+                ],
+                borderColor: '#ffffff',
+                borderWidth: 2
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                legend: {
+                    position: 'bottom'
+                },
+                title: {
+                    display: true,
+                    text: `Σύνολο: ${stats.totalTheses} διπλωματικές`
+                }
+            }
+        }
+    });
+
+    // Average Completion Time Chart (Bar Chart)
+    const timeCtx = document.getElementById('avgCompletionTimeChart').getContext('2d');
+    new Chart(timeCtx, {
+        type: 'bar',
+        data: {
+            labels: ['Μέσος Χρόνος'],
+            datasets: [{
+                label: 'Ημέρες',
+                data: [stats.avgCompletionTime],
+                backgroundColor: ['#7a2327'],
+                borderColor: ['#a03a3e'],
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    title: {
+                        display: true,
+                        text: 'Ημέρες'
+                    }
+                }
+            },
+            plugins: {
+                legend: {
+                    display: false
+                },
+                title: {
+                    display: true,
+                    text: `${stats.avgCompletionTime} ημέρες κατά μέσο όρο`
+                }
+            }
+        }
+    });
+
+    // Average Grade Chart (Gauge-like Bar Chart)
+    const gradeCtx = document.getElementById('avgGradeChart').getContext('2d');
+    new Chart(gradeCtx, {
+        type: 'bar',
+        data: {
+            labels: ['Μέσος Βαθμός'],
+            datasets: [{
+                label: 'Βαθμός',
+                data: [parseFloat(stats.avgGrade)],
+                backgroundColor: [stats.avgGrade >= 7 ? '#28a745' : stats.avgGrade >= 5 ? '#ffc107' : '#dc3545'],
+                borderColor: ['#ffffff'],
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    max: 10,
+                    title: {
+                        display: true,
+                        text: 'Βαθμός (0-10)'
+                    }
+                }
+            },
+            plugins: {
+                legend: {
+                    display: false
+                },
+                title: {
+                    display: true,
+                    text: `${stats.avgGrade}/10`
+                }
+            }
+        }
+    });
 }
     </script>
 </body>

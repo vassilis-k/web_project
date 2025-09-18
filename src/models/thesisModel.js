@@ -88,7 +88,7 @@ class Thesis {
     static async getProfessorRelatedThesesDetailed(professor_id, filters = {}) {
         let query = `
             SELECT
-                t.id, t.title, t.description, t.description_pdf_url, t.status, t.assignment_date, t.presentation_date, t.repository_url, t.final_grade, t.cancellation_reason,
+                t.id, t.title, t.description, t.description_pdf_url, t.status, t.assignment_date, t.presentation_date, t.repository_url, t.draft_file_url, t.final_grade, t.cancellation_reason,
                 s.id AS student_id, s.name AS student_name, s.surname AS student_surname, s.email AS student_email,
                 sup.id AS supervisor_id, sup.name AS supervisor_name, sup.surname AS supervisor_surname, sup.email AS supervisor_email,
                 GROUP_CONCAT(DISTINCT CONCAT(cm_u.id, ':', cm_u.name, ' ', cm_u.surname, ':', cm.grade, ':', cm.grade_details)) AS committee_members_full,
@@ -120,7 +120,18 @@ class Thesis {
 
         try {
             const [rows] = await pool.execute(query, params);
-            return rows.map(row => {
+            // Only include theses where the professor is supervisor, or is a committee member, or has accepted an invitation
+            const filteredRows = rows.filter(row => {
+                // Supervisor
+                if (row.supervisor_id === professor_id) return true;
+                // Committee member
+                if (row.committee_members_full && row.committee_members_full.split(',').some(m => m.startsWith(professor_id + ':'))) return true;
+                // Accepted invitation
+                if (row.committee_invitations_full && row.committee_invitations_full.split(',').some(inv => inv.startsWith(professor_id + ':') && inv.endsWith(':accepted'))) return true;
+                // Otherwise, only invited (pending) -- skip
+                return false;
+            });
+            return filteredRows.map(row => {
                 // Parse committee members and invitations
                 row.committee_members_parsed = [];
                 if (row.committee_members_full) {
@@ -165,10 +176,12 @@ class Thesis {
                     s.name AS supervisor_name, s.surname AS supervisor_surname, s.email AS supervisor_email
                 FROM thesis t
                 JOIN users s ON t.supervisor_id = s.id
-                WHERE t.student_id = ?`,
+                WHERE t.student_id = ? AND t.status != 'cancelled'
+                ORDER BY t.assignment_date DESC, t.id DESC
+                LIMIT 1`,
                 [studentId]
             );
-            return rows[0]; // Ένας φοιτητής συνήθως έχει μία ενεργή διπλωματική
+            return rows[0] || null;
         } catch (error) {
             console.error('Error fetching thesis by student ID:', error);
             throw error;
@@ -550,9 +563,28 @@ class Thesis {
 
     // 6) Διαχείριση διπλωματικών - Υπό Εξέταση: Καταχώριση ατομικού βαθμού μέλους επιτροπής
     static async saveCommitteeMemberGrade(thesisId, professorId, grade, gradeDetails) {
+        // Validate parameters
+        if (!thesisId || !professorId || grade === undefined || grade === null || !gradeDetails) {
+            throw new Error('Όλα τα πεδία είναι υποχρεωτικά για την καταχώριση βαθμού.');
+        }
+
         const connection = await pool.getConnection();
         try {
             await connection.beginTransaction();
+            
+            // Check if thesis is under review and professor is committee member
+            const [thesisCheck] = await connection.execute(
+                `SELECT t.status, cm.professor_id 
+                 FROM thesis t 
+                 LEFT JOIN committee_members cm ON t.id = cm.thesis_id AND cm.professor_id = ?
+                 WHERE t.id = ?`,
+                [professorId, thesisId]
+            );
+            
+            if (!thesisCheck.length || thesisCheck[0].status !== 'under_review' || !thesisCheck[0].professor_id) {
+                throw new Error('Δεν έχετε δικαίωμα καταχώρισης βαθμού για αυτή τη διπλωματική.');
+            }
+            
             const [result] = await connection.execute(
                 'UPDATE committee_members SET grade = ?, grade_details = ? WHERE thesis_id = ? AND professor_id = ?',
                 [grade, gradeDetails, thesisId, professorId]
@@ -593,19 +625,29 @@ class Thesis {
     // New: Get a single thesis with full details (for modal view)
     static async getSingleThesisFullDetails(thesisId, professorId) {
         try {
+            // Check if professor is supervisor, committee member, or has accepted invitation
+            const [accessRows] = await pool.execute(
+                `SELECT t.id
+                 FROM thesis t
+                 LEFT JOIN committee_members cm ON t.id = cm.thesis_id AND cm.professor_id = ?
+                 LEFT JOIN committee_invitations ci ON t.id = ci.thesis_id AND ci.invited_professor_id = ? AND ci.status = 'accepted'
+                 WHERE t.id = ? AND (t.supervisor_id = ? OR cm.professor_id IS NOT NULL OR ci.id IS NOT NULL)`,
+                [professorId, professorId, thesisId, professorId]
+            );
+            if (!accessRows.length) return null;
+
             const [thesisRows] = await pool.execute(
                 `SELECT
                     t.id, t.title, t.description, t.description_pdf_url, t.status, t.assignment_date, t.presentation_date, t.presentation_location,
-                    t.repository_url, t.final_grade, t.cancellation_reason, t.gs_approval_protocol,
+                    t.repository_url, t.draft_file_url, t.final_grade, t.cancellation_reason, t.gs_approval_protocol,
                     s.id AS student_id, s.name AS student_name, s.surname AS student_surname, s.email AS student_email,
                     sup.id AS supervisor_id, sup.name AS supervisor_name, sup.surname AS supervisor_surname, sup.email AS supervisor_email
                 FROM thesis t
                 LEFT JOIN users s ON t.student_id = s.id
                 JOIN users sup ON t.supervisor_id = sup.id
-                WHERE t.id = ? AND (t.supervisor_id = ? OR EXISTS(SELECT 1 FROM committee_members cm WHERE cm.thesis_id = t.id AND cm.professor_id = ?))`,
-                [thesisId, professorId, professorId]
+                WHERE t.id = ?`,
+                [thesisId]
             );
-
             if (!thesisRows.length) return null;
             const thesis = thesisRows[0];
 
@@ -619,15 +661,19 @@ class Thesis {
             );
             thesis.committee_members = cmRows;
 
-            // Committee Invitations (New Addition)
-            const [invitationRows] = await pool.execute(
-                `SELECT ci.id AS invitation_id, ci.status, u.name, u.surname
-                 FROM committee_invitations ci
-                 JOIN users u ON ci.invited_professor_id = u.id
-                 WHERE ci.thesis_id = ?`,
-                [thesisId]
-            );
-            thesis.committee_invitations = invitationRows;
+            // Committee Invitations (Only supervisor can see all, others see none)
+            if (thesis.supervisor_id === professorId) {
+                const [invitationRows] = await pool.execute(
+                    `SELECT ci.id AS invitation_id, ci.status, u.name, u.surname
+                     FROM committee_invitations ci
+                     JOIN users u ON ci.invited_professor_id = u.id
+                     WHERE ci.thesis_id = ?`,
+                    [thesisId]
+                );
+                thesis.committee_invitations = invitationRows;
+            } else {
+                thesis.committee_invitations = [];
+            }
 
             // Notes (only visible to author, so fetch only for the requesting professorId)
             const ProfessorNote = require('./professorNoteModel'); // Local require to avoid circular dependency
@@ -635,7 +681,6 @@ class Thesis {
 
             // Fetch Action Timeline
             thesis.action_log = await ThesisLog.getByThesisId(thesisId);
-
 
             return thesis;
         } catch (error) {
@@ -771,6 +816,56 @@ class Thesis {
             throw error;
         } finally {
             connection.release();
+        }
+    }
+
+    // Statistics for professor dashboard
+    static async getProfessorStatistics(professorId) {
+        try {
+            // Total theses count by status for this professor
+            const [statusCounts] = await pool.execute(`
+                SELECT status, COUNT(*) as count 
+                FROM thesis 
+                WHERE supervisor_id = ? AND student_id IS NOT NULL
+                GROUP BY status
+            `, [professorId]);
+
+            // Average completion time for completed theses (in days)
+            const [avgTimeResult] = await pool.execute(`
+                SELECT AVG(DATEDIFF(
+                    CASE 
+                        WHEN presentation_date IS NOT NULL THEN presentation_date
+                        ELSE CURRENT_DATE 
+                    END, 
+                    assignment_date
+                )) as avg_days
+                FROM thesis 
+                WHERE supervisor_id = ? AND assignment_date IS NOT NULL AND status IN ('completed', 'under_review')
+            `, [professorId]);
+
+            // Average grade for completed theses
+            const [avgGradeResult] = await pool.execute(`
+                SELECT AVG(CAST(final_grade AS DECIMAL(3,1))) as avg_grade
+                FROM thesis 
+                WHERE supervisor_id = ? AND final_grade IS NOT NULL AND status = 'completed'
+            `, [professorId]);
+
+            // Total count of theses by supervisor
+            const [totalResult] = await pool.execute(`
+                SELECT COUNT(*) as total
+                FROM thesis 
+                WHERE supervisor_id = ? AND student_id IS NOT NULL
+            `, [professorId]);
+
+            return {
+                totalTheses: totalResult[0]?.total || 0,
+                statusCounts: statusCounts,
+                avgCompletionTime: Math.round(avgTimeResult[0]?.avg_days || 0),
+                avgGrade: parseFloat(avgGradeResult[0]?.avg_grade || 0).toFixed(1)
+            };
+        } catch (error) {
+            console.error('Error fetching professor statistics:', error);
+            throw error;
         }
     }
 }
