@@ -28,6 +28,8 @@ app.use(session({
 
 // Serve static files from the 'public' directory
 app.use(express.static(path.join(__dirname, '../public')));
+// Serve uploaded files (PDFs, drafts, notes)
+app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 
 // Auth routes (login/logout, user-info)
 app.use('/', authRoutes);

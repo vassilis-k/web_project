@@ -90,7 +90,7 @@ class Thesis {
         let query = `
             SELECT DISTINCT
                 t.id, t.title, t.description, t.description_pdf_url, t.status, t.assignment_date, 
-                t.presentation_date, t.repository_url, t.draft_file_url, t.final_grade, t.cancellation_reason,
+                t.presentation_date, t.repository_url, t.draft_file_url, t.grade, t.cancellation_reason,
                 s.id AS student_id, s.name AS student_name, s.surname AS student_surname, s.email AS student_email,
                 sup.id AS supervisor_id, sup.name AS supervisor_name, sup.surname AS supervisor_surname, sup.email AS supervisor_email,
                 GROUP_CONCAT(DISTINCT CONCAT(cm_u.id, ':', cm_u.name, ' ', cm_u.surname, ':', cm.grade, ':', cm.grade_details)) AS committee_members_full,
@@ -473,7 +473,7 @@ class Thesis {
         try {
             await connection.beginTransaction();
             const [result] = await connection.execute(
-                'UPDATE thesis SET status = "completed" WHERE id = ? AND status = "under_review" AND final_grade IS NOT NULL AND repository_url IS NOT NULL',
+                'UPDATE thesis SET status = "completed" WHERE id = ? AND status = "under_review" AND grade IS NOT NULL AND repository_url IS NOT NULL',
                 [thesisId]
             );
             if (result.affectedRows > 0) {
@@ -497,7 +497,7 @@ class Thesis {
         try {
             await connection.beginTransaction();
             const [result] = await connection.execute(
-                'UPDATE thesis SET final_grade = ? WHERE id = ?',
+                'UPDATE thesis SET grade = ? WHERE id = ?',
                 [grade, thesisId]
             );
             if (result.affectedRows > 0) {
@@ -640,7 +640,7 @@ class Thesis {
             const [thesisRows] = await pool.execute(
                 `SELECT
                     t.id, t.title, t.description, t.description_pdf_url, t.status, t.assignment_date, t.presentation_date, t.presentation_location,
-                    t.repository_url, t.draft_file_url, t.final_grade, t.cancellation_reason, t.gs_approval_protocol,
+                    t.repository_url, t.draft_file_url, t.grade, t.cancellation_reason, t.gs_approval_protocol,
                     s.id AS student_id, s.name AS student_name, s.surname AS student_surname, s.email AS student_email,
                     sup.id AS supervisor_id, sup.name AS supervisor_name, sup.surname AS supervisor_surname, sup.email AS supervisor_email
                 FROM thesis t
@@ -665,10 +665,10 @@ class Thesis {
             // Attach current viewer id for frontend logic (e.g., hide grade button if already graded)
             thesis.viewer_professor_id = professorId;
 
-            // Committee Invitations (Only supervisor can see all, others see none)
+            // Committee Invitations (Only supervisor can see all; others: accepted only if under_assignment maybe; keep empty for simplicity)
             if (thesis.supervisor_id === professorId) {
                 const [invitationRows] = await pool.execute(
-                    `SELECT ci.id AS invitation_id, ci.status, u.name, u.surname
+                    `SELECT ci.id AS invitation_id, ci.status, u.name, u.surname, u.email
                      FROM committee_invitations ci
                      JOIN users u ON ci.invited_professor_id = u.id
                      WHERE ci.thesis_id = ?`,
@@ -676,21 +676,12 @@ class Thesis {
                 );
                 thesis.committee_invitations = invitationRows;
             } else {
-
-                // Prevent multiple submissions
-                if (thesisCheck[0].existing_grade !== null && thesisCheck[0].existing_grade !== undefined) {
-                    throw new Error('Έχετε ήδη καταχωρήσει βαθμό. Η επανυποβολή δεν επιτρέπεται.');
-                }
                 thesis.committee_invitations = [];
             }
-                    'UPDATE committee_members SET grade = ?, grade_details = ? WHERE thesis_id = ? AND professor_id = ? AND grade IS NULL',
-                    [grade, gradeDetails, thesisId, professorId]
-            const ProfessorNote = require('./professorNoteModel'); // Local require to avoid circular dependency
+
+            const ProfessorNote = require('./professorNoteModel');
             thesis.my_notes = await ProfessorNote.findByThesisAndProfessor(thesisId, professorId);
-
-            // Fetch Action Timeline
             thesis.action_log = await ThesisLog.getByThesisId(thesisId);
-
             return thesis;
         } catch (error) {
             console.error('Error fetching single thesis full details:', error);
@@ -854,9 +845,9 @@ class Thesis {
 
             // Average grade for completed theses
             const [avgGradeResult] = await pool.execute(`
-                SELECT AVG(CAST(final_grade AS DECIMAL(3,1))) as avg_grade
+                SELECT AVG(CAST(grade AS DECIMAL(3,1))) as avg_grade
                 FROM thesis 
-                WHERE supervisor_id = ? AND final_grade IS NOT NULL AND status = 'completed'
+                WHERE supervisor_id = ? AND grade IS NOT NULL AND status = 'completed'
             `, [professorId]);
 
             // Total count of theses by supervisor

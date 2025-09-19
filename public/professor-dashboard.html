@@ -53,7 +53,7 @@
                 </div>
                 <div class="form-group">
                     <label for="newTopicPdfFile">Αρχείο PDF Αναλυτικής Περιγραφής:</label>
-                    <input type="file" id="newTopicPdfFile" name="pdfFile" accept=".pdf">
+                    <input type="file" id="newTopicPdfFile" name="description_pdf" accept=".pdf">
                 </div>
                 <button type="submit">Δημιουργία Θέματος</button>
                 <p id="createTopicMessage" class="error-message" style="display: none;"></p>
@@ -180,7 +180,8 @@
                     </div>
                     <div class="form-group">
                         <label for="editTopicPdfFile">Ανέβασμα Νέου Αρχείου PDF (προαιρετικό):</label>
-                        <input type="file" id="editTopicPdfFile" name="pdfFile" accept=".pdf">
+                        <input type="file" id="editTopicPdfFile" name="description_pdf" accept=".pdf">
+                        <input type="hidden" id="editTopicExistingPdf" name="description_pdf_url" value="">
                         <p>Τρέχον αρχείο: <a id="currentPdfLink" href="#" target="_blank">Κανένα</a></p>
                     </div>
                     <button type="submit">Αποθήκευση Αλλαγών</button>
@@ -375,7 +376,8 @@
 
         async function fetchUserInfo() {
             try {
-                const response = await fetch('/api/user-info');
+                // Endpoint is mounted at root via authRoutes, not under /api
+                const response = await fetch('/user-info');
                 if (response.ok) {
                     const data = await response.json();
                     currentProfessorId = data.userId; // Store professor ID
@@ -436,35 +438,38 @@
 
         async function handleCreateTopic(event) {
             event.preventDefault();
-            const form = event.target;
-            const formData = new FormData(form);
-            // No longer converting to JSON, sending as FormData
-            
+            const title = document.getElementById('newTopicTitle').value.trim();
+            const description = document.getElementById('newTopicDescription').value.trim();
+            const pdfInput = document.getElementById('newTopicPdfFile');
+
+            const formData = new FormData();
+            formData.append('title', title);
+            formData.append('description', description);
+            if (pdfInput.files[0]) {
+                formData.append('description_pdf', pdfInput.files[0]);
+            }
+
             const messageElement = document.getElementById('createTopicMessage');
             messageElement.textContent = 'Δημιουργία θέματος...';
             messageElement.style.color = 'blue';
 
             try {
-                const response = await fetch('/api/professor/topics', {
-                    method: 'POST',
-                    body: formData // Send as multipart/form-data
-                });
+                const response = await fetch('/api/professor/topics', { method: 'POST', body: formData });
                 const result = await response.json();
-
                 if (response.ok) {
                     messageElement.textContent = result.message;
                     messageElement.style.color = 'green';
-                    form.reset(); // Clear form
-                    fetchProfessorTopics(); // Refresh list
-                    fetchAvailableTopicsForAssignment(); // Refresh topics for assignment section
+                    document.getElementById('createTopicForm').reset();
+                    fetchProfessorTopics();
+                    fetchAvailableTopicsForAssignment();
                 } else {
                     messageElement.textContent = result.message || 'Σφάλμα κατά τη δημιουργία θέματος.';
                     messageElement.style.color = 'red';
                 }
             } catch (error) {
                 console.error('Error creating topic:', error);
-                document.getElementById('createTopicMessage').textContent = 'Αδυναμία επικοινωνίας με τον server.';
-                document.getElementById('createTopicMessage').style.color = 'red';
+                messageElement.textContent = 'Αδυναμία επικοινωνίας με τον server.';
+                messageElement.style.color = 'red';
             }
         }
 
@@ -478,9 +483,13 @@
                 pdfLink.href = `/uploads/thesis_pdfs/${pdfUrl}`;
                 pdfLink.textContent = pdfUrl; // Show filename
                 pdfLink.style.display = 'inline';
+                const existing = document.getElementById('editTopicExistingPdf');
+                if (existing) existing.value = pdfUrl;
             } else {
                 pdfLink.textContent = 'Κανένα';
                 pdfLink.style.display = 'none';
+                const existing = document.getElementById('editTopicExistingPdf');
+                if (existing) existing.value = '';
             }
 
             document.getElementById('editTopicMessage').textContent = ''; // Clear previous messages
@@ -489,35 +498,42 @@
 
         async function handleUpdateTopic(event) {
             event.preventDefault();
-            const form = event.target;
             const topicId = document.getElementById('editTopicId').value;
-            const formData = new FormData(form);
-            
+            const title = document.getElementById('editTopicTitle').value.trim();
+            const description = document.getElementById('editTopicDescription').value.trim();
+            const newFile = document.getElementById('editTopicPdfFile').files[0];
+            const existingFilename = document.getElementById('editTopicExistingPdf') ? document.getElementById('editTopicExistingPdf').value : '';
+
+            const formData = new FormData();
+            formData.append('title', title);
+            formData.append('description', description);
+            if (newFile) {
+                formData.append('description_pdf', newFile);
+            } else if (existingFilename) {
+                formData.append('description_pdf_url', existingFilename); // backend keeps it
+            }
+
             const messageElement = document.getElementById('editTopicMessage');
             messageElement.textContent = 'Ενημέρωση...';
             messageElement.style.color = 'blue';
 
             try {
-                const response = await fetch(`/api/professor/topics/${topicId}`, {
-                    method: 'PUT',
-                    body: formData // Send as multipart/form-data
-                });
+                const response = await fetch(`/api/professor/topics/${topicId}`, { method: 'PUT', body: formData });
                 const result = await response.json();
-
                 if (response.ok) {
                     messageElement.textContent = result.message;
                     messageElement.style.color = 'green';
-                    fetchProfessorTopics(); // Refresh list
-                    fetchAvailableTopicsForAssignment(); // Refresh topics for assignment section
-                    setTimeout(() => closeModal('editTopicModal'), 1500); // Close modal after a short delay
+                    fetchProfessorTopics();
+                    fetchAvailableTopicsForAssignment();
+                    setTimeout(() => closeModal('editTopicModal'), 1500);
                 } else {
                     messageElement.textContent = result.message || 'Σφάλμα κατά την ενημέρωση θέματος.';
                     messageElement.style.color = 'red';
                 }
             } catch (error) {
                 console.error('Error updating topic:', error);
-                document.getElementById('editTopicMessage').textContent = 'Αδυναμία επικοινωνίας με τον server.';
-                document.getElementById('editTopicMessage').style.color = 'red';
+                messageElement.textContent = 'Αδυναμία επικοινωνίας με τον server.';
+                messageElement.style.color = 'red';
             }
         }
 
@@ -913,10 +929,7 @@
                         <div class="action-log-container">
                             <h5>Χρονολόγιο Διπλωματικής</h5>
                             <ul class="action-log-list">
-                                ${thesis.action_log
-                                    .slice()
-                                    .sort((a,b) => new Date(b.timestamp) - new Date(a.timestamp))
-                                    .map(log => `
+                                ${thesis.action_log.slice().reverse().map(log => `
                                     <li class="action-log-item">
                                         <div class="log-meta-row">
                                             <span class="log-meta-time">${new Date(log.timestamp).toLocaleString('el-GR')}</span>
@@ -949,7 +962,7 @@
                 ${thesis.status === 'under_review' && thesis.presentation_location ? `<p><strong>Τοποθεσία Παρουσίασης:</strong> ${escapeHtml(thesis.presentation_location)}</p>` : ''}
                 ${thesis.final_grade !== null ? `<p><strong>Τελικός Βαθμός:</strong> ${thesis.final_grade}</p>` : ''}
                 ${thesis.repository_url ? `<p><strong>Σύνδεσμος Αποθετηρίου:</strong> <a href="${thesis.repository_url}" target="_blank">Προβολή</a></p>` : ''}
-                ${thesis.draft_file_url ? `<p><strong>Κείμενο Διπλωματικής:</strong> <a class="thesis-file-link" href="${thesis.draft_file_url}" target="_blank">Προβολή PDF</a></p>` : ''}
+                ${thesis.draft_file_url ? `<p><strong>Κείμενο Διπλωματικής:</strong> <a class="thesis-file-link" href="${normalizeDraftUrl(thesis.draft_file_url)}" target="_blank">Προβολή PDF</a></p>` : ''}
                 ${thesis.cancellation_reason ? `<p style="color: red;"><strong>Ακυρωμένη:</strong> ${escapeHtml(thesis.cancellation_reason)}</p>` : ''}
                 ${finalCommitteeHtml}
                 ${pendingInvitationsHtml}
@@ -963,14 +976,6 @@
             // Dynamic actions based on thesis status and professor's role (refactored for better layout)
             const isProfessorSupervisor = parseInt(thesis.supervisor_id) === parseInt(currentProfessorId);
             const isProfessorCommitteeMember = thesis.committee_members?.some(m => parseInt(m.professor_id) === parseInt(currentProfessorId) && m.professor_id !== thesis.supervisor_id);
-            // Determine if current professor already graded
-            let hasAlreadyGraded = false;
-            if (thesis.committee_members && thesis.committee_members.length > 0) {
-                const me = thesis.committee_members.find(m => parseInt(m.professor_id) === parseInt(currentProfessorId));
-                if (me && me.grade !== null && me.grade !== undefined) {
-                    hasAlreadyGraded = true;
-                }
-            }
             const actions = [];
 
             // Helper push in correct order later; collect capabilities
@@ -981,7 +986,8 @@
 
             if (thesis.status === 'under_review') {
                 if (thesis.draft_file_url && thesis.draft_file_url.trim()) {
-                    viewDocBtn = `<button class=\"action-button\" onclick=\"window.open('${escapeUrl(thesis.draft_file_url)}','_blank')\">Προβολή Κειμένου Διπλωματικής</button>`;
+                    const safeDraft = normalizeDraftUrl(thesis.draft_file_url.trim());
+                    viewDocBtn = `<button class=\"action-button\" onclick=\"window.open('${escapeUrl(safeDraft)}','_blank')\">Προβολή Κειμένου Διπλωματικής</button>`;
                 } else {
                     viewDocBtn = `<button class=\"action-button disabled\" disabled title=\"Ο φοιτητής δεν έχει ανεβάσει ακόμα το κείμενο της διπλωματικής.\">Προβολή Κειμένου Διπλωματικής</button>`;
                 }
@@ -1001,11 +1007,7 @@
                         gradeBtn = `<button class=\"action-button disabled\" disabled title=\"Η ακύρωση επιτρέπεται μόνο μετά από 2 χρόνια από την ανάθεση. Απομένουν περίπου ${monthsLeft} μήνες.\">Ακύρωση Ανάθεσης (2ετία)</button>`;
                     }
                 } else if (thesis.status === 'under_review') {
-                    if (hasAlreadyGraded) {
-                        gradeBtn = `<button class=\"action-button disabled\" disabled title=\"Έχετε ήδη καταχωρήσει βαθμό.\">Βαθμός Επιβλέποντα Καταχωρημένος</button>`;
-                    } else {
-                        gradeBtn = `<button class=\"action-button\" onclick=\"openGradeModal(${thesis.id}, 'supervisor')\">Καταχώριση Βαθμού Επιβλέποντα</button>`;
-                    }
+                    gradeBtn = `<button class=\"action-button\" onclick=\"openGradeModal(${thesis.id}, 'supervisor')\">Καταχώριση Βαθμού Επιβλέποντα</button>`;
                     if (thesis.committee_members && thesis.committee_members.length > 0) {
                         viewGradesBtn = `<button class=\"action-button\" onclick=\"showCommitteeGrades(${thesis.id})\">Προβολή Βαθμών Επιτροπής</button>`;
                     }
@@ -1016,11 +1018,7 @@
             }
 
             if (!isProfessorSupervisor && isProfessorCommitteeMember && thesis.status === 'under_review') {
-                if (hasAlreadyGraded) {
-                    gradeBtn = `<button class=\"action-button disabled\" disabled title=\"Έχετε ήδη καταχωρήσει βαθμό.\">Βαθμός Μέλους Καταχωρημένος</button>`;
-                } else {
-                    gradeBtn = `<button class=\"action-button\" onclick=\"openGradeModal(${thesis.id}, 'member')\">Καταχώριση Βαθμού Μέλους</button>`;
-                }
+                gradeBtn = `<button class=\"action-button\" onclick=\"openGradeModal(${thesis.id}, 'member')\">Καταχώριση Βαθμού Μέλους</button>`;
                 if (thesis.committee_members && thesis.committee_members.length > 0) {
                     viewGradesBtn = `<button class=\"action-button\" onclick=\"showCommitteeGrades(${thesis.id})\">Προβολή Βαθμών Επιτροπής</button>`;
                 }
@@ -1259,18 +1257,8 @@
                         viewThesisDetails(thesisId); // Refresh thesis details
                     }, 1500);
                 } else {
-                    if (response.status === 409) {
-                        messageElement.textContent = result.message || 'Έχετε ήδη καταχωρήσει βαθμό.';
-                        messageElement.style.color = 'red';
-                        // Refresh modal to update disabled button
-                        setTimeout(() => { closeModal('gradeModal'); viewThesisDetails(thesisId); }, 1500);
-                    } else if (response.status === 403) {
-                        messageElement.textContent = result.message || 'Δεν έχετε δικαίωμα για αυτή την ενέργεια.';
-                        messageElement.style.color = 'red';
-                    } else {
-                        messageElement.textContent = result.message || 'Σφάλμα καταχώρισης βαθμού.';
-                        messageElement.style.color = 'red';
-                    }
+                    messageElement.textContent = result.message || 'Σφάλμα καταχώρισης βαθμού.';
+                    messageElement.style.color = 'red';
                 }
             } catch (error) {
                 console.error('Error submitting grade:', error);
@@ -1360,6 +1348,19 @@
             if (!url) return '';
             // Only escape single quotes for use in onclick handlers
             return url.replace(/'/g, "\\'");
+        }
+
+        function normalizeDraftUrl(raw) {
+            if (!raw) return '';
+            // If already starts with /uploads/ return as-is
+            if (raw.startsWith('/uploads/')) return raw;
+            // If it's just a filename, assume drafts directory
+            if (!raw.includes('/') || /^[-\w.]+$/.test(raw)) {
+                return `/uploads/thesis_drafts/${raw}`;
+            }
+            // If stored without leading slash (e.g. uploads/thesis_drafts/filename.pdf)
+            if (raw.startsWith('uploads/')) return '/' + raw;
+            return raw; // fallback
         }
 
         async function logout() {

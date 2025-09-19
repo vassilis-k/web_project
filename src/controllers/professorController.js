@@ -17,34 +17,45 @@ exports.getProfessorTopics = async (req, res) => {
 };
 
 exports.createProfessorTopic = async (req, res) => {
-    const { title, description } = req.body;
-    const description_pdf_filename = req.file ? req.file.filename : null;
-    const supervisor_id = req.session.userId;
-
-    if (!title || !description) {
-        return res.status(400).json({ message: 'Ο τίτλος και η περιγραφή του θέματος είναι υποχρεωτικά.' });
-    }
-
     try {
+        if (!req.body) {
+            return res.status(400).json({ message: 'Δεν στάλθηκαν δεδομένα φόρμας.' });
+        }
+
+        const title = (req.body.title || '').trim();
+        const description = (req.body.description || '').trim();
+        const description_pdf_filename = req.file ? req.file.filename : null;
+        const supervisor_id = req.session.userId;
+
+        if (!title || !description) {
+            return res.status(400).json({ message: 'Ο τίτλος και η περιγραφή του θέματος είναι υποχρεωτικά.' });
+        }
+
         const newTopic = await Thesis.createTopic(title, description, description_pdf_filename, supervisor_id);
         res.status(201).json({ message: 'Το θέμα δημιουργήθηκε επιτυχώς!', topic: newTopic });
     } catch (error) {
         console.error('Error in createProfessorTopic:', error);
-        res.status(500).json({ message: 'Σφάλμα server κατά τη δημιουργία θέματος.' });
+        const msg = error.message === 'Μόνο αρχεία PDF επιτρέπονται για την περιγραφή θέματος.' ? error.message : 'Σφάλμα server κατά τη δημιουργία θέματος.';
+        res.status(500).json({ message: msg });
     }
 };
 
 exports.updateProfessorTopic = async (req, res) => {
-    const { id } = req.params;
-    const { title, description } = req.body;
-    const description_pdf_filename = req.file ? req.file.filename : req.body.description_pdf_url; // Keep existing if no new file
-    const supervisor_id = req.session.userId;
-
-    if (!title || !description) {
-        return res.status(400).json({ message: 'Ο τίτλος και η περιγραφή του θέματος είναι υποχρεωτικά.' });
-    }
-
     try {
+        const { id } = req.params;
+        if (!req.body) {
+            return res.status(400).json({ message: 'Δεν στάλθηκαν δεδομένα φόρμας.' });
+        }
+        const title = (req.body.title || '').trim();
+        const description = (req.body.description || '').trim();
+        // If a new file uploaded use it, else keep previous value passed by client as description_pdf_url
+        const description_pdf_filename = req.file ? req.file.filename : (req.body.description_pdf_url || null);
+        const supervisor_id = req.session.userId;
+
+        if (!title || !description) {
+            return res.status(400).json({ message: 'Ο τίτλος και η περιγραφή του θέματος είναι υποχρεωτικά.' });
+        }
+
         const isUpdated = await Thesis.updateTopic(id, supervisor_id, title, description, description_pdf_filename);
         if (isUpdated) {
             res.status(200).json({ message: 'Το θέμα ενημερώθηκε επιτυχώς!' });
@@ -53,7 +64,8 @@ exports.updateProfessorTopic = async (req, res) => {
         }
     } catch (error) {
         console.error('Error in updateProfessorTopic:', error);
-        res.status(500).json({ message: 'Σφάλμα server κατά την ενημέρωση θέματος.' });
+        const msg = error.message === 'Μόνο αρχεία PDF επιτρέπονται για την περιγραφή θέματος.' ? error.message : 'Σφάλμα server κατά την ενημέρωση θέματος.';
+        res.status(500).json({ message: msg });
     }
 };
 
@@ -244,27 +256,7 @@ exports.declineInvitation = async (req, res) => {
 };
 
 
-// 6) Διαχείριση διπλωματικών εργασιών (ενέργειες ανά κατάσταση)
-exports.addThesisNote = async (req, res) => {
-    const { thesisId } = req.params;
-    const { note } = req.body;
-    const authorId = req.session.userId;
-
-    if (!note) {
-        return res.status(400).json({ message: 'Το πεδίο σημείωσης δεν μπορεί να είναι κενό.' });
-    }
-    if (note.length > 300) {
-        return res.status(400).json({ message: 'Η σημείωση δεν μπορεί να υπερβαίνει τους 300 χαρακτήρες.' });
-    }
-
-    try {
-        const newNote = await ProgressNote.addNote(thesisId, authorId, note);
-        res.status(201).json({ message: 'Η σημείωση προστέθηκε επιτυχώς!', note: newNote });
-    } catch (error) {
-        console.error('Error adding thesis note:', error);
-        res.status(500).json({ message: 'Σφάλμα server κατά την προσθήκη σημείωσης.' });
-    }
-};
+// Η παλαιά συνάρτηση addThesisNote αφαιρέθηκε. Χρησιμοποιήστε την addProfessorNote.
 
 exports.setThesisUnderReview = async (req, res) => {
     const { thesisId } = req.params;
