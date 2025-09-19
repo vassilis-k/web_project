@@ -390,7 +390,7 @@ class Thesis {
                 `SELECT
                     t.id, t.title, t.description, t.status, t.assignment_date,
                     s.name AS student_name, s.surname AS student_surname,
-                    sup.name AS supervisor_name, sup.surname AS supervisor_surname
+                    sup.id AS supervisor_id, sup.name AS supervisor_name, sup.surname AS supervisor_surname, sup.email AS supervisor_email
                 FROM thesis t
                 LEFT JOIN users s ON t.student_id = s.id
                 JOIN users sup ON t.supervisor_id = sup.id
@@ -400,15 +400,14 @@ class Thesis {
 
             for (const thesis of theses) {
                 const [members] = await pool.execute(
-                    `SELECT u.name, u.surname
+                    `SELECT u.id, u.name, u.surname, u.email
                      FROM committee_members cm
                      JOIN users u ON cm.professor_id = u.id
                      WHERE cm.thesis_id = ?`,
                     [thesis.id]
                 );
-                // Also add the supervisor to the committee list for display purposes
-                const supervisorAsMember = { name: thesis.supervisor_name, surname: thesis.supervisor_surname };
-                thesis.committee_members = [supervisorAsMember, ...members];
+                // Filter out supervisor if somehow present (defensive)
+                thesis.committee_members = members.filter(m => m.id !== thesis.supervisor_id);
             }
 
             return theses;
