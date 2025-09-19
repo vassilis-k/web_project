@@ -341,7 +341,14 @@ exports.saveProfessorGrade = async (req, res) => {
         }
     } catch (error) {
         console.error('Error saving professor grade:', error);
-        res.status(500).json({ message: error.message || 'Σφάλμα server κατά την καταχώριση βαθμού.' });
+        const msg = error.message || 'Σφάλμα server κατά την καταχώριση βαθμού.';
+        if (msg.includes('έχετε δικαίωμα') || msg.includes('δικαίωμα')) {
+            return res.status(403).json({ message: msg });
+        }
+        if (msg.includes('ήδη καταχωρήσει βαθμό')) {
+            return res.status(409).json({ message: msg });
+        }
+        res.status(500).json({ message: msg });
     }
 };
 

@@ -1,4 +1,3 @@
-DROP DATABASE project_web_local;
 CREATE DATABASE IF NOT EXISTS project_web_local DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
 USE project_web_local;
@@ -36,10 +35,6 @@ CREATE TABLE thesis (
     cancellation_reason TEXT,
     presentation_date DATETIME,
     presentation_location VARCHAR(255),
-    presentation_mode ENUM('in_person', 'remote'),
-    draft_file_url VARCHAR(500),
-    extra_material_url VARCHAR(500),
-    presentation_details_locked BOOLEAN DEFAULT FALSE,
     final_grade INT CHECK (final_grade BETWEEN 0 AND 10), -- Renamed from 'grade'
     repository_url VARCHAR(500),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -122,9 +117,7 @@ CREATE TABLE progress_notes (
     id INT PRIMARY KEY AUTO_INCREMENT,
     thesis_id INT NOT NULL,
     author_id INT NOT NULL,
-    date DATE NOT NULL,
-    description TEXT NOT NULL,
-    file_url VARCHAR(500),
+    note TEXT NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (thesis_id) REFERENCES thesis(id),
     FOREIGN KEY (author_id) REFERENCES users(id)
@@ -139,27 +132,6 @@ CREATE TABLE thesis_announcements (
     announcement_text TEXT NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (thesis_id) REFERENCES thesis(id)
-);
-
-CREATE TABLE thesis_log (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    thesis_id INT NOT NULL,
-    user_id INT,
-    action VARCHAR(255) NOT NULL,
-    details TEXT,
-    timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (thesis_id) REFERENCES thesis(id) ON DELETE CASCADE,
-    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL
-);
-
-CREATE TABLE professor_notes (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    thesis_id INT NOT NULL,
-    professor_id INT NOT NULL,
-    note TEXT NOT NULL,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (thesis_id) REFERENCES thesis(id) ON DELETE CASCADE,
-    FOREIGN KEY (professor_id) REFERENCES users(id) ON DELETE CASCADE
 );
 
 CREATE INDEX idx_thesis_announcements_date ON thesis_announcements(announcement_date);

@@ -662,6 +662,9 @@ class Thesis {
             );
             thesis.committee_members = cmRows;
 
+            // Attach current viewer id for frontend logic (e.g., hide grade button if already graded)
+            thesis.viewer_professor_id = professorId;
+
             // Committee Invitations (Only supervisor can see all, others see none)
             if (thesis.supervisor_id === professorId) {
                 const [invitationRows] = await pool.execute(
@@ -673,10 +676,15 @@ class Thesis {
                 );
                 thesis.committee_invitations = invitationRows;
             } else {
+
+                // Prevent multiple submissions
+                if (thesisCheck[0].existing_grade !== null && thesisCheck[0].existing_grade !== undefined) {
+                    throw new Error('Έχετε ήδη καταχωρήσει βαθμό. Η επανυποβολή δεν επιτρέπεται.');
+                }
                 thesis.committee_invitations = [];
             }
-
-            // Notes (only visible to author, so fetch only for the requesting professorId)
+                    'UPDATE committee_members SET grade = ?, grade_details = ? WHERE thesis_id = ? AND professor_id = ? AND grade IS NULL',
+                    [grade, gradeDetails, thesisId, professorId]
             const ProfessorNote = require('./professorNoteModel'); // Local require to avoid circular dependency
             thesis.my_notes = await ProfessorNote.findByThesisAndProfessor(thesisId, professorId);
 

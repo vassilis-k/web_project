@@ -28,23 +28,9 @@ app.use(session({
 
 // Serve static files from the 'public' directory
 app.use(express.static(path.join(__dirname, '../public')));
-app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 
 // Auth routes (login/logout, user-info)
 app.use('/', authRoutes);
-
-// API endpoint for user info
-app.get('/api/user-info', isAuthenticated, (req, res) => {
-    if (req.session && req.session.userId) {
-        res.json({ 
-            userId: req.session.userId, 
-            userRole: req.session.userRole, 
-            userName: req.session.userName 
-        });
-    } else {
-        res.status(401).json({ message: 'Δεν είστε συνδεδεμένος.' });
-    }
-});
 
 // Professor specific API routes - protected
 app.use('/api/professor', isAuthenticated, authorizeRole('professor'), professorRoutes);
