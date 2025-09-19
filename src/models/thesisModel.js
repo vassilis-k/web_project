@@ -84,11 +84,13 @@ class Thesis {
 
     // Add other thesis-related methods here as needed for other functionalities
     // e.g., get all theses where professor is supervisor or committee member
-     // 3) Προβολή λίστας διπλωματικών (Detailed - updated to include more details and specific invitation statuses)
+     // 3) Προβολή λίστας διπλωματικών (Detailed - clean filtering approach)
     static async getProfessorRelatedThesesDetailed(professor_id, filters = {}) {
+        // Base query that gets all theses where professor has any role
         let query = `
-            SELECT
-                t.id, t.title, t.description, t.description_pdf_url, t.status, t.assignment_date, t.presentation_date, t.repository_url, t.draft_file_url, t.final_grade, t.cancellation_reason,
+            SELECT DISTINCT
+                t.id, t.title, t.description, t.description_pdf_url, t.status, t.assignment_date, 
+                t.presentation_date, t.repository_url, t.draft_file_url, t.final_grade, t.cancellation_reason,
                 s.id AS student_id, s.name AS student_name, s.surname AS student_surname, s.email AS student_email,
                 sup.id AS supervisor_id, sup.name AS supervisor_name, sup.surname AS supervisor_surname, sup.email AS supervisor_email,
                 GROUP_CONCAT(DISTINCT CONCAT(cm_u.id, ':', cm_u.name, ' ', cm_u.surname, ':', cm.grade, ':', cm.grade_details)) AS committee_members_full,
@@ -100,38 +102,37 @@ class Thesis {
             LEFT JOIN users cm_u ON cm.professor_id = cm_u.id
             LEFT JOIN committee_invitations ci ON t.id = ci.thesis_id
             LEFT JOIN users inv_u ON ci.invited_professor_id = inv_u.id
-            WHERE t.supervisor_id = ? OR cm.professor_id = ? OR ci.invited_professor_id = ?
+            WHERE (
+                t.supervisor_id = ? 
+                OR cm.professor_id = ? 
+                OR (ci.invited_professor_id = ? AND ci.status = 'accepted')
+            )
         `;
+        
         const params = [professor_id, professor_id, professor_id];
 
+        // Apply role filter at SQL level
+        if (filters.role && filters.role !== 'all') {
+            if (filters.role === 'supervisor') {
+                query += ` AND t.supervisor_id = ?`;
+                params.push(professor_id);
+            } else if (filters.role === 'member') {
+                query += ` AND t.supervisor_id != ? AND (cm.professor_id = ? OR (ci.invited_professor_id = ? AND ci.status = 'accepted'))`;
+                params.push(professor_id, professor_id, professor_id);
+            }
+        }
+
+        // Apply status filter at SQL level
         if (filters.status && filters.status !== 'all') {
             query += ` AND t.status = ?`;
             params.push(filters.status);
         }
-        if (filters.role && filters.role !== 'all') {
-            if (filters.role === 'supervisor') {
-                query += ` AND t.supervisor_id = ?`;
-            } else if (filters.role === 'member') {
-                query += ` AND cm.professor_id = ? AND t.supervisor_id != ?`;
-                params.push(professor_id); // The first `professor_id` is already in WHERE clause for cm.professor_id
-            }
-        }
+        
         query += ` GROUP BY t.id ORDER BY t.created_at DESC`;
 
         try {
             const [rows] = await pool.execute(query, params);
-            // Only include theses where the professor is supervisor, or is a committee member, or has accepted an invitation
-            const filteredRows = rows.filter(row => {
-                // Supervisor
-                if (row.supervisor_id === professor_id) return true;
-                // Committee member
-                if (row.committee_members_full && row.committee_members_full.split(',').some(m => m.startsWith(professor_id + ':'))) return true;
-                // Accepted invitation
-                if (row.committee_invitations_full && row.committee_invitations_full.split(',').some(inv => inv.startsWith(professor_id + ':') && inv.endsWith(':accepted'))) return true;
-                // Otherwise, only invited (pending) -- skip
-                return false;
-            });
-            return filteredRows.map(row => {
+            return rows.map(row => {
                 // Parse committee members and invitations
                 row.committee_members_parsed = [];
                 if (row.committee_members_full) {

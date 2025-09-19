@@ -24,20 +24,22 @@
             <div class="subtitle">Πανεπιστήμιο Πατρών</div>
         </div>
     </div>
-    <div class="login-container">
-        <h2>Σύνδεση Χρήστη</h2>
-        <form id="loginForm" action="/login" method="POST">
-            <div class="form-group">
-                <label for="email">Email:</label>
-                <input type="email" id="email" name="email" required>
-            </div>
-            <div class="form-group">
-                <label for="password">Κωδικός:</label>
-                <input type="password" id="password" name="password" required>
-            </div>
-            <button type="submit">Σύνδεση</button>
-            <p id="errorMessage" class="error-message" style="color: red; display: none;"></p>
-        </form>
+    <div class="main-wrapper">
+        <div class="login-container">
+            <h2>Σύνδεση Χρήστη</h2>
+            <form id="loginForm" action="/login" method="POST">
+                <div class="form-group">
+                    <label for="email">Email:</label>
+                    <input type="email" id="email" name="email" required>
+                </div>
+                <div class="form-group">
+                    <label for="password">Κωδικός:</label>
+                    <input type="password" id="password" name="password" required>
+                </div>
+                <button type="submit">Σύνδεση</button>
+                <p id="errorMessage" class="error-message" style="color: red; display: none;"></p>
+            </form>
+        </div>
     </div>
     <script>
         document.getElementById('loginForm').addEventListener('submit', async function(event) {

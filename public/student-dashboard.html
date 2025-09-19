@@ -21,13 +21,14 @@
             <div class="subtitle">Πανεπιστήμιο Πατρών</div>
         </div>
     </div>
-    <div class="student-dashboard-container">
+    <div class="main-wrapper">
+        <div class="student-dashboard-container">
         <div class="student-dashboard-header">
             <h2 id="welcomeMessage">Καλωσήρθατε!</h2>
         </div>
         <nav class="student-dashboard-nav">
-            <button class="student-dashboard-nav-btn" onclick="showStudentSection('thesis-section')">Η Διπλωματική μου</button>
-            <button class="student-dashboard-nav-btn" onclick="showStudentSection('profile-section')">Το Προφίλ μου</button>
+            <button class="student-dashboard-nav-btn" onclick="showSection('thesis-section')">Η Διπλωματική μου</button>
+            <button class="student-dashboard-nav-btn" onclick="showSection('profile-section')">Το Προφίλ μου</button>
         </nav>
 
         <section id="thesis-section" class="student-section-content">
@@ -35,7 +36,7 @@
             <div id="thesisDetails">
                 <p>Φόρτωση λεπτομερειών διπλωματικής...</p>
             </div>
-            <div id="thesisActions" class="student-section-content">
+            <div id="thesisActions">
                 <!-- Ενέργειες βάσει κατάστασης διπλωματικής θα εμφανιστούν εδώ -->
             </div>
         </section>
@@ -88,6 +89,7 @@
             </form>
         </section>
     </div>
+    </div>
     <script>
         let studentThesis = null;
 
@@ -98,27 +100,8 @@
 
             document.getElementById('profileForm').addEventListener('submit', handleProfileUpdate);
 
-            // Navigation logic for buttons
-            document.querySelectorAll('.student-dashboard-nav-btn').forEach(btn => {
-                btn.addEventListener('click', (event) => {
-                    event.preventDefault();
-                    document.querySelectorAll('.student-section-content').forEach(section => {
-                        section.style.display = 'none';
-                    });
-                    const sectionId = event.target.getAttribute('onclick').match(/'([^']+)'/)[1];
-                    const targetSection = document.getElementById(sectionId);
-                    if (targetSection) {
-                        targetSection.style.display = 'block';
-                    }
-
-                    // Refresh data when navigating to a section
-                    if (sectionId === 'thesis-section') {
-                        fetchStudentThesis();
-                    } else if (sectionId === 'profile-section') {
-                        fetchStudentProfile();
-                    }
-                });
-            });
+            // Show thesis section by default
+            showSection('thesis-section');
         });
 
         async function fetchUserInfo() {
@@ -860,6 +843,34 @@
                 "'": '&#039;'
             };
             return text.replace(/[&<>"']/g, function(m) { return map[m]; });
+        }
+
+        function showSection(sectionId) {
+            // Hide all sections
+            const sections = document.querySelectorAll('.student-section-content');
+            sections.forEach(section => {
+                section.style.display = 'none';
+                section.classList.remove('active');
+            });
+
+            // Remove active class from all nav buttons
+            const navButtons = document.querySelectorAll('.student-dashboard-nav-btn');
+            navButtons.forEach(button => {
+                button.classList.remove('active');
+            });
+
+            // Show the selected section
+            const selectedSection = document.getElementById(sectionId);
+            if (selectedSection) {
+                selectedSection.style.display = 'block';
+                selectedSection.classList.add('active');
+            }
+
+            // Add active class to the corresponding button
+            const activeButton = document.querySelector(`[onclick="showSection('${sectionId}')"]`);
+            if (activeButton) {
+                activeButton.classList.add('active');
+            }
         }
 
         async function logout() {

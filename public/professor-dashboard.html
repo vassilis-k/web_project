@@ -25,17 +25,18 @@
             <div class="subtitle">Πανεπιστήμιο Πατρών</div>
         </div>
     </div>
-    <div class="student-dashboard-container">
-        <div class="student-dashboard-header">
-            <h2 id="welcomeMessage">Καλωσήρθατε!</h2>
-        </div>
-        <nav class="student-dashboard-nav">
-            <button class="student-dashboard-nav-btn" onclick="showSection('topics-section')">Διαχείριση Θεμάτων</button>
-            <button class="student-dashboard-nav-btn" onclick="showSection('assign-section')">Ανάθεση Θεμάτων</button>
-            <button class="student-dashboard-nav-btn" onclick="showSection('theses-list-section')">Οι Διπλωματικές μου</button>
-            <button class="student-dashboard-nav-btn" onclick="showSection('invitations-section')">Προσκλήσεις Επιτροπής</button>
-            <button class="student-dashboard-nav-btn" onclick="showSection('stats-section')">Στατιστικά</button>
-        </nav>
+    <div class="main-wrapper">
+        <div class="student-dashboard-container">
+            <div class="student-dashboard-header">
+                <h2 id="welcomeMessage">Καλωσήρθατε!</h2>
+            </div>
+            <nav class="student-dashboard-nav">
+                <button class="student-dashboard-nav-btn" onclick="showSection('topics-section')">Διαχείριση Θεμάτων</button>
+                <button class="student-dashboard-nav-btn" onclick="showSection('assign-section')">Ανάθεση Θεμάτων</button>
+                <button class="student-dashboard-nav-btn" onclick="showSection('theses-list-section')">Οι Διπλωματικές μου</button>
+                <button class="student-dashboard-nav-btn" onclick="showSection('invitations-section')">Προσκλήσεις Επιτροπής</button>
+                <button class="student-dashboard-nav-btn" onclick="showSection('stats-section')">Στατιστικά</button>
+            </nav>
 
         <!-- 1) Διαχείριση Θεμάτων (Δημιουργία/Προβολή/Επεξεργασία) -->
         <section id="topics-section" class="student-section-content">
@@ -105,28 +106,29 @@
         <!-- 3) Προβολή λίστας διπλωματικών -->
         <section id="theses-list-section" class="student-section-content" style="display: none;">
             <h3>Οι Διπλωματικές μου Εργασίες</h3>
-            <div class="filter-controls">
-                <label for="thesisStatusFilter">Κατάσταση:</label>
-                <select id="thesisStatusFilter">
-                    <option value="all">Όλες</option>
-                    <option value="under_assignment">Υπό Ανάθεση</option>
-                    <option value="active">Ενεργή</option>
-                    <option value="under_review">Υπό Εξέταση</option>
-                    <option value="completed">Ολοκληρωμένη</option>
-                    <option value="cancelled">Ακυρωμένη</option>
-                </select>
-
-                <label for="thesisRoleFilter">Ρόλος:</label>
-                <select id="thesisRoleFilter">
-                    <option value="all">Όλοι</option>
-                    <option value="supervisor">Επιβλέπων</option>
-                    <option value="member">Μέλος Επιτροπής</option>
-                </select>
-
-                <button onclick="fetchProfessorTheses()" class="filter-btn">Εφαρμογή Φίλτρων</button>
-                <div class="export-buttons">
-                    <button class="export-btn" type="button" onclick="exportTable('json')">Εξαγωγή σε JSON</button>
-                    <button class="export-btn" type="button" onclick="exportTable('csv')">Εξαγωγή σε CSV</button>
+            <div class="filter-controls-compact">
+                <div class="filter-group">
+                    <select id="thesisRoleFilter" class="filter-select">
+                        <option value="all">Όλοι οι Ρόλοι</option>
+                        <option value="supervisor">Επιβλέπων</option>
+                        <option value="member">Μέλος Επιτροπής</option>
+                    </select>
+                    
+                    <select id="thesisStatusFilter" class="filter-select">
+                        <option value="all">Όλες οι Καταστάσεις</option>
+                        <option value="under_assignment">Υπό Ανάθεση</option>
+                        <option value="active">Ενεργή</option>
+                        <option value="under_review">Υπό Εξέταση</option>
+                        <option value="completed">Ολοκληρωμένη</option>
+                        <option value="cancelled">Ακυρωμένη</option>
+                    </select>
+                    
+                    <button onclick="applyFilters()" class="filter-apply-btn">Εφαρμογή</button>
+                </div>
+                
+                <div class="export-controls">
+                    <button class="export-btn" type="button" onclick="exportTable('json')">JSON</button>
+                    <button class="export-btn" type="button" onclick="exportTable('csv')">CSV</button>
                 </div>
             </div>
             <div id="professorThesesList" class="thesis-list-table">
@@ -276,6 +278,7 @@
 
 
     </div>
+    </div>
 
     <script>
         // Utility functions for message handling
@@ -363,10 +366,7 @@
                 });
             });
 
-            // Filters for thesis list
-            document.getElementById('thesisStatusFilter').addEventListener('change', fetchProfessorTheses);
-            document.getElementById('thesisRoleFilter').addEventListener('change', fetchProfessorTheses);
-
+            // Initialize filters (removed auto-change listeners for manual application)
             // Export buttons handled inline via exportTable('json'|'csv') to match on-screen filtered data
 
             // Ensure default visible section is Topics and hide all others (including stats) on load
@@ -721,24 +721,41 @@
 
 
         // --- 3) Προβολή λίστας διπλωματικών (φιλτραρισμένες) ---
-        async function fetchProfessorTheses() {
+        async function applyFilters() {
             const statusFilter = document.getElementById('thesisStatusFilter').value;
             const roleFilter = document.getElementById('thesisRoleFilter').value;
 
             try {
                 const response = await fetch(`/api/professor/theses?status=${statusFilter}&role=${roleFilter}`);
                 const thesesListDiv = document.getElementById('professorThesesList');
+                
                 if (response.ok) {
                     const theses = await response.json();
                     renderProfessorThesesTable(theses);
+                    
+                    // Update UI feedback
+                    const filterBtn = document.querySelector('.filter-apply-btn');
+                    const originalText = filterBtn.textContent;
+                    filterBtn.textContent = 'Εφαρμόστηκε ✓';
+                    filterBtn.style.background = 'var(--success)';
+                    
+                    setTimeout(() => {
+                        filterBtn.textContent = originalText;
+                        filterBtn.style.background = 'var(--primary-color)';
+                    }, 1500);
                 } else {
                     const errorData = await response.json();
                     thesesListDiv.innerHTML = `<p style="color: red;">Σφάλμα φόρτωσης διπλωματικών: ${errorData.message}</p>`;
                 }
             } catch (error) {
-                console.error('Error fetching professor theses:', error);
+                console.error('Error applying filters:', error);
                 document.getElementById('professorThesesList').innerHTML = `<p style="color: red;">Αδυναμία επικοινωνίας με τον server.</p>`;
             }
+        }
+
+        // Load initial data without filters
+        async function fetchProfessorTheses() {
+            await applyFilters();
         }
 
         function renderProfessorThesesTable(theses) {
@@ -1325,13 +1342,28 @@
         }
 
         function showSection(sectionId) {
+            // Hide all sections
             document.querySelectorAll('section').forEach(section => {
                 section.style.display = 'none';
             });
+
+            // Remove active class from all nav buttons
+            document.querySelectorAll('.student-dashboard-nav-btn').forEach(button => {
+                button.classList.remove('active');
+            });
+
+            // Show the selected section
             const targetSection = document.getElementById(sectionId);
             if (targetSection) {
                 targetSection.style.display = 'block';
             }
+
+            // Add active class to the corresponding button
+            const activeButton = document.querySelector(`[onclick="showSection('${sectionId}')"]`);
+            if (activeButton) {
+                activeButton.classList.add('active');
+            }
+
             // Optionally refresh data for each section as needed
             if (sectionId === 'topics-section') {
                 fetchProfessorTopics();
