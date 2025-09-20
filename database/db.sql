@@ -1,5 +1,3 @@
-DROP DATABASE project_web_local;
-
 CREATE DATABASE IF NOT EXISTS project_web_local DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
 USE project_web_local;
