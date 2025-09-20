@@ -8,7 +8,6 @@ CREATE TABLE users (
     surname VARCHAR(100) NOT NULL,
     email VARCHAR(150) NOT NULL UNIQUE,
     password VARCHAR(255) NOT NULL,
-    -- Removed: topic VARCHAR(255),
     landline VARCHAR(20),
     mobile VARCHAR(20),
     street VARCHAR(255),
@@ -29,7 +28,7 @@ CREATE TABLE thesis (
     description_pdf_url VARCHAR(500),
     status ENUM('available', 'under_assignment', 'active', 'under_review', 'completed', 'cancelled') NOT NULL DEFAULT 'available',
     supervisor_id INT NOT NULL,
-    student_id INT NULL, -- Changed to NULLABLE
+    student_id INT NULL,
     gs_approval_protocol VARCHAR(100),
     assignment_date DATE,
     cancellation_reason TEXT,
@@ -39,7 +38,7 @@ CREATE TABLE thesis (
     draft_file_url VARCHAR(500),
     extra_material_url VARCHAR(500),
     presentation_details_locked BOOLEAN DEFAULT FALSE,
-    grade INT CHECK (final_grade BETWEEN 0 AND 10), -- Renamed from 'grade'
+    grade INT CHECK (final_grade BETWEEN 0 AND 10),
     repository_url VARCHAR(500),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (supervisor_id) REFERENCES users(id),
@@ -52,7 +51,7 @@ BEFORE UPDATE ON thesis
 FOR EACH ROW
 BEGIN
     IF OLD.status != 'active' AND NEW.status = 'active' THEN
-        SET NEW.assignment_date = CURDATE(); -- Changed NOW() to CURDATE()
+        SET NEW.assignment_date = CURDATE();
     END IF;
 END$$
 DELIMITER ;
@@ -97,7 +96,7 @@ CREATE TABLE committee_members (
     id INT PRIMARY KEY AUTO_INCREMENT,
     thesis_id INT NOT NULL,
     professor_id INT NOT NULL,
-    role ENUM('member') NOT NULL DEFAULT 'member', -- Changed 'role' to only 'member'
+    role ENUM('member') NOT NULL DEFAULT 'member',
     grade INT CHECK (grade BETWEEN 0 AND 10),
     grade_details TEXT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -140,20 +139,6 @@ CREATE TABLE thesis_announcements (
     FOREIGN KEY (thesis_id) REFERENCES thesis(id)
 );
 
-DROP TABLE progress_notes;
-
-CREATE TABLE progress_notes (
-    id INT PRIMARY KEY AUTO_INCREMENT,
-    thesis_id INT NOT NULL,
-    author_id INT NOT NULL,
-    date DATE NOT NULL,
-    description TEXT NOT NULL,
-    file_url VARCHAR(500),
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (thesis_id) REFERENCES thesis(id),
-    FOREIGN KEY (author_id) REFERENCES users(id)
-);
-
 CREATE TABLE thesis_log (
     id INT AUTO_INCREMENT PRIMARY KEY,
     thesis_id INT NOT NULL,
@@ -179,4 +164,4 @@ CREATE INDEX idx_thesis_announcements_date ON thesis_announcements(announcement_
 CREATE INDEX idx_users_email ON users(email);
 CREATE INDEX idx_thesis_student ON thesis(student_id);
 CREATE INDEX idx_thesis_supervisor ON thesis(supervisor_id);
-CREATE INDEX idx_thesis_status ON thesis(status); -- New index
+CREATE INDEX idx_thesis_status ON thesis(status);
