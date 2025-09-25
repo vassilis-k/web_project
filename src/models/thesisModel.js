@@ -295,7 +295,24 @@ class Thesis {
                 throw new Error('Could not activate thesis or thesis is not in "under_assignment" status.');
             }
 
-            // 2. Προσθήκη αποδεκτών προσκλήσεων στον πίνακα committee_members
+            // 2. Προσθήκη επιβλέποντα και αποδεκτών προσκλήσεων στον πίνακα committee_members
+            // 2a. Εισαγωγή επιβλέποντα ως μέλος επιτροπής (ο πίνακας επί του παρόντος υποστηρίζει μόνο ρόλο 'member')
+            const [supRow] = await connection.execute('SELECT supervisor_id FROM thesis WHERE id = ?', [thesisId]);
+            const supId = supervisorId || (supRow && supRow[0] ? supRow[0].supervisor_id : null);
+            if (supId) {
+                const [existsRows] = await connection.execute(
+                    'SELECT 1 AS exists_flag FROM committee_members WHERE thesis_id = ? AND professor_id = ? LIMIT 1',
+                    [thesisId, supId]
+                );
+                if (!existsRows.length) {
+                    await connection.execute(
+                        'INSERT INTO committee_members (thesis_id, professor_id, role) VALUES (?, ?, "member")',
+                        [thesisId, supId]
+                    );
+                }
+            }
+
+            // 2b. Εισαγωγή αποδεκτών προσκλήσεων
             const [acceptedInvitations] = await connection.execute(
                 `SELECT invited_professor_id FROM committee_invitations WHERE thesis_id = ? AND status = 'accepted'`,
                 [thesisId]
@@ -509,6 +526,39 @@ class Thesis {
                 const [prof] = await connection.execute('SELECT name, surname FROM users WHERE id = ?', [professorId]);
                 const profName = prof.length > 0 ? `${prof[0].name} ${prof[0].surname}` : `ID: ${professorId}`;
                 await ThesisLog.add(thesisId, professorId, 'MEMBER_GRADE_SAVED', `Ο/Η ${profName} καταχώρησε βαθμό (${grade}).`, connection);
+
+                // Έλεγχος αν έχουν βαθμολογήσει όλα τα μέλη της επιτροπής και υπολογισμός τελικού βαθμού
+                const [countRows] = await connection.execute(
+                    'SELECT COUNT(*) AS total FROM committee_members WHERE thesis_id = ?',
+                    [thesisId]
+                );
+                const [gradedRows] = await connection.execute(
+                    'SELECT COUNT(*) AS graded FROM committee_members WHERE thesis_id = ? AND grade IS NOT NULL',
+                    [thesisId]
+                );
+                const total = countRows[0]?.total || 0;
+                const graded = gradedRows[0]?.graded || 0;
+
+                if (total > 0 && graded === total) {
+                    const [avgRows] = await connection.execute(
+                        'SELECT AVG(grade) AS avg_grade FROM committee_members WHERE thesis_id = ?',
+                        [thesisId]
+                    );
+                    // Στρογγυλοποίηση στο ένα δεκαδικό (0.1) για συνέπεια με DECIMAL(3,1)
+                    const avg = avgRows[0]?.avg_grade !== null && avgRows[0]?.avg_grade !== undefined
+                        ? Math.round(parseFloat(avgRows[0].avg_grade) * 10) / 10
+                        : null;
+
+                    if (avg !== null) {
+                        const [updateThesis] = await connection.execute(
+                            'UPDATE thesis SET grade = ? WHERE id = ? AND grade IS NULL',
+                            [avg, thesisId]
+                        );
+                        if (updateThesis.affectedRows > 0) {
+                            await ThesisLog.add(thesisId, null, 'FINAL_GRADE_SET', `Ο τελικός βαθμός ορίστηκε αυτόματα σε ${avg}/10.`, connection);
+                        }
+                    }
+                }
             }
             await connection.commit();
             return result.affectedRows > 0;
@@ -518,24 +568,6 @@ class Thesis {
             throw error;
         } finally {
             connection.release();
-        }
-    }
-
-    // Νέα μέθοδος: Επιστροφή βαθμών επιτροπής για συγκεκριμένη διπλωματική
-    static async getCommitteeGrades(thesisId) {
-        try {
-            const [rows] = await pool.execute(
-                `SELECT u.name, u.surname, cm.grade
-                 FROM committee_members cm
-                 JOIN users u ON u.id = cm.professor_id
-                 WHERE cm.thesis_id = ?
-                 ORDER BY u.surname ASC, u.name ASC`,
-                [thesisId]
-            );
-            return rows;
-        } catch (error) {
-            console.error('Error fetching committee grades:', error);
-            throw error;
         }
     }
 

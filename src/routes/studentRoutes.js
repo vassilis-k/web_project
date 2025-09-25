@@ -22,10 +22,7 @@ router.get('/thesis/:thesisId/progress-notes', studentController.getProgressNote
 // 5) Διαχείριση διπλωματικής εργασίας - Υπό Εξέταση (Ορισμός Παρουσίασης)
 router.post('/thesis/:thesisId/presentation-details', studentController.submitPresentationDetails);
 
-// 6) Βαθμολογίες επιτροπής (μόνο για τον φοιτητή της διπλωματικής)
-router.get('/thesis/:thesisId/committee-grades', studentController.getCommitteeGrades);
-
-// 7) Καταχώριση repository URL (μόνο όταν η διπλωματική είναι υπό εξέταση)
+// 6) Καταχώριση repository URL (επιτρέπεται μετά τον οριστικό τελικό βαθμό)
 router.post('/thesis/:thesisId/repository-url', studentController.submitRepositoryUrl);
 
 

@@ -69,6 +69,13 @@ exports.getStudentThesis = async (req, res) => {
         if (!thesis) {
             return res.status(404).json({ message: 'Δεν έχει ανατεθεί διπλωματική εργασία στον φοιτητή.' });
         }
+        // Απόκρυψη βαθμών/λεπτομερειών μελών επιτροπής από τον φοιτητή
+        if (Array.isArray(thesis.committee_members)) {
+            thesis.committee_members = thesis.committee_members.map(m => {
+                const { grade, grade_details, ...rest } = m;
+                return rest; // επιστρέφουμε τα υπόλοιπα πεδία χωρίς βαθμούς
+            });
+        }
         res.status(200).json(thesis);
     } catch (error) {
         console.error('Error in getStudentThesis:', error);
@@ -182,26 +189,7 @@ exports.submitPresentationDetails = (req, res) => {
     });
 };
 
-// 6) Βαθμολογίες επιτροπής για την τρέχουσα διπλωματική του φοιτητή
-exports.getCommitteeGrades = async (req, res) => {
-    const { thesisId } = req.params;
-    const studentId = req.session.userId;
-
-    try {
-        const studentThesis = await Thesis.getThesisByStudentId(studentId);
-        if (!studentThesis || String(studentThesis.id) !== String(thesisId)) {
-            return res.status(403).json({ message: 'Δεν έχετε δικαίωμα προβολής για αυτή τη διπλωματική.' });
-        }
-
-        const grades = await Thesis.getCommitteeGrades(thesisId);
-        return res.status(200).json(grades);
-    } catch (error) {
-        console.error('Error fetching committee grades:', error);
-        return res.status(500).json({ message: 'Σφάλμα server κατά την ανάκτηση βαθμολογιών επιτροπής.' });
-    }
-};
-
-// 7) Καταχώριση repository URL από φοιτητή (υπό εξέταση)
+// 6) Καταχώριση repository URL από φοιτητή (μετά τον οριστικό τελικό βαθμό)
 exports.submitRepositoryUrl = async (req, res) => {
     const { thesisId } = req.params;
     const { repository_url } = req.body || {};
@@ -217,12 +205,14 @@ exports.submitRepositoryUrl = async (req, res) => {
             return res.status(403).json({ message: 'Δεν έχετε δικαίωμα ενημέρωσης για αυτή τη διπλωματική.' });
         }
 
-        if (studentThesis.status !== 'under_review') {
-            return res.status(400).json({ message: 'Το repository URL μπορεί να καταχωρηθεί μόνο όταν η διπλωματική είναι υπό εξέταση.' });
+        // Επιτρέπεται μόνο όταν υπάρχει τελικός βαθμός (grade) και η διπλωματική είναι υπό εξέταση
+        if (studentThesis.status !== 'under_review' || studentThesis.grade === null || studentThesis.grade === undefined) {
+            return res.status(400).json({ message: 'Το repository URL μπορεί να καταχωρηθεί μόνο μετά τον οριστικό τελικό βαθμό και όταν η διπλωματική είναι υπό εξέταση.' });
         }
 
         const ok = await Thesis.updateRepositoryUrl(thesisId, repository_url.trim());
         if (ok) {
+            // Δεν ολοκληρώνουμε αυτόματα εδώ: η περάτωση γίνεται από τη Γραμματεία.
             return res.status(200).json({ message: 'Το repository URL καταχωρήθηκε επιτυχώς!' });
         }
         return res.status(400).json({ message: 'Αδυναμία ενημέρωσης repository URL.' });

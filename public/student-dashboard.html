@@ -473,6 +473,22 @@
                                 </div>
                                 <div class="ps-note">Για αλλαγές απαιτείται επικοινωνία με τη Γραμματεία.</div>
                             </div>
+                            ${thesis.grade !== null && thesis.grade !== undefined && !thesis.repository_url ? `
+                            <div class="repository-section" style="margin-top: var(--space-4);">
+                                <h4>Καταχώριση Αποθετηρίου</h4>
+                                <p class="actions-description">Μετά την οριστικοποίηση του τελικού βαθμού, καταχωρήστε το URL του αποθετηρίου (π.χ. GitHub).</p>
+                                <form class="modern-form" onsubmit="handleRepositorySubmit(event, ${thesis.id})">
+                                    <div class="form-grid">
+                                        <div class="form-group full-width">
+                                            <label for="repository_url">Repository URL:</label>
+                                            <input type="url" id="repository_url" name="repository_url" placeholder="https://..." required />
+                                        </div>
+                                    </div>
+                                    <button type="submit" class="action-button primary">Καταχώριση</button>
+                                    <div id="repositoryMessage" class="message-area"></div>
+                                </form>
+                            </div>
+                            ` : ''}
                         </div>
                     `;
                 } else {
@@ -717,45 +733,7 @@
             }
         }
 
-        // Helper function για λήψη πληροφοριών βαθμολόγησης επιτροπής
-        async function getCommitteeGradesInfo(thesisId) {
-            try {
-                const response = await fetch(`/api/student/thesis/${thesisId}/committee-grades`);
-                if (response.ok) {
-                    const grades = await response.json();
-                    let gradeInfoHtml = '<div class="grades-info">';
-                    
-                    if (grades && grades.length > 0) {
-                        gradeInfoHtml += '<div class="grades-list">';
-                        grades.forEach(grade => {
-                            const statusClass = grade.grade !== null ? 'completed' : 'pending';
-                            gradeInfoHtml += `
-                                <div class="grade-item ${statusClass}">
-                                    <span class="member-name">${escapeHtml(grade.name)} ${escapeHtml(grade.surname)}</span>
-                                    <span class="grade-status">
-                                        ${grade.grade !== null ? 
-                                            `<strong>${grade.grade}/10</strong>` : 
-                                            '<em>Σε αναμονή</em>'
-                                        }
-                                    </span>
-                                </div>
-                            `;
-                        });
-                        gradeInfoHtml += '</div>';
-                    } else {
-                        gradeInfoHtml += '<div class="info-message">Η βαθμολόγηση δεν έχει ξεκινήσει ακόμη.</div>';
-                    }
-                    
-                    gradeInfoHtml += '</div>';
-                    return gradeInfoHtml;
-                } else {
-                    return '<div class="error-message">Σφάλμα φόρτωσης πληροφοριών βαθμολόγησης.</div>';
-                }
-            } catch (error) {
-                console.error('Error fetching committee grades:', error);
-                return '<div class="error-message">Αδυναμία φόρτωσης πληροφοριών βαθμολόγησης.</div>';
-            }
-        }
+        // Σκόπιμα δεν παρέχουμε helper για ανάκτηση ατομικών βαθμών επιτροπής, σύμφωνα με την πολιτική απορρήτου
 
         // Handler για καταχώρηση repository URL
         async function handleRepositorySubmit(event, thesisId) {
