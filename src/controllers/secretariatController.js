@@ -20,7 +20,7 @@ exports.importUsers = async (req, res) => {
         let skippedMissingPassword = 0;
         const usersToInsert = await Promise.all(users.map(async (user) => {
             if (!user.password) {
-                console.warn(`User ${user.email} has no password. Skipping password hashing.`);
+                // No hashing when password not provided in input; tracked via skippedMissingPassword
                 skippedMissingPassword += 1;
                 return user;
             }

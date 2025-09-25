@@ -129,7 +129,7 @@ class User {
                     const { email, password, name, surname, role, department, university, landline, mobile, street, street_number, city, postal_code, country } = user;
                     
                     if (!password) {
-                        console.warn(`Skipping new user ${email} due to missing password.`);
+                        // Skip inserting new user without password (no log to avoid noise)
                         continue;
                     }
 
