@@ -142,7 +142,7 @@ class Thesis {
                             row.committee_members_parsed.push({
                                 id: parseInt(parts[0]),
                                 name: parts[1],
-                                grade: parts[2] === 'null' ? null : parseInt(parts[2]),
+                                grade: parts[2] === 'null' ? null : parseFloat(parts[2]),
                                 grade_details: parts[3] === 'null' ? null : parts[3]
                             });
                         }
@@ -215,7 +215,9 @@ class Thesis {
 
             const [committeeMembersRows] = await pool.execute(
                 `SELECT
-                    cm.id, cm.professor_id, u.name, u.surname, u.email, cm.role, cm.grade, cm.grade_details
+                    cm.id, cm.professor_id, u.name, u.surname, u.email, cm.role,
+                    cm.c1_objectives_quality, cm.c2_duration, cm.c3_text_quality, cm.c4_presentation,
+                    cm.grade, cm.grade_details
                 FROM committee_members cm
                 JOIN users u ON cm.professor_id = u.id
                 WHERE cm.thesis_id = ?`,
@@ -495,11 +497,19 @@ class Thesis {
     
 
     // 6) Διαχείριση διπλωματικών - Υπό Εξέταση: Καταχώριση ατομικού βαθμού μέλους επιτροπής
-    static async saveCommitteeMemberGrade(thesisId, professorId, grade, gradeDetails) {
+    static async saveCommitteeMemberGrade(thesisId, professorId, criteria) {
         // Validate parameters
-        if (!thesisId || !professorId || grade === undefined || grade === null || !gradeDetails) {
-            throw new Error('Όλα τα πεδία είναι υποχρεωτικά για την καταχώριση βαθμού.');
+        const { c1, c2, c3, c4 } = criteria || {};
+        const hasAll = [c1, c2, c3, c4].every(v => v !== undefined && v !== null && !isNaN(parseFloat(v)));
+        if (!thesisId || !professorId || !hasAll) {
+            throw new Error('Όλα τα πεδία κριτηρίων είναι υποχρεωτικά για την καταχώριση βαθμού.');
         }
+        const n1 = Math.max(0, Math.min(10, parseFloat(c1)));
+        const n2 = Math.max(0, Math.min(10, parseFloat(c2)));
+        const n3 = Math.max(0, Math.min(10, parseFloat(c3)));
+        const n4 = Math.max(0, Math.min(10, parseFloat(c4)));
+        // Weighted: 60%, 15%, 15%, 10%
+        const weighted = Math.round((n1 * 0.6 + n2 * 0.15 + n3 * 0.15 + n4 * 0.10) * 10) / 10;
 
         const connection = await pool.getConnection();
         try {
@@ -528,13 +538,15 @@ class Thesis {
             }
             
             const [result] = await connection.execute(
-                'UPDATE committee_members SET grade = ?, grade_details = ? WHERE thesis_id = ? AND professor_id = ?',
-                [grade, gradeDetails, thesisId, professorId]
+                `UPDATE committee_members 
+                 SET c1_objectives_quality = ?, c2_duration = ?, c3_text_quality = ?, c4_presentation = ?, grade = ?
+                 WHERE thesis_id = ? AND professor_id = ?`,
+                [n1, n2, n3, n4, weighted, thesisId, professorId]
             );
             if (result.affectedRows > 0) {
                 const [prof] = await connection.execute('SELECT name, surname FROM users WHERE id = ?', [professorId]);
                 const profName = prof.length > 0 ? `${prof[0].name} ${prof[0].surname}` : `ID: ${professorId}`;
-                await ThesisLog.add(thesisId, professorId, 'MEMBER_GRADE_SAVED', `Ο/Η ${profName} καταχώρησε βαθμό (${grade}).`, connection);
+                await ThesisLog.add(thesisId, professorId, 'MEMBER_GRADE_SAVED', `Ο/Η ${profName} καταχώρησε βαθμό (${weighted}).`, connection);
 
                 // Έλεγχος αν έχουν βαθμολογήσει όλα τα μέλη της επιτροπής και υπολογισμός τελικού βαθμού
                 const [countRows] = await connection.execute(
@@ -611,7 +623,9 @@ class Thesis {
 
             // Committee Members
             const [cmRows] = await pool.execute(
-                `SELECT cm.professor_id, u.name, u.surname, u.email, cm.grade, cm.grade_details
+                `SELECT cm.professor_id, u.name, u.surname, u.email,
+                        cm.c1_objectives_quality, cm.c2_duration, cm.c3_text_quality, cm.c4_presentation,
+                        cm.grade, cm.grade_details
                  FROM committee_members cm
                  JOIN users u ON cm.professor_id = u.id
                  WHERE cm.thesis_id = ?`,

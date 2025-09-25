@@ -244,23 +244,31 @@
             </div>
         </div>
 
-        <!-- Grade Modal -->
+        <!-- Grade Modal (criteria-based) -->
         <div id="gradeModal" class="modal">
             <div class="modal-content">
                 <span class="close-button" onclick="closeModal('gradeModal')">&times;</span>
-                <h3 id="gradeModalTitle">Καταχώριση Βαθμού</h3>
+                <h3 id="gradeModalTitle">Καταχώριση Βαθμολογίας</h3>
                 <form onsubmit="event.preventDefault(); submitGrade();">
                     <input type="hidden" id="gradeThesisId">
                     <input type="hidden" id="gradeRole">
                     <div class="form-group">
-                        <label for="gradeValue">Βαθμός (0-10):</label>
-                        <input type="number" id="gradeValue" min="0" max="10" step="0.1" required>
+                        <label for="c1">1) Ποιότητα στόχων & επίτευξη (60%):</label>
+                        <input type="number" id="c1" min="0" max="10" step="0.1" required>
                     </div>
                     <div class="form-group">
-                        <label for="gradeDetails">Λεπτομέρειες Βαθμολογίας:</label>
-                        <textarea id="gradeDetails" rows="4" required placeholder="Αναλυτικός σχολιασμός της βαθμολογίας..."></textarea>
+                        <label for="c2">2) Διάρκεια/Χρονοδιάγραμμα (15%):</label>
+                        <input type="number" id="c2" min="0" max="10" step="0.1" required>
                     </div>
-                    <button type="submit" class="action-button primary">Καταχώριση Βαθμού</button>
+                    <div class="form-group">
+                        <label for="c3">3) Ποιότητα κειμένου (15%):</label>
+                        <input type="number" id="c3" min="0" max="10" step="0.1" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="c4">4) Παρουσίαση (10%):</label>
+                        <input type="number" id="c4" min="0" max="10" step="0.1" required>
+                    </div>
+                    <button type="submit" class="action-button primary">Καταχώριση</button>
                 </form>
                 <p id="gradeMessage" class="error-message" style="display: none;"></p>
             </div>
@@ -1206,17 +1214,18 @@
         function openGradeModal(thesisId, role) {
             document.getElementById('gradeThesisId').value = thesisId;
             document.getElementById('gradeRole').value = role;
-            document.getElementById('gradeValue').value = '';
-            document.getElementById('gradeDetails').value = '';
+            ['c1','c2','c3','c4'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
             document.getElementById('gradeMessage').textContent = '';
-            document.getElementById('gradeModalTitle').textContent = role === 'supervisor' ? 'Καταχώριση Βαθμού Επιβλέποντα' : 'Καταχώριση Βαθμού Μέλους Επιτροπής';
+            document.getElementById('gradeModalTitle').textContent = role === 'supervisor' ? 'Καταχώριση Βαθμολογίας Επιβλέποντα' : 'Καταχώριση Βαθμολογίας Μέλους Επιτροπής';
             document.getElementById('gradeModal').style.display = 'block';
         }
 
         async function submitGrade() {
             const thesisId = document.getElementById('gradeThesisId').value;
-            const grade = document.getElementById('gradeValue').value;
-            const gradeDetails = document.getElementById('gradeDetails').value;
+            const c1 = document.getElementById('c1').value;
+            const c2 = document.getElementById('c2').value;
+            const c3 = document.getElementById('c3').value;
+            const c4 = document.getElementById('c4').value;
             const messageElement = document.getElementById('gradeMessage');
 
             // Clear previous messages
@@ -1229,30 +1238,26 @@
                 return;
             }
 
-            if (!grade || grade === '' || isNaN(grade)) {
-                messageElement.textContent = 'Ο βαθμός είναι υποχρεωτικός και πρέπει να είναι αριθμός.';
-                messageElement.style.color = 'red';
-                return;
-            }
-
-            const numericGrade = parseFloat(grade);
-            if (numericGrade < 0 || numericGrade > 10) {
-                messageElement.textContent = 'Ο βαθμός πρέπει να είναι από 0 έως 10.';
-                messageElement.style.color = 'red';
-                return;
-            }
-
-            if (!gradeDetails || !gradeDetails.trim()) {
-                messageElement.textContent = 'Οι λεπτομέρειες βαθμολογίας είναι υποχρεωτικές.';
-                messageElement.style.color = 'red';
-                return;
+            const fields = { c1, c2, c3, c4 };
+            for (const [k, v] of Object.entries(fields)) {
+                if (!v || v === '' || isNaN(parseFloat(v))) {
+                    messageElement.textContent = `Το πεδίο ${k} είναι υποχρεωτικό και πρέπει να είναι αριθμός.`;
+                    messageElement.style.color = 'red';
+                    return;
+                }
+                const n = parseFloat(v);
+                if (n < 0 || n > 10) {
+                    messageElement.textContent = `Το πεδίο ${k} πρέπει να είναι από 0 έως 10.`;
+                    messageElement.style.color = 'red';
+                    return;
+                }
             }
 
             try {
                 const response = await fetch(`/api/professor/theses/${thesisId}/grade`, {
                     method: 'PUT',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ grade: numericGrade, gradeDetails: gradeDetails.trim() })
+                    body: JSON.stringify({ c1: parseFloat(c1), c2: parseFloat(c2), c3: parseFloat(c3), c4: parseFloat(c4) })
                 });
                 const result = await response.json();
                 if (response.ok) {
@@ -1285,11 +1290,19 @@
                         thesis.committee_members.forEach(member => {
                             const role = member.professor_id == thesis.supervisor_id ? 'Επιβλέπων' : 'Μέλος';
                             const gradeText = member.grade !== null ? `${member.grade}/10` : 'Δεν έχει καταχωρηθεί';
-                            const detailsText = member.grade_details || '';
+                            const crit = [
+                                member.c1_objectives_quality,
+                                member.c2_duration,
+                                member.c3_text_quality,
+                                member.c4_presentation
+                            ];
+                            const critText = crit.every(v => v === null || v === undefined)
+                                ? ''
+                                : `<br><small>Κριτήρια: [60%] ${crit[0] ?? '-'}, [15%] ${crit[1] ?? '-'}, [15%] ${crit[2] ?? '-'}, [10%] ${crit[3] ?? '-'}</small>`;
                             gradesHtml += `
                                 <li>
                                     <strong>${escapeHtml(member.name)} ${escapeHtml(member.surname)} (${role}):</strong> ${gradeText}
-                                    ${detailsText ? `<br><small>${escapeHtml(detailsText)}</small>` : ''}
+                                    ${critText}
                                 </li>
                             `;
                         });

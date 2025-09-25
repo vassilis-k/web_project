@@ -38,7 +38,7 @@ CREATE TABLE thesis (
     draft_file_url VARCHAR(500),
     extra_material_url VARCHAR(500),
     presentation_details_locked BOOLEAN DEFAULT FALSE,
-    grade INT CHECK (grade BETWEEN 0 AND 10),
+    grade DECIMAL(3,1) CHECK (grade BETWEEN 0 AND 10),
     repository_url VARCHAR(500),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (supervisor_id) REFERENCES users(id),
@@ -97,7 +97,13 @@ CREATE TABLE committee_members (
     thesis_id INT NOT NULL,
     professor_id INT NOT NULL,
     role ENUM('member') NOT NULL DEFAULT 'member',
-    grade INT CHECK (grade BETWEEN 0 AND 10),
+    -- Per-criterion scores (0-10) for weighted grading
+    c1_objectives_quality DECIMAL(3,1) CHECK (c1_objectives_quality BETWEEN 0 AND 10),
+    c2_duration DECIMAL(3,1) CHECK (c2_duration BETWEEN 0 AND 10),
+    c3_text_quality DECIMAL(3,1) CHECK (c3_text_quality BETWEEN 0 AND 10),
+    c4_presentation DECIMAL(3,1) CHECK (c4_presentation BETWEEN 0 AND 10),
+    -- Computed member grade (weighted sum) stored for averaging
+    grade DECIMAL(3,1) CHECK (grade BETWEEN 0 AND 10),
     grade_details TEXT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (thesis_id) REFERENCES thesis(id),

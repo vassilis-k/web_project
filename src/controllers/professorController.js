@@ -300,41 +300,38 @@ exports.cancelThesisBySupervisor = async (req, res) => {
 
 exports.saveProfessorGrade = async (req, res) => {
     const { thesisId } = req.params;
-    const { grade, gradeDetails } = req.body;
+    const { c1, c2, c3, c4 } = req.body || {};
     const professorId = req.session.userId;
 
     // Check for required parameters
     if (!thesisId) {
         return res.status(400).json({ message: 'Το ID της διπλωματικής είναι απαιτούμενο.' });
     }
-
     if (!professorId) {
         return res.status(400).json({ message: 'Το ID του καθηγητή είναι απαιτούμενο.' });
     }
 
-    if (grade === undefined || grade === null || grade === '' || isNaN(grade)) {
-        return res.status(400).json({ message: 'Ο βαθμός είναι υποχρεωτικός και πρέπει να είναι αριθμός.' });
-    }
-
-    const numericGrade = parseFloat(grade);
-    if (numericGrade < 0 || numericGrade > 10) {
-        return res.status(400).json({ message: 'Ο βαθμός πρέπει να είναι μεταξύ 0 και 10.' });
-    }
-
-    if (!gradeDetails || !gradeDetails.trim()) {
-        return res.status(400).json({ message: 'Οι λεπτομέρειες βαθμολογίας είναι υποχρεωτικές.' });
+    const fields = { c1, c2, c3, c4 };
+    for (const [k, v] of Object.entries(fields)) {
+        if (v === undefined || v === null || v === '' || isNaN(parseFloat(v))) {
+            return res.status(400).json({ message: `Το πεδίο ${k} είναι υποχρεωτικό και πρέπει να είναι αριθμός.` });
+        }
+        const n = parseFloat(v);
+        if (n < 0 || n > 10) {
+            return res.status(400).json({ message: `Το πεδίο ${k} πρέπει να είναι μεταξύ 0 και 10.` });
+        }
     }
 
     try {
-        const isSaved = await Thesis.saveCommitteeMemberGrade(thesisId, professorId, numericGrade, gradeDetails.trim());
+        const isSaved = await Thesis.saveCommitteeMemberGrade(thesisId, professorId, { c1, c2, c3, c4 });
         if (isSaved) {
-            res.status(200).json({ message: 'Ο βαθμός καταχωρήθηκε επιτυχώς!' });
+            res.status(200).json({ message: 'Η βαθμολόγηση καταχωρήθηκε επιτυχώς!' });
         } else {
-            res.status(400).json({ message: 'Αδυναμία καταχώρισης βαθμού. Βεβαιωθείτε ότι είστε μέλος της επιτροπής και η διπλωματική είναι υπό εξέταση.' });
+            res.status(400).json({ message: 'Αδυναμία καταχώρισης βαθμολόγησης. Βεβαιωθείτε ότι είστε μέλος της επιτροπής και η διπλωματική είναι υπό εξέταση.' });
         }
     } catch (error) {
         console.error('Error saving professor grade:', error);
-        const msg = error.message || 'Σφάλμα server κατά την καταχώριση βαθμού.';
+        const msg = error.message || 'Σφάλμα server κατά την καταχώριση βαθμολόγησης.';
         if (msg.includes('έχετε δικαίωμα') || msg.includes('δικαίωμα')) {
             return res.status(403).json({ message: msg });
         }
