@@ -5,6 +5,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Φοιτητής - Dashboard</title>
     <link rel="stylesheet" href="/css/style.css">
+    <style>
+        /* Discreet badge for final grade */
+        .badge { display: inline-block; padding: 2px 8px; border-radius: 9999px; font-size: 12px; font-weight: 600; vertical-align: middle; }
+        .badge-final { background: var(--success-light); color: var(--success); border: 1px solid var(--success); margin-left: 8px; }
+    </style>
 </head>
 <body>
     <div class="white-line-top">
@@ -308,10 +313,7 @@
                     </div>`;
             }
 
-            let gradeHtml = '';
-            if ((thesis.status === 'completed' || thesis.status === 'under_review') && (thesis.grade !== null && thesis.grade !== undefined)) {
-                gradeHtml = `<div class="grade-section"><p><strong>Βαθμός:</strong> <span class="final-grade">${escapeHtml(thesis.grade)}</span></p></div>`;
-            }
+            const showFinalGrade = (thesis.status === 'completed' || thesis.status === 'under_review') && (thesis.grade !== null && thesis.grade !== undefined);
 
             let presentationDetailsHtml = '';
             if (thesis.status === 'under_review' || thesis.status === 'completed') {
@@ -342,16 +344,10 @@
                         ${thesis.assignment_date ? `<div class="meta-row"><span class="meta-label">Ημ. Ανάθεσης:</span> <span class="meta-value">${new Date(thesis.assignment_date).toLocaleDateString('el-GR')}</span></div>` : ''}
                         ${timeFromAssignmentHtml ? `<div class="meta-row"><span class="meta-label">Χρόνος από Ανάθεση:</span> <span class="meta-value">${timeFromAssignmentHtml}</span></div>` : ''}
                         ${thesis.presentation_date ? `<div class="meta-row"><span class="meta-label">Ημ. Παρουσίασης:</span> <span class="meta-value">${new Date(thesis.presentation_date).toLocaleDateString('el-GR')}</span></div>` : ''}
+                        ${showFinalGrade ? `<div class="meta-row"><span class="meta-label">Τελικός Βαθμός:</span> <span class="meta-value">${escapeHtml(thesis.grade)}/10 <span class="badge badge-final">Τελικός</span></span></div>` : ''}
                     </div>
                     ${thesis.description ? `<div class="thesis-description"><div class="desc-label">Περιγραφή</div><div class="desc-text">${escapeHtml(thesis.description)}${thesis.description_pdf_url ? `<div style='margin-top:8px;'><a href='${escapeHtml(thesis.description_pdf_url)}' target='_blank' class='btn btn-secondary'>Αναλυτική Περιγραφή (PDF)</a></div>` : ''}</div></div>` : ''}
                     ${committeeHtml}
-
-                    ${gradeHtml ? `
-                    <div class="thesis-info-item" style="margin-top: var(--space-4); text-align: center; background: var(--success-light);">
-                        <div class="thesis-info-label">Τελικός Βαθμός</div>
-                        <div class="thesis-info-value" style="font-size: var(--text-xl); font-weight: 600; color: var(--success);">${escapeHtml(thesis.grade)}/10</div>
-                    </div>
-                    ` : ''}
 
                     ${thesis.repository_url ? `
                     <div style="margin-top: var(--space-4); text-align: center;">
@@ -538,23 +534,8 @@
                     `;
                 }
             } else if (thesis.status === 'completed') {
-                thesisActionsDiv.innerHTML = `
-                    <div class="thesis-actions-container">
-                        <div class="actions-header completed">
-                            <h4>Διπλωματική Ολοκληρωμένη</h4>
-                            <p class="actions-description">Συγχαρητήρια! Η διπλωματική σας εργασία έχει ολοκληρωθεί επιτυχώς.</p>
-                        </div>
-                        <div class="completion-details">
-                            ${thesis.grade ? `
-                                <div class="final-grade-display">
-                                    <h5>Τελικός Βαθμός:</h5>
-                                    <div class="grade-value">${thesis.grade}/10</div>
-                                </div>
-                            ` : ''}
-                            <div class="info-message">Μπορείτε πάντα να ανατρέχετε στις πληροφορίες της διπλωματικής σας από αυτή τη σελίδα.</div>
-                        </div>
-                    </div>
-                `;
+                // Δεν χρειάζεται επιπλέον ενότητα: όλες οι πληροφορίες φαίνονται ήδη στην κάρτα
+                thesisActionsDiv.innerHTML = '';
             } else if (thesis.status === 'cancelled') {
                 thesisActionsDiv.innerHTML = '<p style="color: red;">Η διπλωματική σας έχει ακυρωθεί.</p>';
             }
