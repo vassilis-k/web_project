@@ -126,8 +126,9 @@ class CommitteeInvitation {
                         );
 
                         // 2c. Insert supervisor into the committee
+                        // Note: committee_members.role currently supports only 'member' per schema.
                         await connection.execute(
-                            'INSERT INTO committee_members (thesis_id, professor_id, role) VALUES (?, ?, "supervisor")',
+                            'INSERT INTO committee_members (thesis_id, professor_id, role) VALUES (?, ?, "member")',
                             [thesisId, supervisorId]
                         );
 

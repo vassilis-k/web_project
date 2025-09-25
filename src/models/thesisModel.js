@@ -538,28 +538,7 @@ class Thesis {
         }
     }
 
-    // 6) Διαχείριση διπλωματικών - Ενεργή: Αλλαγή κατάστασης σε "Υπό Εξέταση"
-    static async setThesisUnderReview(thesisId, supervisorId) {
-        const connection = await pool.getConnection();
-        try {
-            await connection.beginTransaction();
-            const [result] = await connection.execute(
-                'UPDATE thesis SET status = "under_review" WHERE id = ? AND supervisor_id = ? AND status = "active"',
-                [thesisId, supervisorId]
-            );
-            if (result.affectedRows > 0) {
-                await ThesisLog.add(thesisId, supervisorId, 'SET_UNDER_REVIEW', 'Η κατάσταση άλλαξε σε "Υπό Εξέταση".', connection);
-            }
-            await connection.commit();
-            return result.affectedRows > 0;
-        } catch (error) {
-            await connection.rollback();
-            console.error('Error setting thesis under review:', error);
-            throw error;
-        } finally {
-            connection.release();
-        }
-    }
+    
 
     // 6) Διαχείριση διπλωματικών - Υπό Εξέταση: Καταχώριση ατομικού βαθμού μέλους επιτροπής
     static async saveCommitteeMemberGrade(thesisId, professorId, grade, gradeDetails) {

@@ -11,12 +11,13 @@ const { isAuthenticated, authorizeRole } = require('./middleware/authMiddleware'
 
 const app = express();
 const PORT = process.env.PORT || 3000;
+const SESSION_SECRET = process.env.SESSION_SECRET || 'dev_insecure_session_secret_change_me';
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 app.use(session({
-    secret: process.env.SESSION_SECRET,
+    secret: SESSION_SECRET,
     resave: false,
     saveUninitialized: false,
     cookie: {

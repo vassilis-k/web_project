@@ -103,7 +103,8 @@ exports.createProgressNote = (req, res) => {
                 thesis_id: thesisId,
                 date: progress_date,
                 description: progress_description,
-                file_url: file_url
+                file_url: file_url,
+                author_id: studentId
             });
 
             res.status(201).json({ message: 'Το σημείωμα προόδου υποβλήθηκε επιτυχώς!', noteId });

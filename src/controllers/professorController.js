@@ -192,7 +192,8 @@ exports.exportTheses = async (req, res) => {
         const theses = await Thesis.getProfessorRelatedThesesDetailed(professorId, { status, role });
 
         if (format === 'csv') {
-            const fields = ['id', 'title', 'status', 'student_name', 'student_surname', 'supervisor_name', 'supervisor_surname', 'final_grade'];
+            // Align field names with actual properties returned by the model
+            const fields = ['id', 'title', 'status', 'student_name', 'student_surname', 'supervisor_name', 'supervisor_surname', 'grade'];
             const json2csvParser = new json2csv({ fields });
             const csv = json2csvParser.parse(theses);
             res.header('Content-Type', 'text/csv');

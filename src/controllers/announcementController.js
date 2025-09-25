@@ -34,8 +34,3 @@ exports.getAnnouncements = async (req, res) => {
         res.status(500).json({ message: 'Error fetching announcements.' });
     }
 };
-
-function toggleDatePicker() {
-    const datePickerContainer = document.getElementById('datePickerContainer');
-    datePickerContainer.style.display = datePickerContainer.style.display === 'none' ? 'block' : 'none';
-}

@@ -815,7 +815,7 @@
                             <td>${thesis.student_name ? escapeHtml(thesis.student_name + ' ' + (thesis.student_surname || '')) : 'N/A'}</td>
                             <td>${thesis.supervisor_name ? escapeHtml(thesis.supervisor_name + ' ' + (thesis.supervisor_surname || '')) : ''}</td>
                             <td>${translateThesisStatus(thesis.status)}</td>
-                            <td>${thesis.final_grade !== null ? thesis.final_grade : 'N/A'}</td>
+                            <td>${thesis.grade !== null && thesis.grade !== undefined ? thesis.grade : 'N/A'}</td>
                             <td>
                                 <button class="action-button info" onclick="viewThesisDetails(${thesis.id})">Προβολή</button>
                             </td>
@@ -960,7 +960,7 @@
                 ${thesis.gs_approval_protocol ? `<p><strong>ΑΠ Γ.Σ. Ανάθεσης:</strong> ${escapeHtml(thesis.gs_approval_protocol)}</p>` : ''}
                 ${thesis.status === 'under_review' && thesis.presentation_date ? `<p><strong>Ημερομηνία Παρουσίασης:</strong> ${new Date(thesis.presentation_date).toLocaleString('el-GR')}</p>` : ''}
                 ${thesis.status === 'under_review' && thesis.presentation_location ? `<p><strong>Τοποθεσία Παρουσίασης:</strong> ${escapeHtml(thesis.presentation_location)}</p>` : ''}
-                ${thesis.final_grade !== null ? `<p><strong>Τελικός Βαθμός:</strong> ${thesis.final_grade}</p>` : ''}
+                ${thesis.grade !== null && thesis.grade !== undefined ? `<p><strong>Τελικός Βαθμός:</strong> ${thesis.grade}</p>` : ''}
                 ${thesis.repository_url ? `<p><strong>Σύνδεσμος Αποθετηρίου:</strong> <a href="${thesis.repository_url}" target="_blank">Προβολή</a></p>` : ''}
                 ${thesis.draft_file_url ? `<p><strong>Κείμενο Διπλωματικής:</strong> <a class="thesis-file-link" href="${normalizeDraftUrl(thesis.draft_file_url)}" target="_blank">Προβολή PDF</a></p>` : ''}
                 ${thesis.cancellation_reason ? `<p style="color: red;"><strong>Ακυρωμένη:</strong> ${escapeHtml(thesis.cancellation_reason)}</p>` : ''}
@@ -1117,8 +1117,8 @@
             messageElement.style.color = 'blue';
 
             try {
-                const response = await fetch(`/api/professor/theses/${thesisId}/generate-announcement`, {
-                    method: 'POST'
+                const response = await fetch(`/api/professor/theses/${thesisId}/announcement`, {
+                    method: 'GET'
                 });
                 const result = await response.json();
                 if (response.ok) {
@@ -1507,7 +1507,7 @@
             const roleFilter = document.getElementById('thesisRoleFilter').value;
 
             try {
-                const response = await fetch(`/api/professor/export-theses?format=${format}&status=${statusFilter}&role=${roleFilter}`);
+                const response = await fetch(`/api/professor/theses/export?format=${format}&status=${statusFilter}&role=${roleFilter}`);
 
                 if (!response.ok) {
                     throw new Error('Failed to export theses');

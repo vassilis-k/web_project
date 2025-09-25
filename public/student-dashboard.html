@@ -309,8 +309,8 @@
             }
 
             let gradeHtml = '';
-            if ((thesis.status === 'completed' || thesis.status === 'under_review') && thesis.final_grade) {
-                gradeHtml = `<div class="grade-section"><p><strong>Βαθμός:</strong> <span class="final-grade">${escapeHtml(thesis.final_grade)}</span></p></div>`;
+            if ((thesis.status === 'completed' || thesis.status === 'under_review') && (thesis.grade !== null && thesis.grade !== undefined)) {
+                gradeHtml = `<div class="grade-section"><p><strong>Βαθμός:</strong> <span class="final-grade">${escapeHtml(thesis.grade)}</span></p></div>`;
             }
 
             let presentationDetailsHtml = '';
@@ -349,7 +349,7 @@
                     ${gradeHtml ? `
                     <div class="thesis-info-item" style="margin-top: var(--space-4); text-align: center; background: var(--success-light);">
                         <div class="thesis-info-label">Τελικός Βαθμός</div>
-                        <div class="thesis-info-value" style="font-size: var(--text-xl); font-weight: 600; color: var(--success);">${escapeHtml(thesis.final_grade)}/10</div>
+                        <div class="thesis-info-value" style="font-size: var(--text-xl); font-weight: 600; color: var(--success);">${escapeHtml(thesis.grade)}/10</div>
                     </div>
                     ` : ''}
 
@@ -529,10 +529,10 @@
                             <p class="actions-description">Συγχαρητήρια! Η διπλωματική σας εργασία έχει ολοκληρωθεί επιτυχώς.</p>
                         </div>
                         <div class="completion-details">
-                            ${thesis.final_grade ? `
+                            ${thesis.grade ? `
                                 <div class="final-grade-display">
                                     <h5>Τελικός Βαθμός:</h5>
-                                    <div class="grade-value">${thesis.final_grade}/10</div>
+                                    <div class="grade-value">${thesis.grade}/10</div>
                                 </div>
                             ` : ''}
                             <div class="info-message">Μπορείτε πάντα να ανατρέχετε στις πληροφορίες της διπλωματικής σας από αυτή τη σελίδα.</div>
