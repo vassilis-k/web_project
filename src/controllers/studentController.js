@@ -182,6 +182,56 @@ exports.submitPresentationDetails = (req, res) => {
     });
 };
 
+// 6) Βαθμολογίες επιτροπής για την τρέχουσα διπλωματική του φοιτητή
+exports.getCommitteeGrades = async (req, res) => {
+    const { thesisId } = req.params;
+    const studentId = req.session.userId;
+
+    try {
+        const studentThesis = await Thesis.getThesisByStudentId(studentId);
+        if (!studentThesis || String(studentThesis.id) !== String(thesisId)) {
+            return res.status(403).json({ message: 'Δεν έχετε δικαίωμα προβολής για αυτή τη διπλωματική.' });
+        }
+
+        const grades = await Thesis.getCommitteeGrades(thesisId);
+        return res.status(200).json(grades);
+    } catch (error) {
+        console.error('Error fetching committee grades:', error);
+        return res.status(500).json({ message: 'Σφάλμα server κατά την ανάκτηση βαθμολογιών επιτροπής.' });
+    }
+};
+
+// 7) Καταχώριση repository URL από φοιτητή (υπό εξέταση)
+exports.submitRepositoryUrl = async (req, res) => {
+    const { thesisId } = req.params;
+    const { repository_url } = req.body || {};
+    const studentId = req.session.userId;
+
+    if (!repository_url || typeof repository_url !== 'string' || repository_url.trim() === '') {
+        return res.status(400).json({ message: 'Απαιτείται έγκυρο repository URL.' });
+    }
+
+    try {
+        const studentThesis = await Thesis.getThesisByStudentId(studentId);
+        if (!studentThesis || String(studentThesis.id) !== String(thesisId)) {
+            return res.status(403).json({ message: 'Δεν έχετε δικαίωμα ενημέρωσης για αυτή τη διπλωματική.' });
+        }
+
+        if (studentThesis.status !== 'under_review') {
+            return res.status(400).json({ message: 'Το repository URL μπορεί να καταχωρηθεί μόνο όταν η διπλωματική είναι υπό εξέταση.' });
+        }
+
+        const ok = await Thesis.updateRepositoryUrl(thesisId, repository_url.trim());
+        if (ok) {
+            return res.status(200).json({ message: 'Το repository URL καταχωρήθηκε επιτυχώς!' });
+        }
+        return res.status(400).json({ message: 'Αδυναμία ενημέρωσης repository URL.' });
+    } catch (error) {
+        console.error('Error submitting repository URL:', error);
+        return res.status(500).json({ message: 'Σφάλμα server κατά την καταχώριση repository URL.' });
+    }
+};
+
 
 // 2) Επεξεργασία Προφίλ
 exports.getStudentProfile = async (req, res) => {

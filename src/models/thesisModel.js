@@ -189,29 +189,7 @@ class Thesis {
         }
     }
 
-    // Νέα μέθοδος: Ανάθεση διπλωματικής σε φοιτητή (αλλάζει την κατάσταση σε 'under_assignment')
-    static async assignThesisToStudent(thesisId, studentId) {
-        const connection = await pool.getConnection();
-        try {
-            await connection.beginTransaction();
-            const [result] = await connection.execute(
-                'UPDATE thesis SET student_id = ?, status = "under_assignment" WHERE id = ? AND status = "available"',
-                [studentId, thesisId]
-            );
-            if (result.affectedRows > 0) {
-                // We don't have supervisorId here, so we pass null for userId. The action is initiated by the student.
-                await ThesisLog.add(thesisId, studentId, 'STUDENT_APPLIED', `Ο φοιτητής (ID: ${studentId}) έκανε αίτηση για το θέμα.`, connection);
-            }
-            await connection.commit();
-            return result.affectedRows > 0;
-        } catch (error) {
-            await connection.rollback();
-            console.error('Error assigning thesis to student:', error);
-            throw error;
-        } finally {
-            connection.release();
-        }
-    }
+    // Removed legacy assignThesisToStudent (use assignTopicToStudent instead)
 
     // Νέα μέθοδος: Ανάκτηση λεπτομερειών διπλωματικής μαζί με μέλη επιτροπής και προσκλήσεις
     static async getThesisDetailsWithCommittee(thesisId) {
@@ -363,26 +341,7 @@ class Thesis {
         }
     }
 
-    // Νέα μέθοδος: Ακύρωση συγκεκριμένης πρόσκλησης
-    static async cancelInvitation(invitationId, thesisId) {
-        const connection = await pool.getConnection();
-        try {
-            await connection.beginTransaction();
-            const [result] = await connection.execute('DELETE FROM committee_invitations WHERE id = ? AND thesis_id = ?', [invitationId, thesisId]);
-            if (result.affectedRows > 0) {
-                // professorId is not available here, so we pass null.
-                await ThesisLog.add(thesisId, null, 'INVITATION_CANCELLED', `Μια πρόσκληση μέλους επιτροπής ακυρώθηκε.`, connection);
-            }
-            await connection.commit();
-            return result.affectedRows > 0;
-        } catch (error) {
-            await connection.rollback();
-            console.error('Error canceling invitation:', error);
-            throw error;
-        } finally {
-            connection.release();
-        }
-    }
+    // Removed legacy cancelInvitation (use CommitteeInvitation.deleteInvitation instead)
 
     static async getSecretariatThesesWithDetails() {
         try {
@@ -490,29 +449,7 @@ class Thesis {
         }
     }
 
-    // Νέα μέθοδος: Ενημέρωση τελικού βαθμού
-    static async updateFinalGrade(thesisId, grade) {
-        const connection = await pool.getConnection();
-        try {
-            await connection.beginTransaction();
-            const [result] = await connection.execute(
-                'UPDATE thesis SET grade = ? WHERE id = ?',
-                [grade, thesisId]
-            );
-            if (result.affectedRows > 0) {
-                // professorId is not available here, so we pass null.
-                await ThesisLog.add(thesisId, null, 'FINAL_GRADE_SET', `Ο τελικός βαθμός ορίστηκε σε ${grade}.`, connection);
-            }
-            await connection.commit();
-            return result.affectedRows > 0;
-        } catch (error) {
-            await connection.rollback();
-            console.error('Error updating final grade:', error);
-            throw error;
-        } finally {
-            connection.release();
-        }
-    }
+    // Removed legacy updateFinalGrade (finalization currently flows via committee grades and state changes)
 
     // Νέα μέθοδος: Ενημέρωση repository URL
     static async updateRepositoryUrl(thesisId, url) {
@@ -584,19 +521,20 @@ class Thesis {
         }
     }
 
-    // Added for detailed thesis view to fetch all notes
-    static async getThesisNotes(thesisId) {
+    // Νέα μέθοδος: Επιστροφή βαθμών επιτροπής για συγκεκριμένη διπλωματική
+    static async getCommitteeGrades(thesisId) {
         try {
             const [rows] = await pool.execute(
-                `SELECT pn.id, pn.description as note, pn.created_at, u.name, u.surname, u.role
-                 FROM progress_notes pn
-                 JOIN users u ON pn.author_id = u.id
-                 WHERE pn.thesis_id = ? ORDER BY pn.created_at DESC`,
+                `SELECT u.name, u.surname, cm.grade
+                 FROM committee_members cm
+                 JOIN users u ON u.id = cm.professor_id
+                 WHERE cm.thesis_id = ?
+                 ORDER BY u.surname ASC, u.name ASC`,
                 [thesisId]
             );
             return rows;
         } catch (error) {
-            console.error('Error fetching thesis notes:', error);
+            console.error('Error fetching committee grades:', error);
             throw error;
         }
     }
