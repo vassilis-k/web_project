@@ -4,7 +4,10 @@ const secretariatController = require('../controllers/secretariatController');
 const multer = require('multer');
 
 // Use memory storage for multer to handle the file as a buffer
-const upload = multer({ storage: multer.memoryStorage() });
+const upload = multer({
+	storage: multer.memoryStorage(),
+	limits: { fileSize: 2 * 1024 * 1024 } // 2MB limit to prevent large in-memory uploads
+});
 
 // 1) Προβολή ΔΕ
 router.get('/theses-overview', secretariatController.getThesesForOverview);

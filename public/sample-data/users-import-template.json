@@ -1,0 +1,27 @@
+[
+  {
+    "email": "student1@example.com",
+    "password": "PlaintextWillBeHashedServerSide",
+    "name": "Μαρία",
+    "surname": "Παπαδοπούλου",
+    "role": "student",
+    "department": "ΤΜΗΥΠ",
+    "university": "Πανεπιστήμιο Πατρών",
+    "landline": null,
+    "mobile": "+30 69xxxxxxxx",
+    "street": "Οδός",
+    "street_number": "1",
+    "city": "Πάτρα",
+    "postal_code": "26504",
+    "country": "Ελλάδα"
+  },
+  {
+    "email": "prof1@example.com",
+    "password": "PlaintextWillBeHashedServerSide",
+    "name": "Νίκος",
+    "surname": "Ιωάννου",
+    "role": "professor",
+    "department": "ΤΜΗΥΠ",
+    "university": "Πανεπιστήμιο Πατρών"
+  }
+]

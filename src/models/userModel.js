@@ -79,13 +79,32 @@ class User {
             let inserted = 0;
             let updated = 0;
 
-            for (const user of users) {
+            const nz = (v) => (v === undefined ? null : v);
+            const sanitizeUser = (u) => ({
+                email: u && u.email !== undefined ? u.email : null,
+                password: u && u.password !== undefined ? u.password : null,
+                name: u && u.name !== undefined ? u.name : null,
+                surname: u && u.surname !== undefined ? u.surname : null,
+                role: u && u.role !== undefined ? u.role : null,
+                department: u && u.department !== undefined ? u.department : null,
+                university: u && u.university !== undefined ? u.university : null,
+                landline: u && u.landline !== undefined ? u.landline : null,
+                mobile: u && u.mobile !== undefined ? u.mobile : null,
+                street: u && u.street !== undefined ? u.street : null,
+                street_number: u && u.street_number !== undefined ? u.street_number : null,
+                city: u && u.city !== undefined ? u.city : null,
+                postal_code: u && u.postal_code !== undefined ? u.postal_code : null,
+                country: u && u.country !== undefined ? u.country : null,
+            });
+
+            for (const raw of users) {
+                const user = sanitizeUser(raw);
                 if (!user.email || !user.role) {
                     console.warn('Skipping user with missing email or role:', user);
                     continue;
                 }
 
-                const [existing] = await connection.execute('SELECT id FROM users WHERE email = ?', [user.email]);
+                const [existing] = await connection.execute('SELECT id FROM users WHERE email = ?', [String(user.email)]);
 
                 if (existing.length > 0) {
                     // User exists -> Update
@@ -102,7 +121,7 @@ class User {
                          street_number = COALESCE(?, street_number), city = COALESCE(?, city), 
                          postal_code = COALESCE(?, postal_code), country = COALESCE(?, country)
                          WHERE id = ?`,
-                        [name, surname, role, department, university, landline, mobile, street, street_number, city, postal_code, country, userId]
+                        [nz(name), nz(surname), nz(role), nz(department), nz(university), nz(landline), nz(mobile), nz(street), nz(street_number), nz(city), nz(postal_code), nz(country), userId]
                     );
                     updated++;
                 } else {
@@ -117,7 +136,7 @@ class User {
                     await connection.execute(
                         `INSERT INTO users (email, password, name, surname, role, department, university, landline, mobile, street, street_number, city, postal_code, country)
                          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-                        [email, password, name, surname, role, department, university, landline, mobile, street, street_number, city, postal_code, country]
+                        [String(email), String(password), nz(name), nz(surname), String(role), nz(department), nz(university), nz(landline), nz(mobile), nz(street), nz(street_number), nz(city), nz(postal_code), nz(country)]
                     );
                     inserted++;
                 }

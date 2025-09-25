@@ -16,11 +16,12 @@ exports.importUsers = async (req, res) => {
             return res.status(400).json({ message: 'Το αρχείο JSON πρέπει να περιέχει έναν πίνακα χρηστών.' });
         }
 
-        // Hash passwords before inserting
+        // Hash passwords before inserting; track how many without password (skipped on insert)
+        let skippedMissingPassword = 0;
         const usersToInsert = await Promise.all(users.map(async (user) => {
             if (!user.password) {
-                // You might want to assign a default password or skip the user
                 console.warn(`User ${user.email} has no password. Skipping password hashing.`);
+                skippedMissingPassword += 1;
                 return user;
             }
             const salt = await bcrypt.genSalt(10);
@@ -33,8 +34,11 @@ exports.importUsers = async (req, res) => {
 
         const result = await User.bulkInsertOrUpdate(usersToInsert);
 
+        const baseMessage = `Η εισαγωγή ολοκληρώθηκε. ${result.inserted} νέοι χρήστες προστέθηκαν, ${result.updated} χρήστες ενημερώθηκαν.`;
+        const skipMessage = skippedMissingPassword > 0 ? ` Παραλείφθηκαν ${skippedMissingPassword} εγγραφές χωρίς κωδικό (μόνο για νέους χρήστες).` : '';
         res.status(201).json({ 
-            message: `Η εισαγωγή ολοκληρώθηκε. ${result.inserted} νέοι χρήστες προστέθηκαν, ${result.updated} χρήστεes ενημερώθηκαν.`,
+            message: baseMessage + skipMessage,
+            skippedMissingPassword,
             ...result 
         });
 
@@ -43,7 +47,11 @@ exports.importUsers = async (req, res) => {
         if (error instanceof SyntaxError) {
             return res.status(400).json({ message: 'Μη έγκυρη μορφή JSON.' });
         }
-        res.status(500).json({ message: 'Σφάλμα server κατά την εισαγωγή των χρηστών.' });
+        // Multer file size error
+        if (error.code === 'LIMIT_FILE_SIZE') {
+            return res.status(413).json({ message: 'Το αρχείο είναι πολύ μεγάλο (όριο 2MB).' });
+        }
+        res.status(500).json({ message: 'Σφάλμα server κατά την εισαγωγή των χρηστών. Ελέγξτε τα πεδία του JSON (null αντί για undefined).' });
     }
 };
 
