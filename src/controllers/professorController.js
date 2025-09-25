@@ -338,7 +338,7 @@ exports.saveProfessorGrade = async (req, res) => {
         if (msg.includes('έχετε δικαίωμα') || msg.includes('δικαίωμα')) {
             return res.status(403).json({ message: msg });
         }
-        if (msg.includes('ήδη καταχωρήσει βαθμό')) {
+        if (msg.includes('ήδη καταχωρήσει βαθμό') || msg.includes('ήδη καταχωρήσει')) {
             return res.status(409).json({ message: msg });
         }
         res.status(500).json({ message: msg });

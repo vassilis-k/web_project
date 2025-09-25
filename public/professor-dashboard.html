@@ -1007,7 +1007,10 @@
                         gradeBtn = `<button class=\"action-button disabled\" disabled title=\"Η ακύρωση επιτρέπεται μόνο μετά από 2 χρόνια από την ανάθεση. Απομένουν περίπου ${monthsLeft} μήνες.\">Ακύρωση Ανάθεσης (2ετία)</button>`;
                     }
                 } else if (thesis.status === 'under_review') {
-                    gradeBtn = `<button class=\"action-button\" onclick=\"openGradeModal(${thesis.id}, 'supervisor')\">Καταχώριση Βαθμού Επιβλέποντα</button>`;
+                    const alreadyGraded = Array.isArray(thesis.committee_members) && thesis.committee_members.some(m => String(m.professor_id) === String(thesis.viewer_professor_id) && m.grade !== null && m.grade !== undefined);
+                    gradeBtn = alreadyGraded
+                        ? `<button class=\"action-button disabled\" disabled title=\"Έχετε ήδη καταχωρήσει βαθμό.\">Βαθμολογήσατε</button>`
+                        : `<button class=\"action-button\" onclick=\"openGradeModal(${thesis.id}, 'supervisor')\">Καταχώριση Βαθμού Επιβλέποντα</button>`;
                     if (thesis.committee_members && thesis.committee_members.length > 0) {
                         viewGradesBtn = `<button class=\"action-button\" onclick=\"showCommitteeGrades(${thesis.id})\">Προβολή Βαθμών Επιτροπής</button>`;
                     }
@@ -1018,7 +1021,10 @@
             }
 
             if (!isProfessorSupervisor && isProfessorCommitteeMember && thesis.status === 'under_review') {
-                gradeBtn = `<button class=\"action-button\" onclick=\"openGradeModal(${thesis.id}, 'member')\">Καταχώριση Βαθμού Μέλους</button>`;
+                const alreadyGraded = Array.isArray(thesis.committee_members) && thesis.committee_members.some(m => String(m.professor_id) === String(thesis.viewer_professor_id) && m.grade !== null && m.grade !== undefined);
+                gradeBtn = alreadyGraded
+                    ? `<button class=\"action-button disabled\" disabled title=\"Έχετε ήδη καταχωρήσει βαθμό.\">Βαθμολογήσατε</button>`
+                    : `<button class=\"action-button\" onclick=\"openGradeModal(${thesis.id}, 'member')\">Καταχώριση Βαθμού Μέλους</button>`;
                 if (thesis.committee_members && thesis.committee_members.length > 0) {
                     viewGradesBtn = `<button class=\"action-button\" onclick=\"showCommitteeGrades(${thesis.id})\">Προβολή Βαθμών Επιτροπής</button>`;
                 }

@@ -517,6 +517,15 @@ class Thesis {
             if (!thesisCheck.length || thesisCheck[0].status !== 'under_review' || !thesisCheck[0].professor_id) {
                 throw new Error('Δεν έχετε δικαίωμα καταχώρισης βαθμού για αυτή τη διπλωματική.');
             }
+
+            // Prevent multiple submissions: check if this professor has already graded
+            const [existingGradeRows] = await connection.execute(
+                'SELECT grade FROM committee_members WHERE thesis_id = ? AND professor_id = ? FOR UPDATE',
+                [thesisId, professorId]
+            );
+            if (existingGradeRows.length && existingGradeRows[0].grade !== null) {
+                throw new Error('Έχετε ήδη καταχωρήσει βαθμό για αυτή τη διπλωματική.');
+            }
             
             const [result] = await connection.execute(
                 'UPDATE committee_members SET grade = ?, grade_details = ? WHERE thesis_id = ? AND professor_id = ?',
