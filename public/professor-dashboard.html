@@ -937,7 +937,7 @@
                         <div class="action-log-container">
                             <h5>Χρονολόγιο Διπλωματικής</h5>
                             <ul class="action-log-list">
-                                ${thesis.action_log.slice().reverse().map(log => `
+                                ${thesis.action_log.map(log => `
                                     <li class="action-log-item">
                                         <div class="log-meta-row">
                                             <span class="log-meta-time">${new Date(log.timestamp).toLocaleString('el-GR')}</span>
