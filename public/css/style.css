@@ -555,18 +555,39 @@ button:disabled,
     border: none;
     border-radius: var(--radius);
     cursor: pointer;
-    transition: all var(--transition);
+    /* Enhanced transition for subtle lift & glow */
+    transition: background var(--transition-fast), transform var(--transition-fast), box-shadow var(--transition-fast);
     font-weight: 500;
     height: 40px;
     display: inline-flex;
     align-items: center;
     justify-content: center;
+    position: relative;
+    overflow: hidden;
 }
 
 .login-header-btn:hover,
 .logout-header-btn:hover,
 .announcements-header-btn:hover {
     background: var(--primary-dark);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 10px -2px rgba(0,0,0,0.25);
+}
+
+/* Focus visible for accessibility */
+.login-header-btn:focus-visible,
+.logout-header-btn:focus-visible,
+.announcements-header-btn:focus-visible {
+    outline: 2px solid var(--primary-light);
+    outline-offset: 2px;
+}
+
+/* Active press feedback */
+.login-header-btn:active,
+.logout-header-btn:active,
+.announcements-header-btn:active {
+    transform: translateY(0);
+    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
 }
 
 /* =================
