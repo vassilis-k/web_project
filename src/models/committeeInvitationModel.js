@@ -19,6 +19,24 @@ class CommitteeInvitation {
                 'INSERT INTO committee_invitations (thesis_id, invited_professor_id, status) VALUES (?, ?, "pending")',
                 [thesisId, invitedProfessorId]
             );
+            // Log invitation creation (student initiated). Need student & invited professor names.
+            try {
+                const ThesisLog = require('./thesisLogModel');
+                // Fetch student (owner) and invited professor names
+                const [[thesisRow]] = await pool.execute('SELECT student_id FROM thesis WHERE id = ?', [thesisId]);
+                let studentName = 'Φοιτητής';
+                if (thesisRow && thesisRow.student_id) {
+                    const [stuRows] = await pool.execute('SELECT name, surname FROM users WHERE id = ?', [thesisRow.student_id]);
+                    if (stuRows.length) studentName = `${stuRows[0].name} ${stuRows[0].surname}`;
+                }
+                let professorName = `ID:${invitedProfessorId}`;
+                const [profRows] = await pool.execute('SELECT name, surname FROM users WHERE id = ?', [invitedProfessorId]);
+                if (profRows.length) professorName = `${profRows[0].name} ${profRows[0].surname}`;
+                const details = `Ο/Η ${studentName} έστειλε πρόσκληση συμμετοχής στην επιτροπή στον/στην ${professorName}.`;
+                await ThesisLog.add(thesisId, thesisRow?.student_id || null, 'INVITATION_SENT', details);
+            } catch (logErr) {
+                console.error('Failed to log invitation creation:', logErr);
+            }
             return result.insertId;
         } catch (error) {
             console.error('Error creating committee invitation:', error);
