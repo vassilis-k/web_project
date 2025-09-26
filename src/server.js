@@ -13,6 +13,23 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 const SESSION_SECRET = process.env.SESSION_SECRET || 'dev_insecure_session_secret_change_me';
 
+// Ensure required upload subdirectories exist at startup
+const fs = require('fs');
+const uploadDirs = [
+    path.join(__dirname, '../uploads'),
+    path.join(__dirname, '../uploads/thesis_drafts'),
+    path.join(__dirname, '../uploads/thesis_pdfs')
+];
+uploadDirs.forEach(dir => {
+    try {
+        if (!fs.existsSync(dir)) {
+            fs.mkdirSync(dir, { recursive: true });
+        }
+    } catch (e) {
+        console.error('Failed to ensure upload directory:', dir, e);
+    }
+});
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 

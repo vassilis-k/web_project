@@ -1,36 +1,8 @@
 const User = require('../models/userModel');
 const Thesis = require('../models/thesisModel');
 const CommitteeInvitation = require('../models/committeeInvitationModel');
-const ProgressNote = require('../models/progressNoteModel');
 const multer = require('multer');
 const path = require('path');
-
-// Ρύθμιση του Multer για αποθήκευση αρχείων προόδου
-const progressNoteStorage = multer.diskStorage({
-    destination: (req, file, cb) => {
-        cb(null, 'uploads/progress_notes/');
-    },
-    filename: (req, file, cb) => {
-        // Δημιουργία μοναδικού ονόματος αρχείου για αποφυγή συγκρούσεων
-        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-        cb(null, `thesis_${req.params.thesisId}_${uniqueSuffix}${path.extname(file.originalname)}`);
-    }
-});
-
-const uploadProgressNote = multer({
-    storage: progressNoteStorage,
-    fileFilter: (req, file, cb) => {
-        // Αποδοχή μόνο συγκεκριμένων τύπων αρχείων (π.χ. PDF, Word, ZIP)
-        const allowedTypes = /pdf|doc|docx|zip|rar/;
-        const mimetype = allowedTypes.test(file.mimetype);
-        const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase());
-        if (mimetype && extname) {
-            return cb(null, true);
-        }
-        cb(new Error('Τύπος αρχείου μη επιτρεπτός. Επιτρέπονται μόνο: PDF, DOC, DOCX, ZIP, RAR.'));
-    },
-    limits: { fileSize: 10 * 1024 * 1024 } // Όριο μεγέθους αρχείου 10MB
-}).single('progress_file'); // Το όνομα του πεδίου στη φόρμα
 
 // Ρύθμιση του Multer για αποθήκευση πρόχειρων κειμένων διπλωματικής
 const thesisDraftStorage = multer.diskStorage({
@@ -90,66 +62,6 @@ exports.getStudentThesis = async (req, res) => {
     }
 };
 
-// 4) Διαχείριση διπλωματικής εργασίας - Ενεργή (Σημειώματα Προόδου)
-exports.createProgressNote = (req, res) => {
-    uploadProgressNote(req, res, async (err) => {
-        if (err) {
-            // Handle multer errors (e.g., file type, size limit)
-            return res.status(400).json({ message: err.message });
-        }
-
-        const { thesisId } = req.params;
-        const studentId = req.session.userId;
-        const { progress_date, progress_description } = req.body;
-        const file_url = req.file ? `/uploads/progress_notes/${req.file.filename}` : null;
-
-        if (!progress_date || !progress_description) {
-            return res.status(400).json({ message: 'Η ημερομηνία και η περιγραφή είναι υποχρεωτικά.' });
-        }
-
-        try {
-            const studentThesis = await Thesis.getThesisByStudentId(studentId);
-            if (!studentThesis || studentThesis.id != thesisId || studentThesis.status !== 'active') {
-                return res.status(403).json({ message: 'Δεν έχετε δικαίωμα να προσθέσετε πρόοδο σε αυτή τη διπλωματική ή δεν είναι ενεργή.' });
-            }
-
-            const noteId = await ProgressNote.create({
-                thesis_id: thesisId,
-                date: progress_date,
-                description: progress_description,
-                file_url: file_url,
-                author_id: studentId
-            });
-
-            res.status(201).json({ message: 'Το σημείωμα προόδου υποβλήθηκε επιτυχώς!', noteId });
-
-        } catch (error) {
-            console.error('Error creating progress note:', error);
-            res.status(500).json({ message: 'Σφάλμα server κατά την υποβολή του σημειώματος προόδου.' });
-        }
-    });
-};
-
-exports.getProgressNotesForThesis = async (req, res) => {
-    const { thesisId } = req.params;
-    const studentId = req.session.userId;
-
-    try {
-        // Έλεγχος αν ο φοιτητής έχει πρόσβαση σε αυτή τη διπλωματική
-        const studentThesis = await Thesis.getThesisByStudentId(studentId);
-        if (!studentThesis || studentThesis.id != thesisId) {
-            return res.status(403).json({ message: 'Δεν έχετε δικαίωμα προβολής για αυτή τη διπλωματική.' });
-        }
-
-        const notes = await ProgressNote.findByThesisId(thesisId);
-        res.status(200).json(notes);
-
-    } catch (error) {
-        console.error('Error fetching progress notes:', error);
-        res.status(500).json({ message: 'Σφάλμα server κατά την ανάκτηση των σημειωμάτων προόδου.' });
-    }
-};
-
 // 5) Διαχείριση διπλωματικής εργασίας - Υπό Εξέταση (Ορισμός Παρουσίασης)
 exports.submitPresentationDetails = (req, res) => {
     uploadThesisDraft(req, res, async (err) => {
@@ -162,14 +74,26 @@ exports.submitPresentationDetails = (req, res) => {
         const { presentation_date, presentation_mode, presentation_location, extra_material_url } = req.body;
         const draft_file_url = req.file ? `/uploads/thesis_drafts/${req.file.filename}` : null;
 
-        if (!presentation_date || !presentation_mode || !presentation_location || !draft_file_url) {
-            return res.status(400).json({ message: 'Όλα τα πεδία (εκτός του έξτρα υλικού) είναι υποχρεωτικά.' });
+        // Validation with detailed messaging
+        const missing = [];
+        if (!presentation_date) missing.push('ημερομηνία & ώρα');
+        if (!presentation_mode) missing.push('τρόπος παρουσίασης');
+        if (!presentation_location) missing.push('τοποθεσία/link');
+        if (!draft_file_url) missing.push('πρόχειρο αρχείο');
+        if (missing.length) {
+            return res.status(400).json({ message: `Αποτυχία: λείπουν: ${missing.join(', ')}.` });
         }
 
         try {
             const studentThesis = await Thesis.getThesisByStudentId(studentId);
-            if (!studentThesis || studentThesis.id != thesisId || studentThesis.status !== 'under_review' || studentThesis.presentation_details_locked) {
-                return res.status(403).json({ message: 'Δεν έχετε δικαίωμα να ορίσετε λεπτομέρειες παρουσίασης για αυτή τη διπλωματική ή είναι ήδη κλειδωμένες.' });
+            if (!studentThesis || studentThesis.id != thesisId) {
+                return res.status(403).json({ message: 'Δεν εντοπίστηκε επιλέξιμη διπλωματική για τον φοιτητή.' });
+            }
+            if (studentThesis.status !== 'under_review') {
+                return res.status(400).json({ message: `Η διπλωματική πρέπει να είναι σε κατάσταση "Υπό Εξέταση" (τρέχουσα: ${studentThesis.status}).` });
+            }
+            if (studentThesis.presentation_details_locked) {
+                return res.status(400).json({ message: 'Οι λεπτομέρειες έχουν ήδη κλειδώσει.' });
             }
 
             const details = {
