@@ -14,9 +14,9 @@
         </div>
         <div class="header-text-top-right">
             <div style="display: flex; align-items: center; gap: 16px;">
-                <div class="header-buttons-inline" style="margin-right: 24px;">
+                <div id="headerNavButtons" class="header-buttons-inline" style="margin-right: 24px;">
                     <a href="login.html" class="login-header-btn">Σύνδεση</a>
-                    <a href="index.html" class="announcements-header-btn active">Ανακοινώσεις</a>
+                    <a href="index.html" class="announcements-header-btn active" aria-current="page">Ανακοινώσεις</a>
                 </div>
                 <div class="main-title">Σύστημα Υποστήριξης Διπλωματικών Εργασιών</div>
             </div>
@@ -37,6 +37,42 @@
     </div>
     </div>
     <script>
+        // Dynamic header adaptation: if user is logged in, replace buttons (Ανακοινώσεις > Dashboard > Αποσύνδεση)
+        async function adaptHeaderForSession() {
+            const container = document.getElementById('headerNavButtons');
+            if (!container) return;
+            try {
+                // NOTE: Auth routes are mounted at root (see server.js: app.use('/', authRoutes))
+                // so the correct endpoint is '/user-info' not '/api/auth/user-info'
+                const resp = await fetch('/user-info');
+                if (!resp.ok) return; // Not authenticated
+                const data = await resp.json();
+                const role = data.userRole;
+                let dashboardUrl = '/dashboard.html';
+                if (role === 'student') dashboardUrl = '/student-dashboard.html';
+                else if (role === 'professor') dashboardUrl = '/professor-dashboard.html';
+                else if (role === 'secretariat') dashboardUrl = '/secretariat-dashboard.html';
+                container.innerHTML = `
+                    <a href="/index.html" class="announcements-header-btn active" aria-current="page">Ανακοινώσεις</a>
+                    <a href="${dashboardUrl}" class="dashboard-header-btn">Dashboard</a>
+                    <button class="logout-header-btn" onclick="dynamicLogout()">Αποσύνδεση</button>
+                `;
+            } catch (e) {
+                // Silent fail; user not logged or network issue
+            }
+        }
+
+        async function dynamicLogout() {
+            try {
+                // Correct logout endpoint is '/logout'
+                const r = await fetch('/logout', { method: 'POST' });
+                if (r.ok) {
+                    window.location.href = '/login.html';
+                }
+            } catch (err) { console.error('Logout failed', err); }
+        }
+
+        adaptHeaderForSession();
         let currentPage = 1; 
         const limit = 2; 
 

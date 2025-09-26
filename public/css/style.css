@@ -547,7 +547,8 @@ button:disabled,
 /* Header Buttons */
 .login-header-btn,
 .logout-header-btn,
-.announcements-header-btn {
+.announcements-header-btn,
+.dashboard-header-btn {
     padding: var(--space-3) var(--space-4);
     font-size: var(--text-sm);
     background: var(--primary-color);
@@ -568,7 +569,8 @@ button:disabled,
 
 .login-header-btn:hover,
 .logout-header-btn:hover,
-.announcements-header-btn:hover {
+.announcements-header-btn:hover,
+.dashboard-header-btn:hover {
     background: var(--primary-dark);
     transform: translateY(-2px);
     box-shadow: 0 4px 10px -2px rgba(0,0,0,0.25);
@@ -577,7 +579,8 @@ button:disabled,
 /* Focus visible for accessibility */
 .login-header-btn:focus-visible,
 .logout-header-btn:focus-visible,
-.announcements-header-btn:focus-visible {
+.announcements-header-btn:focus-visible,
+.dashboard-header-btn:focus-visible {
     outline: 2px solid var(--primary-light);
     outline-offset: 2px;
 }
@@ -585,7 +588,8 @@ button:disabled,
 /* Active press feedback */
 .login-header-btn:active,
 .logout-header-btn:active,
-.announcements-header-btn:active {
+.announcements-header-btn:active,
+.dashboard-header-btn:active {
     transform: translateY(0);
     box-shadow: 0 2px 4px rgba(0,0,0,0.2);
 }
