@@ -630,7 +630,29 @@ class Thesis {
          WHERE cm.thesis_id = ?`,
                 [thesisId]
             );
-            thesis.committee_members = cmRows;
+            // If viewer is not the supervisor, hide other members' detailed grading info
+            if (thesis.supervisor_id !== professorId) {
+                thesis.committee_members = cmRows.map(m => {
+                    // Allow each member to see ONLY their own detailed criteria & grade (and not others')
+                    if (m.professor_id === professorId) {
+                        return m; // full info for self
+                    }
+                    // Mask sensitive grading fields for other members
+                    return {
+                        professor_id: m.professor_id,
+                        name: m.name,
+                        surname: m.surname,
+                        email: m.email,
+                        c1_objectives_quality: null,
+                        c2_duration: null,
+                        c3_text_quality: null,
+                        c4_presentation: null,
+                        grade: null
+                    };
+                });
+            } else {
+                thesis.committee_members = cmRows; // Supervisor gets full visibility
+            }
 
             // Attach current viewer id for frontend logic (e.g., hide grade button if already graded)
             thesis.viewer_professor_id = professorId;

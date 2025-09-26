@@ -1033,9 +1033,7 @@
                 gradeBtn = alreadyGraded
                     ? `<button class=\"action-button disabled\" disabled title=\"Έχετε ήδη καταχωρήσει βαθμό.\">Βαθμολογήσατε</button>`
                     : `<button class=\"action-button\" onclick=\"openGradeModal(${thesis.id}, 'member')\">Καταχώριση Βαθμού Μέλους</button>`;
-                if (thesis.committee_members && thesis.committee_members.length > 0) {
-                    viewGradesBtn = `<button class=\"action-button\" onclick=\"showCommitteeGrades(${thesis.id})\">Προβολή Βαθμών Επιτροπής</button>`;
-                }
+                // Intentionally NOT showing committee grades button to non-supervisor members
             }
 
             // Order: viewDoc, grade, view grades, announcement
