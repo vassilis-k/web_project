@@ -104,7 +104,6 @@ CREATE TABLE committee_members (
     c4_presentation DECIMAL(3,1) CHECK (c4_presentation BETWEEN 0 AND 10),
     -- Computed member grade (weighted sum) stored for averaging
     grade DECIMAL(3,1) CHECK (grade BETWEEN 0 AND 10),
-    grade_details TEXT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (thesis_id) REFERENCES thesis(id),
     FOREIGN KEY (professor_id) REFERENCES users(id)

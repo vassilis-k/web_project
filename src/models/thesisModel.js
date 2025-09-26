@@ -93,7 +93,7 @@ class Thesis {
                 t.presentation_date, t.repository_url, t.draft_file_url, t.grade, t.cancellation_reason,
                 s.id AS student_id, s.name AS student_name, s.surname AS student_surname, s.email AS student_email,
                 sup.id AS supervisor_id, sup.name AS supervisor_name, sup.surname AS supervisor_surname, sup.email AS supervisor_email,
-                GROUP_CONCAT(DISTINCT CONCAT(cm_u.id, ':', cm_u.name, ' ', cm_u.surname, ':', cm.grade, ':', cm.grade_details)) AS committee_members_full,
+                GROUP_CONCAT(DISTINCT CONCAT(cm_u.id, ':', cm_u.name, ' ', cm_u.surname, ':', cm.grade)) AS committee_members_full,
                 GROUP_CONCAT(DISTINCT CONCAT(ci.invited_professor_id, ':', inv_u.name, ' ', inv_u.surname, ':', ci.status)) AS committee_invitations_full
             FROM thesis t
             LEFT JOIN users s ON t.student_id = s.id
@@ -138,12 +138,11 @@ class Thesis {
                 if (row.committee_members_full) {
                     row.committee_members_full.split(',').forEach(member => {
                         const parts = member.split(':');
-                        if (parts.length === 4) {
+                        if (parts.length === 3) {
                             row.committee_members_parsed.push({
                                 id: parseInt(parts[0]),
                                 name: parts[1],
-                                grade: parts[2] === 'null' ? null : parseFloat(parts[2]),
-                                grade_details: parts[3] === 'null' ? null : parts[3]
+                                grade: parts[2] === 'null' ? null : parseFloat(parts[2])
                             });
                         }
                     });
@@ -217,7 +216,7 @@ class Thesis {
                 `SELECT
                     cm.id, cm.professor_id, u.name, u.surname, u.email, cm.role,
                     cm.c1_objectives_quality, cm.c2_duration, cm.c3_text_quality, cm.c4_presentation,
-                    cm.grade, cm.grade_details
+                    cm.grade
                 FROM committee_members cm
                 JOIN users u ON cm.professor_id = u.id
                 WHERE cm.thesis_id = ?`,
@@ -623,12 +622,12 @@ class Thesis {
 
             // Committee Members
             const [cmRows] = await pool.execute(
-                `SELECT cm.professor_id, u.name, u.surname, u.email,
-                        cm.c1_objectives_quality, cm.c2_duration, cm.c3_text_quality, cm.c4_presentation,
-                        cm.grade, cm.grade_details
-                 FROM committee_members cm
-                 JOIN users u ON cm.professor_id = u.id
-                 WHERE cm.thesis_id = ?`,
+        `SELECT cm.professor_id, u.name, u.surname, u.email,
+            cm.c1_objectives_quality, cm.c2_duration, cm.c3_text_quality, cm.c4_presentation,
+            cm.grade
+         FROM committee_members cm
+         JOIN users u ON cm.professor_id = u.id
+         WHERE cm.thesis_id = ?`,
                 [thesisId]
             );
             thesis.committee_members = cmRows;

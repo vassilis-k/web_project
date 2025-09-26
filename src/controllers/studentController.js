@@ -72,7 +72,7 @@ exports.getStudentThesis = async (req, res) => {
         // Απόκρυψη βαθμών/λεπτομερειών μελών επιτροπής από τον φοιτητή
         if (Array.isArray(thesis.committee_members)) {
             thesis.committee_members = thesis.committee_members.map(m => {
-                const { grade, grade_details, c1_objectives_quality, c2_duration, c3_text_quality, c4_presentation, ...rest } = m;
+                const { grade, c1_objectives_quality, c2_duration, c3_text_quality, c4_presentation, ...rest } = m;
                 return rest; // επιστρέφουμε τα υπόλοιπα πεδία χωρίς βαθμούς/κριτήρια
             });
         }
