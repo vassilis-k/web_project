@@ -277,7 +277,21 @@ p {
 }
 
 .announcements-container {
-    max-width: 600px;
+    max-width: clamp(720px, 60vw, 1100px);
+}
+
+/* Extra vertical offset so announcements box doesn't stick to fixed header */
+.announcements-page .main-wrapper {
+    align-items: flex-start; /* allow top padding to work naturally */
+    padding-top: 140px; /* header (80px) + desired gap (≈60px) */
+}
+
+@media (max-width: 900px) {
+    .announcements-page .main-wrapper { padding-top: 120px; }
+}
+
+@media (max-width: 600px) {
+    .announcements-page .main-wrapper { padding-top: 100px; }
 }
 
 /* Dashboard Headers */
