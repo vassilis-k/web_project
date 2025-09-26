@@ -94,13 +94,16 @@
                         <input type="text" id="country" name="country">
                     </div>
                     <button type="submit" class="action-button primary">Αποθήκευση Προφίλ</button>
-                    <p id="profileMessage" class="error-message" style="display: none;"></p>
+                    <!-- Ενοποιημένο container μηνύματος (επιτυχία/σφάλμα) -->
+                    <div id="profileMessage" class="message-area" style="display:none;" role="status" aria-live="polite"></div>
                 </form>
             </section>
         </div>
     </div>
     <script>
         let studentThesis = null;
+        // Timeout holder για αυτόματη απόκρυψη success μηνύματος προφίλ
+        let profileMessageHideTimeout = null;
 
         document.addEventListener('DOMContentLoaded', () => {
             fetchUserInfo();
@@ -721,6 +724,16 @@
             const form = event.target;
             const formData = new FormData(form);
             const data = Object.fromEntries(formData.entries());
+            const messageElement = document.getElementById('profileMessage');
+            // Καθαρισμός τυχόν προηγούμενου timeout
+            if (profileMessageHideTimeout) {
+                clearTimeout(profileMessageHideTimeout);
+                profileMessageHideTimeout = null;
+            }
+            // Προκαταρκτική ένδειξη
+            messageElement.style.display = 'block';
+            messageElement.textContent = 'Αποθήκευση...';
+            messageElement.className = 'message-area';
 
             try {
                 const response = await fetch('/api/student/profile', {
@@ -729,20 +742,24 @@
                     body: JSON.stringify(data)
                 });
                 const result = await response.json();
-                const messageElement = document.getElementById('profileMessage');
 
                 if (response.ok) {
-                    messageElement.textContent = result.message;
-                    messageElement.style.color = 'green';
+                    messageElement.textContent = result.message || 'Το προφίλ αποθηκεύτηκε με επιτυχία.';
+                    messageElement.className = 'message-area success';
+                    // Αυτόματη απόκρυψη μετά από 3.5s
+                    profileMessageHideTimeout = setTimeout(() => {
+                        messageElement.style.display = 'none';
+                        messageElement.className = 'message-area';
+                    }, 3500);
                     fetchUserInfo(); // Ενημέρωση welcome message αν άλλαξε όνομα/επώνυμο
                 } else {
                     messageElement.textContent = result.message || 'Σφάλμα κατά την ενημέρωση προφίλ.';
-                    messageElement.style.color = 'red';
+                    messageElement.className = 'message-area error';
                 }
             } catch (error) {
                 console.error('Error updating profile:', error);
-                document.getElementById('profileMessage').textContent = 'Αδυναμία επικοινωνίας με τον server.';
-                document.getElementById('profileMessage').style.color = 'red';
+                messageElement.textContent = 'Αδυναμία επικοινωνίας με τον server.';
+                messageElement.className = 'message-area error';
             }
         }
 
