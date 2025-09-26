@@ -814,40 +814,59 @@ class Thesis {
     // Statistics for professor dashboard
     static async getProfessorStatistics(professorId) {
         try {
-            // Total theses count by status for this professor
-            const [statusCounts] = await pool.execute(`
-                SELECT status, COUNT(*) as count 
-                FROM thesis 
-                WHERE supervisor_id = ? AND student_id IS NOT NULL
-                GROUP BY status
-            `, [professorId]);
+            /*
+              Extend statistics so they include theses where the professor participates
+              either as supervisor OR as committee member (table committee_members).
+              Rationale: User requested counts reflect overall involvement, not only supervision.
 
-            // Average completion time for completed theses (in days)
+              Definition of "related" thesis for stats:
+              - thesis.supervisor_id = professorId OR
+              - committee_members.thesis_id = thesis.id AND committee_members.professor_id = professorId
+              (We ignore pending invitations; only actual committee membership or supervision.)
+            */
+
+            // 1. Status counts (distinct theses where professor participates)
+            const [statusCounts] = await pool.execute(`
+                SELECT t.status, COUNT(DISTINCT t.id) AS count
+                FROM thesis t
+                LEFT JOIN committee_members cm ON t.id = cm.thesis_id AND cm.professor_id = ?
+                WHERE (t.supervisor_id = ? OR cm.professor_id IS NOT NULL) AND t.student_id IS NOT NULL
+                GROUP BY t.status
+            `, [professorId, professorId]);
+
+            // 2. Total theses (distinct) matching participation
+            const [totalResult] = await pool.execute(`
+                SELECT COUNT(DISTINCT t.id) AS total
+                FROM thesis t
+                LEFT JOIN committee_members cm ON t.id = cm.thesis_id AND cm.professor_id = ?
+                WHERE (t.supervisor_id = ? OR cm.professor_id IS NOT NULL) AND t.student_id IS NOT NULL
+            `, [professorId, professorId]);
+
+            // 3. Average completion time (only for theses that have started assignment)
             const [avgTimeResult] = await pool.execute(`
                 SELECT AVG(DATEDIFF(
                     CASE 
-                        WHEN presentation_date IS NOT NULL THEN presentation_date
+                        WHEN t.presentation_date IS NOT NULL THEN t.presentation_date
                         ELSE CURRENT_DATE 
-                    END, 
-                    assignment_date
-                )) as avg_days
-                FROM thesis 
-                WHERE supervisor_id = ? AND assignment_date IS NOT NULL AND status IN ('completed', 'under_review')
-            `, [professorId]);
+                    END,
+                    t.assignment_date
+                )) AS avg_days
+                FROM thesis t
+                LEFT JOIN committee_members cm ON t.id = cm.thesis_id AND cm.professor_id = ?
+                WHERE (t.supervisor_id = ? OR cm.professor_id IS NOT NULL)
+                  AND t.assignment_date IS NOT NULL
+                  AND t.status IN ('completed', 'under_review')
+            `, [professorId, professorId]);
 
-            // Average grade for completed theses
+            // 4. Average grade (only completed theses with final grade)
             const [avgGradeResult] = await pool.execute(`
-                SELECT AVG(CAST(grade AS DECIMAL(3,1))) as avg_grade
-                FROM thesis 
-                WHERE supervisor_id = ? AND grade IS NOT NULL AND status = 'completed'
-            `, [professorId]);
-
-            // Total count of theses by supervisor
-            const [totalResult] = await pool.execute(`
-                SELECT COUNT(*) as total
-                FROM thesis 
-                WHERE supervisor_id = ? AND student_id IS NOT NULL
-            `, [professorId]);
+                SELECT AVG(CAST(t.grade AS DECIMAL(3,1))) AS avg_grade
+                FROM thesis t
+                LEFT JOIN committee_members cm ON t.id = cm.thesis_id AND cm.professor_id = ?
+                WHERE (t.supervisor_id = ? OR cm.professor_id IS NOT NULL)
+                  AND t.grade IS NOT NULL
+                  AND t.status = 'completed'
+            `, [professorId, professorId]);
 
             return {
                 totalTheses: totalResult[0]?.total || 0,
