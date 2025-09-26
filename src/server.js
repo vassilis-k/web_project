@@ -32,6 +32,16 @@ app.use(express.static(path.join(__dirname, '../public')));
 // Serve uploaded files (PDFs, drafts, notes)
 app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 
+// Backward compatibility: if older links pointed directly to /topic-<id>.pdf at root, attempt to serve from thesis_pdfs
+app.get(/^\/topic-(.+)\.pdf$/, (req, res, next) => {
+    const identifier = req.params[0];
+    const fileName = `topic-${identifier}.pdf`;
+    const filePath = path.join(__dirname, '../uploads/thesis_pdfs', fileName);
+    res.sendFile(filePath, err => {
+        if (err) return next();
+    });
+});
+
 // Auth routes (login/logout, user-info)
 app.use('/', authRoutes);
 

@@ -24,7 +24,9 @@ exports.createProfessorTopic = async (req, res) => {
 
         const title = (req.body.title || '').trim();
         const description = (req.body.description || '').trim();
-        const description_pdf_filename = req.file ? req.file.filename : null;
+    // Store only if a file uploaded; we keep just the filename in DB for consistency,
+    // but frontend will receive a fully qualified relative URL. (Legacy rows may only have filename.)
+    const description_pdf_filename = req.file ? req.file.filename : null;
         const supervisor_id = req.session.userId;
 
         if (!title || !description) {
@@ -49,7 +51,9 @@ exports.updateProfessorTopic = async (req, res) => {
         const title = (req.body.title || '').trim();
         const description = (req.body.description || '').trim();
         // If a new file uploaded use it, else keep previous value passed by client as description_pdf_url
-        const description_pdf_filename = req.file ? req.file.filename : (req.body.description_pdf_url || null);
+    // Accept either new upload or existing filename (strip any accidental prefixed path coming from client)
+    const rawDesc = req.file ? req.file.filename : (req.body.description_pdf_url || null);
+    const description_pdf_filename = rawDesc ? rawDesc.split('/').pop() : null;
         const supervisor_id = req.session.userId;
 
         if (!title || !description) {

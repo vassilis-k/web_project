@@ -69,6 +69,13 @@ exports.getStudentThesis = async (req, res) => {
         if (!thesis) {
             return res.status(404).json({ message: 'Δεν έχει ανατεθεί διπλωματική εργασία στον φοιτητή.' });
         }
+        // Normalize description_pdf_url: DB stores just filename; ensure frontend gets a relative URL path.
+        if (thesis.description_pdf_url && !thesis.description_pdf_url.startsWith('/')) {
+            thesis.description_pdf_url = `/uploads/thesis_pdfs/${thesis.description_pdf_url}`;
+        } else if (thesis.description_pdf_url && thesis.description_pdf_url.startsWith('/topic-')) {
+            // legacy case where served root expected; map to uploads path
+            thesis.description_pdf_url = `/uploads/thesis_pdfs${thesis.description_pdf_url}`;
+        }
         // Απόκρυψη βαθμών/λεπτομερειών μελών επιτροπής από τον φοιτητή
         if (Array.isArray(thesis.committee_members)) {
             thesis.committee_members = thesis.committee_members.map(m => {
