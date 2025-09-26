@@ -11,14 +11,24 @@ class ThesisLog {
      */
     static async add(thesisId, userId, action, details, connection = pool) {
         try {
+            // Basic validation / normalization
+            if (thesisId === undefined || thesisId === null) {
+                throw new Error('ThesisLog.add called without thesisId');
+            }
+            if (action === undefined || action === null) {
+                throw new Error('ThesisLog.add called without action');
+            }
+            // Details may be optional; fallback to empty string if undefined
+            const safeDetails = details === undefined ? '' : details;
+            const safeUserId = (userId === undefined) ? null : userId; // allow null (system action)
+
             await connection.execute(
                 'INSERT INTO thesis_log (thesis_id, user_id, action, details) VALUES (?, ?, ?, ?)',
-                [thesisId, userId, action, details]
+                [thesisId, safeUserId, action, safeDetails]
             );
         } catch (error) {
             console.error('Error adding to thesis log:', error);
-            // We don't re-throw the error here because a logging failure should not
-            // typically cause the main operation to fail.
+            // Do not rethrow; logging failure should not block main flow.
         }
     }
 
