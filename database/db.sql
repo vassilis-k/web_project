@@ -1,3 +1,5 @@
+DROP DATABASE project_web_local;
+
 CREATE DATABASE IF NOT EXISTS project_web_local DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
 USE project_web_local;
@@ -38,7 +40,7 @@ CREATE TABLE thesis (
     draft_file_url VARCHAR(500),
     extra_material_url VARCHAR(500),
     presentation_details_locked BOOLEAN DEFAULT FALSE,
-    grade INT CHECK (final_grade BETWEEN 0 AND 10),
+    grade INT CHECK (grade BETWEEN 0 AND 10),
     repository_url VARCHAR(500),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (supervisor_id) REFERENCES users(id),
