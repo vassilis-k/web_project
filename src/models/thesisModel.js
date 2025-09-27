@@ -963,7 +963,6 @@ Thesis.publishAnnouncement = async function(thesisId, supervisorId) {
             `Τίτλος: ${t.title}\n`+
             `Φοιτητής: ${t.student_full || 'N/A'}\n`+
             `Επιβλέπων: ${t.supervisor_full || 'N/A'}\n`+
-            `Ημερομηνία & Ώρα Παρουσίασης: ${localizedDateTime}\n`+
             `Τοποθεσία: ${t.presentation_location}\n\n`+
             `Σας προσκαλούμε να παρακολουθήσετε την παρουσίαση.`;
 
