@@ -357,10 +357,17 @@
                     ${thesis.repository_url ? `
                     <div style="margin-top: var(--space-4); text-align: center;">
                         <a href="${escapeHtml(thesis.repository_url)}" target="_blank" class="btn btn-primary">Αποθετήριο Κώδικα</a>
+                        ${thesis.status === 'completed' ? `
+                            <button onclick="viewExaminationReport(${thesis.id})" class="btn btn-secondary">Πρακτικό Εξέτασης</button>
+                         ` : ''}
                     </div>
                     ` : ''}
                 </div>
             `;
+        }
+
+        function viewExaminationReport(thesisId) {
+            window.location.href = `/theses/${thesisId}/examination-report`;
         }
 
         function translateThesisStatus(status) {
