@@ -862,7 +862,12 @@
             // Reset notes input and action messages
             addNoteText.value = '';
             document.getElementById('noteMessage').textContent = '';
-            document.getElementById('thesisActionMessage').textContent = ''; // Reset action messages
+            // Do not blank out action message if it already shows success; hide only if it was error
+            const actionMsgEl = document.getElementById('thesisActionMessage');
+            if (actionMsgEl && actionMsgEl.classList.contains('error-message')) {
+                actionMsgEl.textContent = '';
+                actionMsgEl.style.display = 'none';
+            }
 
             // New logic for displaying committee members and invitations separately
             let finalCommitteeHtml = '';
@@ -1018,9 +1023,19 @@
                     }
                 } else if (thesis.status === 'under_review') {
                     const alreadyGraded = Array.isArray(thesis.committee_members) && thesis.committee_members.some(m => String(m.professor_id) === String(thesis.viewer_professor_id) && m.grade !== null && m.grade !== undefined);
-                    gradeBtn = alreadyGraded
-                        ? `<button class=\"action-button disabled\" disabled title=\"Έχετε ήδη καταχωρήσει βαθμό.\">Βαθμολογήσατε</button>`
-                        : `<button class=\"action-button\" onclick=\"openGradeModal(${thesis.id}, 'supervisor')\">Καταχώριση Βαθμού Επιβλέποντα</button>`;
+
+                    // Enable grading button (only if not yet enabled)
+                    if (!thesis.grading_enabled) {
+                        if (!thesis.draft_file_url || !thesis.draft_file_url.trim()) {
+                            gradeBtn = `<button class=\"action-button disabled\" disabled title=\"Απαιτείται πρώτα η καταχώρηση του κειμένου της διπλωματικής για να ενεργοποιηθεί η βαθμολόγηση.\">Ενεργοποίηση Καταχώρισης Βαθμών</button>`;
+                        } else {
+                            gradeBtn = `<button class=\"action-button primary\" onclick=\"enableGrading(${thesis.id})\">Ενεργοποίηση Καταχώρισης Βαθμών</button>`;
+                        }
+                    } else {
+                        gradeBtn = alreadyGraded
+                            ? `<button class=\"action-button disabled\" disabled title=\"Έχετε ήδη καταχωρήσει βαθμό.\">Βαθμολογήσατε</button>`
+                            : `<button class=\"action-button\" onclick=\"openGradeModal(${thesis.id}, 'supervisor')\">Καταχώριση Βαθμού Επιβλέποντα</button>`;
+                    }
                     if (thesis.committee_members && thesis.committee_members.length > 0) {
                         viewGradesBtn = `<button class=\"action-button\" onclick=\"showCommitteeGrades(${thesis.id})\">Προβολή Βαθμών Επιτροπής</button>`;
                     }
@@ -1032,10 +1047,14 @@
 
             if (!isProfessorSupervisor && isProfessorCommitteeMember && thesis.status === 'under_review') {
                 const alreadyGraded = Array.isArray(thesis.committee_members) && thesis.committee_members.some(m => String(m.professor_id) === String(thesis.viewer_professor_id) && m.grade !== null && m.grade !== undefined);
-                gradeBtn = alreadyGraded
-                    ? `<button class=\"action-button disabled\" disabled title=\"Έχετε ήδη καταχωρήσει βαθμό.\">Βαθμολογήσατε</button>`
-                    : `<button class=\"action-button\" onclick=\"openGradeModal(${thesis.id}, 'member')\">Καταχώριση Βαθμού Μέλους</button>`;
-                // Intentionally NOT showing committee grades button to non-supervisor members
+                if (!thesis.grading_enabled) {
+                    gradeBtn = `<button class=\"action-button disabled\" disabled title=\"Ο επιβλέπων δεν έχει ακόμη ενεργοποιήσει την καταχώριση βαθμών.\">Καταχώριση Βαθμού Μέλους</button>`;
+                } else {
+                    gradeBtn = alreadyGraded
+                        ? `<button class=\"action-button disabled\" disabled title=\"Έχετε ήδη καταχωρήσει βαθμό.\">Βαθμολογήσατε</button>`
+                        : `<button class=\"action-button\" onclick=\"openGradeModal(${thesis.id}, 'member')\">Καταχώριση Βαθμού Μέλους</button>`;
+                }
+                // Committee grades remain hidden for non-supervisor
             }
 
             // Order: viewDoc, grade, view grades, announcement
@@ -1094,6 +1113,24 @@
                 console.error('Error adding note:', error);
                 messageElement.textContent = 'Αδυναμία επικοινωνίας με τον server.';
                 messageElement.style.color = 'red';
+            }
+        }
+
+        async function enableGrading(thesisId) {
+            if (!confirm('Είστε βέβαιοι ότι θέλετε να ενεργοποιήσετε την καταχώριση βαθμών; Η ενέργεια δεν μπορεί να αναιρεθεί.')) return;
+            try {
+                const response = await fetch(`/api/professor/theses/${thesisId}/enable-grading`, { method: 'POST' });
+                const data = await response.json();
+                if (response.ok) {
+                    showSuccessMessage('thesisActionMessage', data.message || 'Η καταχώριση βαθμών ενεργοποιήθηκε.');
+                    // Refresh thesis details to reflect new state
+                    viewThesisDetails(thesisId);
+                } else {
+                    showErrorMessage('thesisActionMessage', data.message || 'Αδυναμία ενεργοποίησης.');
+                }
+            } catch (e) {
+                console.error('Error enabling grading:', e);
+                showErrorMessage('thesisActionMessage', 'Σφάλμα server κατά την ενεργοποίηση.');
             }
         }
 

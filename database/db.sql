@@ -38,6 +38,7 @@ CREATE TABLE thesis (
     draft_file_url VARCHAR(500),
     extra_material_url VARCHAR(500),
     presentation_details_locked BOOLEAN DEFAULT FALSE,
+    grading_enabled TINYINT(1) NOT NULL DEFAULT 0,
     grade DECIMAL(3,1) CHECK (grade BETWEEN 0 AND 10),
     repository_url VARCHAR(500),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,

@@ -376,3 +376,25 @@ exports.getProfessorStatistics = async (req, res) => {
         res.status(500).json({ message: 'Σφάλμα server κατά την ανάκτηση στατιστικών.' });
     }
 };
+
+// Enable grading (Option A: one-way enable)
+exports.enableGrading = async (req, res) => {
+    const { thesisId } = req.params;
+    const supervisorId = req.session.userId;
+    try {
+        const enabled = await Thesis.enableGrading(thesisId, supervisorId);
+        if (enabled) {
+            return res.status(200).json({ message: 'Η καταχώριση βαθμών ενεργοποιήθηκε επιτυχώς!' });
+        }
+        return res.status(400).json({ message: 'Αδυναμία ενεργοποίησης. Βεβαιωθείτε ότι είστε ο επιβλέπων, η διπλωματική είναι υπό εξέταση και δεν έχει ήδη ενεργοποιηθεί.' });
+    } catch (error) {
+        console.error('Error enabling grading:', error);
+        if (error.message && error.message.includes('πριν ανέβει το κείμενο')) {
+            return res.status(400).json({ message: error.message });
+        }
+        if (error.message && error.message.includes('δεν βρέθηκε')) {
+            return res.status(404).json({ message: error.message });
+        }
+        res.status(500).json({ message: 'Σφάλμα server κατά την ενεργοποίηση καταχώρισης βαθμών.' });
+    }
+};

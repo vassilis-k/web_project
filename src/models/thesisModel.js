@@ -516,15 +516,22 @@ class Thesis {
             
             // Check if thesis is under review and professor is committee member
             const [thesisCheck] = await connection.execute(
-                `SELECT t.status, cm.professor_id 
-                 FROM thesis t 
+                `SELECT t.status, t.grading_enabled, cm.professor_id
+                 FROM thesis t
                  LEFT JOIN committee_members cm ON t.id = cm.thesis_id AND cm.professor_id = ?
-                 WHERE t.id = ?`,
+                 WHERE t.id = ? FOR UPDATE`,
                 [professorId, thesisId]
             );
-            
-            if (!thesisCheck.length || thesisCheck[0].status !== 'under_review' || !thesisCheck[0].professor_id) {
+
+            if (!thesisCheck.length) {
+                throw new Error('Η διπλωματική δεν βρέθηκε.');
+            }
+            const row = thesisCheck[0];
+            if (row.status !== 'under_review' || !row.professor_id) {
                 throw new Error('Δεν έχετε δικαίωμα καταχώρισης βαθμού για αυτή τη διπλωματική.');
+            }
+            if (!row.grading_enabled) {
+                throw new Error('Η καταχώριση βαθμών δεν έχει ενεργοποιηθεί από τον επιβλέποντα.');
             }
 
             // Prevent multiple submissions: check if this professor has already graded
@@ -609,6 +616,7 @@ class Thesis {
                 `SELECT
                     t.id, t.title, t.description, t.description_pdf_url, t.status, t.assignment_date, t.presentation_date, t.presentation_location,
                     t.repository_url, t.draft_file_url, t.grade, t.cancellation_reason, t.gs_approval_protocol,
+                    t.grading_enabled,
                     s.id AS student_id, s.name AS student_name, s.surname AS student_surname, s.email AS student_email,
                     sup.id AS supervisor_id, sup.name AS supervisor_name, sup.surname AS supervisor_surname, sup.email AS supervisor_email
                 FROM thesis t
@@ -880,5 +888,48 @@ class Thesis {
         }
     }
 }
+
+// New method: enable grading by supervisor
+Thesis.enableGrading = async function(thesisId, supervisorId) {
+    const connection = await pool.getConnection();
+    try {
+        await connection.beginTransaction();
+        // Fetch thesis state & draft presence
+        const [rows] = await connection.execute(
+            'SELECT draft_file_url, status, grading_enabled, supervisor_id FROM thesis WHERE id = ? FOR UPDATE',
+            [thesisId]
+        );
+        if (!rows.length) {
+            throw new Error('Η διπλωματική δεν βρέθηκε.');
+        }
+        const t = rows[0];
+        if (t.supervisor_id != supervisorId) {
+            await connection.rollback();
+            return false; // Not supervisor
+        }
+        if (t.status !== 'under_review' || t.grading_enabled === 1) {
+            await connection.rollback();
+            return false; // Invalid status or already enabled
+        }
+        if (!t.draft_file_url || !t.draft_file_url.trim()) {
+            throw new Error('Δεν μπορείτε να ενεργοποιήσετε τη βαθμολόγηση πριν ανέβει το κείμενο της διπλωματικής.');
+        }
+        const [result] = await connection.execute(
+            'UPDATE thesis SET grading_enabled = 1 WHERE id = ? AND grading_enabled = 0',
+            [thesisId]
+        );
+        if (result.affectedRows > 0) {
+            await ThesisLog.add(thesisId, supervisorId, 'GRADING_ENABLED', 'Ο επιβλέπων ενεργοποίησε την καταχώριση βαθμών επιτροπής.', connection);
+        }
+        await connection.commit();
+        return result.affectedRows > 0;
+    } catch (error) {
+        await connection.rollback();
+        console.error('Error enabling grading:', error);
+        throw error;
+    } finally {
+        connection.release();
+    }
+};
 
 module.exports = Thesis;
