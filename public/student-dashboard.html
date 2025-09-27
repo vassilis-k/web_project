@@ -358,7 +358,7 @@
                     <div style="margin-top: var(--space-4); text-align: center;">
                         <a href="${escapeHtml(thesis.repository_url)}" target="_blank" class="btn btn-primary">Αποθετήριο Κώδικα</a>
                         ${thesis.status === 'completed' ? `
-                            <button onclick="viewExaminationReport(${thesis.id})" class="btn btn-secondary">Πρακτικό Εξέτασης</button>
+                            <button onclick="viewExaminationReport(${thesis.id})" class="btn btn-primary">Πρακτικό Εξέτασης</button>
                          ` : ''}
                     </div>
                     ` : ''}
@@ -367,7 +367,8 @@
         }
 
         function viewExaminationReport(thesisId) {
-            window.location.href = `/theses/${thesisId}/examination-report`;
+            window.location.href = `/thesis/${thesisId}/examination-report`;
+            window.open(url, '_blank', 'noopener');
         }
 
         function translateThesisStatus(status) {
