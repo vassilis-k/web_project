@@ -879,6 +879,44 @@ class Thesis {
             throw error;
         }
     }
+
+    static async getThesisDetailsWithCommittee(thesisId) {
+    try {
+        const [thesisRows] = await pool.execute(
+            `SELECT
+                t.id, t.title, t.grade,
+                s.name AS student_name, s.surname AS student_surname,
+                sup.name AS supervisor_name, sup.surname AS supervisor_surname
+            FROM thesis t
+            LEFT JOIN users s ON t.student_id = s.id
+            LEFT JOIN users sup ON t.supervisor_id = sup.id
+            WHERE t.id = ?`,
+            [thesisId]
+        );
+
+        if (!thesisRows.length) {
+            return null;
+        }
+
+        const thesis = thesisRows[0];
+
+        const [committeeMembersRows] = await pool.execute(
+            `SELECT
+                cm.grade, u.name, u.surname
+            FROM committee_members cm
+            JOIN users u ON cm.professor_id = u.id
+            WHERE cm.thesis_id = ?`,
+            [thesisId]
+        );
+
+        thesis.committee_members = committeeMembersRows;
+
+        return thesis;
+    } catch (error) {
+        console.error('Error fetching thesis details with committee:', error);
+        throw error;
+    }
+}
 }
 
 module.exports = Thesis;
