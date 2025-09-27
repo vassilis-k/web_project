@@ -64,7 +64,8 @@ router.put('/theses/:thesisId/set-under-review', professorController.setThesisUn
 router.put('/theses/:thesisId/cancel-by-supervisor', professorController.cancelThesisBySupervisor); // Ακύρωση από επιβλέποντα
 router.put('/theses/:thesisId/grade', professorController.saveProfessorGrade); // Καταχώριση βαθμού
 router.post('/theses/:thesisId/enable-grading', professorController.enableGrading); // Ενεργοποίηση βαθμολόγησης
-router.get('/theses/:thesisId/announcement', professorController.generatePresentationAnnouncement); // Δημιουργία ανακοίνωσης
+// Δημοσίευση / ενημέρωση ανακοίνωσης παρουσίασης (standard)
+router.post('/theses/:thesisId/announcement', professorController.publishThesisAnnouncement);
 
 // 5) Προβολή στατιστικών
 router.get('/statistics', professorController.getProfessorStatistics);

@@ -1040,7 +1040,13 @@
                         viewGradesBtn = `<button class=\"action-button\" onclick=\"showCommitteeGrades(${thesis.id})\">Προβολή Βαθμών Επιτροπής</button>`;
                     }
                     if (thesis.presentation_date && thesis.presentation_location) {
-                        announcementBtn = `<button class=\"action-button\" onclick=\"generatePresentationAnnouncement(${thesis.id})\">Δημιουργία Ανακοίνωσης Παρουσίασης</button>`;
+                        // If announcement exists (announcement_id) offer update/view; else create
+                        if (thesis.announcement_id) {
+                            announcementBtn = `<button class=\"action-button\" onclick=\"publishPresentationAnnouncement(${thesis.id})\">Ενημέρωση Ανακοίνωσης Παρουσίασης</button>`;
+                            announcementBtn += `<button class=\"action-button secondary\" onclick=\"viewExistingAnnouncement(${thesis.id})\">Προβολή Ανακοίνωσης</button>`;
+                        } else {
+                            announcementBtn = `<button class=\"action-button\" onclick=\"publishPresentationAnnouncement(${thesis.id})\">Δημιουργία Ανακοίνωσης Παρουσίασης</button>`;
+                        }
                     }
                 }
             }
@@ -1162,32 +1168,42 @@
             }
         }
 
-        async function generatePresentationAnnouncement(thesisId) {
+        async function publishPresentationAnnouncement(thesisId) {
             const messageElement = document.getElementById('thesisActionMessage');
-            messageElement.textContent = 'Δημιουργία ανακοίνωσης...';
+            messageElement.textContent = 'Δημοσίευση ανακοίνωσης...';
             messageElement.style.color = 'blue';
-
             try {
-                const response = await fetch(`/api/professor/theses/${thesisId}/announcement`, {
-                    method: 'GET'
-                });
+                const response = await fetch(`/api/professor/theses/${thesisId}/announcement`, { method: 'POST' });
                 const result = await response.json();
                 if (response.ok) {
                     messageElement.textContent = result.message;
                     messageElement.style.color = 'green';
-                    setTimeout(() => {
-                        closeModal('thesisDetailsModal');
-                        fetchProfessorTheses(); // Refresh thesis list
-                    }, 1500);
+                    // Refresh details so buttons switch to update/view
+                    setTimeout(() => { viewThesisDetails(thesisId); }, 800);
                 } else {
-                    messageElement.textContent = result.message || 'Σφάλμα κατά τη δημιουργία ανακοίνωσης.';
+                    messageElement.textContent = result.message || 'Σφάλμα κατά τη δημοσίευση ανακοίνωσης.';
                     messageElement.style.color = 'red';
                 }
             } catch (error) {
-                console.error('Error generating presentation announcement:', error);
+                console.error('Error publishing announcement:', error);
                 messageElement.textContent = 'Αδυναμία επικοινωνίας με τον server.';
                 messageElement.style.color = 'red';
             }
+        }
+
+        function viewExistingAnnouncement(thesisId) {
+            // Reuse currently loaded thesis details (if available in cache) else refetch and show extracted announcement text
+            // For simplicity, refetch details and show alert (could be improved to dedicated modal)
+            fetch(`/api/professor/theses/${thesisId}`)
+                .then(r => r.json())
+                .then(data => {
+                    if (data.announcement_text_existing) {
+                        alert(data.announcement_text_existing);
+                    } else {
+                        alert('Δεν βρέθηκε αποθηκευμένη ανακοίνωση.');
+                    }
+                })
+                .catch(() => alert('Σφάλμα ανάκτησης ανακοίνωσης.'));
         }
 
         function openCancelThesisBySupervisorModal(thesisId, assignmentDate) {

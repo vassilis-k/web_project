@@ -281,6 +281,11 @@ p {
     max-width: clamp(720px, 60vw, 1100px);
 }
 
+/* Preserve line breaks in announcement text */
+.announcement-text.multiline {
+    white-space: pre-line; /* respect \n while collapsing other whitespace */
+}
+
 /* Extra vertical offset so announcements box doesn't stick to fixed header */
 .announcements-page .main-wrapper {
     align-items: flex-start; /* allow top padding to work naturally */

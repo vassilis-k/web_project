@@ -346,22 +346,34 @@ exports.saveProfessorGrade = async (req, res) => {
     }
 };
 
-exports.generatePresentationAnnouncement = async (req, res) => {
+// Publish or update presentation announcement (standard implementation)
+exports.publishThesisAnnouncement = async (req, res) => {
     const { thesisId } = req.params;
     const supervisorId = req.session.userId;
-
     try {
-        const thesis = await Thesis.getSingleThesisFullDetails(thesisId, supervisorId);
-        if (!thesis || thesis.supervisor_id !== supervisorId) {
-            return res.status(403).json({ message: 'Δεν έχετε δικαίωμα να δημιουργήσετε ανακοίνωση για αυτή τη διπλωματική.' });
-        }
-        if (thesis.status !== 'under_review' || !thesis.presentation_date || !thesis.presentation_location) {
-             return res.status(400).json({ message: 'Η διπλωματική δεν είναι υπό εξέταση ή δεν έχουν συμπληρωθεί στοιχεία παρουσίασης.' });
-        }
-        res.status(200).json({ message: `Προσομοίωση παραγωγής ανακοίνωσης για διπλωματική "${thesis.title}" την ${thesis.presentation_date} στην ${thesis.presentation_location}.`, announcementUrl: '/some/generated/announcement.pdf' });
+        const result = await Thesis.publishAnnouncement(thesisId, supervisorId);
+        const baseMsg = result.created
+            ? 'Η ανακοίνωση παρουσιάσης δημιουργήθηκε επιτυχώς!'
+            : 'Η ανακοίνωση παρουσίασης ενημερώθηκε επιτυχώς!';
+        return res.status(200).json({
+            message: baseMsg,
+            created: result.created,
+            updated: result.updated,
+            announcement: result.announcement
+        });
     } catch (error) {
-        console.error('Error generating announcement:', error);
-        res.status(500).json({ message: 'Σφάλμα server κατά την παραγωγή ανακοίνωσης.' });
+        const msg = error.message || 'Σφάλμα κατά τη δημοσίευση ανακοίνωσης.';
+        if (msg.includes('δεν βρέθηκε')) {
+            return res.status(404).json({ message: msg });
+        }
+        if (msg.includes('Δεν έχετε δικαίωμα')) {
+            return res.status(403).json({ message: msg });
+        }
+        if (msg.includes('Υπό Εξέταση') || msg.includes('Λείπουν στοιχεία')) {
+            return res.status(400).json({ message: msg });
+        }
+        console.error('Error publishing announcement:', error);
+        return res.status(500).json({ message: 'Σφάλμα server κατά τη δημοσίευση ανακοίνωσης.' });
     }
 };
 

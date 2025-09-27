@@ -76,6 +76,15 @@
         let currentPage = 1; 
         const limit = 2; 
 
+        function escapeHtml(str = '') {
+            return String(str)
+                .replace(/&/g,'&amp;')
+                .replace(/</g,'&lt;')
+                .replace(/>/g,'&gt;')
+                .replace(/"/g,'&quot;')
+                .replace(/'/g,'&#39;');
+        }
+
         async function fetchAnnouncements(page = 1) {
             try {
                 const response = await fetch(`/api/announcements?page=${page}&limit=${limit}`);
@@ -93,11 +102,13 @@
                 data.announcements.forEach(announcement => {
                     const announcementDiv = document.createElement('div');
                     announcementDiv.classList.add('announcement');
+                    const safeTitle = escapeHtml(announcement.title);
+                    const safeText = escapeHtml(announcement.announcement_text);
                     announcementDiv.innerHTML = `
-                        <h3>${announcement.title}</h3>
+                        <h3>${safeTitle}</h3>
                         <p><strong>Ημερομηνία:</strong> ${new Date(announcement.announcement_date).toLocaleDateString('el-GR')}</p>
                         <p><strong>Ώρα:</strong> ${announcement.announcement_time}</p>
-                        <p>${announcement.announcement_text}</p>
+                        <div class="announcement-text multiline">${safeText}</div>
                     `;
                     container.appendChild(announcementDiv);
                 });
@@ -164,11 +175,13 @@
                 data.announcements.forEach(announcement => {
                     const announcementDiv = document.createElement('div');
                     announcementDiv.classList.add('announcement');
+                    const safeTitle = escapeHtml(announcement.title);
+                    const safeText = escapeHtml(announcement.announcement_text);
                     announcementDiv.innerHTML = `
-                        <h3>${announcement.title}</h3>
+                        <h3>${safeTitle}</h3>
                         <p><strong>Ημερομηνία:</strong> ${new Date(announcement.announcement_date).toLocaleDateString('el-GR')}</p>
                         <p><strong>Ώρα:</strong> ${announcement.announcement_time}</p>
-                        <p>${announcement.announcement_text}</p>
+                        <div class="announcement-text multiline">${safeText}</div>
                     `;
                     container.appendChild(announcementDiv);
                 });

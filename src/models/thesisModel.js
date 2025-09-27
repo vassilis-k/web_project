@@ -617,11 +617,14 @@ class Thesis {
                     t.id, t.title, t.description, t.description_pdf_url, t.status, t.assignment_date, t.presentation_date, t.presentation_location,
                     t.repository_url, t.draft_file_url, t.grade, t.cancellation_reason, t.gs_approval_protocol,
                     t.grading_enabled,
+                    ta.id AS announcement_id, ta.announcement_date AS announcement_date_existing, ta.announcement_time AS announcement_time_existing,
+                    ta.title AS announcement_title_existing, ta.announcement_text AS announcement_text_existing,
                     s.id AS student_id, s.name AS student_name, s.surname AS student_surname, s.email AS student_email,
                     sup.id AS supervisor_id, sup.name AS supervisor_name, sup.surname AS supervisor_surname, sup.email AS supervisor_email
                 FROM thesis t
                 LEFT JOIN users s ON t.student_id = s.id
                 JOIN users sup ON t.supervisor_id = sup.id
+                LEFT JOIN thesis_announcements ta ON ta.thesis_id = t.id
                 WHERE t.id = ?`,
                 [thesisId]
             );
@@ -926,6 +929,78 @@ Thesis.enableGrading = async function(thesisId, supervisorId) {
     } catch (error) {
         await connection.rollback();
         console.error('Error enabling grading:', error);
+        throw error;
+    } finally {
+        connection.release();
+    }
+};
+
+// Publish or update thesis announcement (Standard implementation)
+Thesis.publishAnnouncement = async function(thesisId, supervisorId) {
+    const connection = await pool.getConnection();
+    try {
+        await connection.beginTransaction();
+        // Lock thesis row
+        const [tRows] = await connection.execute(
+            `SELECT id, supervisor_id, status, presentation_date, presentation_location, title,
+                    (SELECT CONCAT(name,' ',surname) FROM users WHERE id = student_id) AS student_full,
+                    (SELECT CONCAT(name,' ',surname) FROM users WHERE id = supervisor_id) AS supervisor_full
+             FROM thesis WHERE id = ? FOR UPDATE`, [thesisId]
+        );
+        if (!tRows.length) throw new Error('Η διπλωματική δεν βρέθηκε.');
+        const t = tRows[0];
+        if (t.supervisor_id != supervisorId) throw new Error('Δεν έχετε δικαίωμα.');
+        if (t.status !== 'under_review') throw new Error('Η διπλωματική δεν είναι σε κατάσταση Υπό Εξέταση.');
+        if (!t.presentation_date || !t.presentation_location) throw new Error('Λείπουν στοιχεία παρουσίασης (ημερομηνία ή τοποθεσία).');
+
+        // Build announcement content
+        const dt = new Date(t.presentation_date);
+        const datePart = dt.toISOString().slice(0,10); // YYYY-MM-DD
+        const timePart = dt.toTimeString().slice(0,8); // HH:MM:SS
+        const annTitle = `Δημόσια Παρουσίαση Διπλωματικής Εργασίας: ${t.title}`;
+        const localizedDateTime = dt.toLocaleString('el-GR');
+        const body = 
+            `Τίτλος: ${t.title}\n`+
+            `Φοιτητής: ${t.student_full || 'N/A'}\n`+
+            `Επιβλέπων: ${t.supervisor_full || 'N/A'}\n`+
+            `Ημερομηνία & Ώρα Παρουσίασης: ${localizedDateTime}\n`+
+            `Τοποθεσία: ${t.presentation_location}\n\n`+
+            `Σας προσκαλούμε να παρακολουθήσετε την παρουσίαση.`;
+
+        // Check existing announcement
+        const [existing] = await connection.execute(
+            'SELECT id FROM thesis_announcements WHERE thesis_id = ? LIMIT 1',
+            [thesisId]
+        );
+        let created = false;
+        let announcementId;
+        if (existing.length) {
+            announcementId = existing[0].id;
+            await connection.execute(
+                `UPDATE thesis_announcements
+                 SET announcement_date = ?, announcement_time = ?, title = ?, announcement_text = ?
+                 WHERE id = ?`,
+                [datePart, timePart, annTitle, body, announcementId]
+            );
+            await ThesisLog.add(thesisId, supervisorId, 'ANNOUNCEMENT_UPDATED', 'Η ανακοίνωση ενημερώθηκε.', connection);
+        } else {
+            const [ins] = await connection.execute(
+                `INSERT INTO thesis_announcements (thesis_id, announcement_date, announcement_time, title, announcement_text)
+                 VALUES (?, ?, ?, ?, ?)`,
+                [thesisId, datePart, timePart, annTitle, body]
+            );
+            created = true;
+            announcementId = ins.insertId;
+            await ThesisLog.add(thesisId, supervisorId, 'ANNOUNCEMENT_CREATED', 'Δημιουργήθηκε ανακοίνωση παρουσίασης.', connection);
+        }
+
+        // Fetch final row
+        const [finalRows] = await connection.execute('SELECT * FROM thesis_announcements WHERE id = ?', [announcementId]);
+        await connection.commit();
+        return { created, updated: !created, announcement: finalRows[0] };
+    } catch (error) {
+        await connection.rollback();
+        console.error('Error publishing announcement:', error);
         throw error;
     } finally {
         connection.release();
