@@ -33,7 +33,42 @@
             <br>
             <button class="date-picker-btn" onclick="toggleDatePicker()">Επιλογή Ημ/νιας</button>
         </div>
-        
+        <details id="feedSection" style="margin-top:20px;">
+            <summary style="cursor:pointer;font-weight:600;">Δημόσιο Feed (JSON / XML)</summary>
+            <div class="feed-form" style="margin-top:12px;display:flex;flex-wrap:wrap;gap:12px;align-items:flex-end;">
+                <div>
+                    <label for="feedFrom">Από</label><br>
+                    <input type="date" id="feedFrom">
+                </div>
+                <div>
+                    <label for="feedTo">Έως</label><br>
+                    <input type="date" id="feedTo">
+                </div>
+                <div>
+                    <label for="feedFormat">Μορφή</label><br>
+                    <select id="feedFormat">
+                        <option value="json">JSON</option>
+                        <option value="xml">XML</option>
+                    </select>
+                </div>
+                <div>
+                    <label for="feedLimit">Limit</label><br>
+                    <input type="number" id="feedLimit" min="1" placeholder="προαιρετικό" style="width:110px;">
+                </div>
+                <div style="display:flex;gap:8px;">
+                    <button type="button" class="date-picker-btn" onclick="loadFeed()">Προβολή</button>
+                    <button type="button" class="date-picker-btn" onclick="downloadFeed()">Λήψη</button>
+                    <button type="button" class="date-picker-btn" onclick="copyFeedUrl()">Αντιγραφή URL</button>
+                </div>
+                <div style="flex-basis:100%;font-size:12px;color:#555;">
+                    Αν δεν ορίσεις ημερομηνίες: αυτόματα τελευταίες 30 ημέρες έως σήμερα. Μέγιστο εύρος 366 ημέρες.
+                </div>
+            </div>
+            <div id="feedResult" style="margin-top:16px;">
+                <pre id="feedRaw" style="background:#f4f4f4;padding:12px;overflow:auto;max-height:300px;display:none;"></pre>
+                <div id="feedParsed" style="display:none;"></div>
+            </div>
+        </details>
     </div>
     </div>
     <script>
@@ -97,6 +132,7 @@
                         <button class="date-picker-btn" onclick="toggleDatePicker()">Επιλογή Ημ/νιας</button>
                     </div>
                     <input type="date" id="datePicker" style="display: none;" onchange="filterAnnouncementsByDate(this.value)">
+                    ${document.getElementById('feedSection') ? document.getElementById('feedSection').outerHTML : ''}
                 `;
 
                 data.announcements.forEach(announcement => {
@@ -192,6 +228,167 @@
 
         // Fetch announcements on page load
         document.addEventListener('DOMContentLoaded', () => fetchAnnouncements(currentPage));
+
+        // --- Feed UI Logic ---
+        function buildFeedUrl(baseOnly=false) {
+            const from = document.getElementById('feedFrom').value;
+            const to = document.getElementById('feedTo').value;
+            const format = document.getElementById('feedFormat').value;
+            const limitVal = document.getElementById('feedLimit').value;
+            const params = new URLSearchParams();
+            if (from) params.append('from', from);
+            if (to) params.append('to', to);
+            if (format && format !== 'json') params.append('format', format);
+            if (limitVal) params.append('limit', limitVal);
+            const qs = params.toString();
+            return '/api/announcements/feed' + (qs && !baseOnly ? ('?' + qs) : (baseOnly ? '' : ''));
+        }
+
+        async function loadFeed() {
+            const url = buildFeedUrl();
+            const format = document.getElementById('feedFormat').value;
+            const feedRaw = document.getElementById('feedRaw');
+            const feedParsed = document.getElementById('feedParsed');
+            feedRaw.style.display = 'none';
+            feedParsed.style.display = 'none';
+            feedParsed.innerHTML = '';
+            try {
+                const resp = await fetch(url, { headers: { 'Accept': format === 'xml' ? 'application/xml' : 'application/json' }});
+                if (!resp.ok) {
+                    feedRaw.style.display = 'block';
+                    feedRaw.textContent = 'Σφάλμα: ' + resp.status + ' ' + resp.statusText;
+                    return;
+                }
+                if (format === 'xml') {
+                    const text = await resp.text();
+                    if (text.startsWith('<!DOCTYPE html')) {
+                        feedRaw.style.display = 'block';
+                        feedRaw.textContent = 'Λανθασμένη απάντηση (HTML αντί XML). Έλεγξε το URL.';
+                        return;
+                    }
+                    feedRaw.style.display = 'block';
+                    feedRaw.textContent = text;
+                    // Attempt lightweight parse
+                    try {
+                        const parser = new DOMParser();
+                        const doc = parser.parseFromString(text, 'application/xml');
+                        const items = Array.from(doc.getElementsByTagName('announcement'));
+                        if (items.length) {
+                            const list = document.createElement('div');
+                            list.innerHTML = '<h3>Προβολή (Parsed)</h3>';
+                            items.forEach(el => {
+                                const title = el.getElementsByTagName('title')[0]?.textContent || '';
+                                const date = el.getElementsByTagName('date')[0]?.textContent || '';
+                                const time = el.getElementsByTagName('time')[0]?.textContent || '';
+                                const textNode = el.getElementsByTagName('text')[0]?.textContent || '';
+                                const card = document.createElement('div');
+                                card.className = 'announcement';
+                                card.innerHTML = `<h4>${escapeHtml(title)}</h4><p><strong>${date} ${time}</strong></p><div class="announcement-text multiline">${escapeHtml(textNode)}</div>`;
+                                list.appendChild(card);
+                            });
+                            feedParsed.appendChild(list);
+                            feedParsed.style.display = 'block';
+                        }
+                    } catch (_) { /* ignore parsing errors */ }
+                } else {
+                    const ct = resp.headers.get('Content-Type') || '';
+                    if (ct.includes('text/html')) {
+                        const html = await resp.text();
+                        feedRaw.style.display = 'block';
+                        feedRaw.textContent = 'Λανθασμένη απάντηση (HTML αντί JSON). Έλεγξε το URL.\n' + html.slice(0,500);
+                        return;
+                    }
+                    const json = await resp.json();
+                    feedRaw.style.display = 'block';
+                    feedRaw.textContent = JSON.stringify(json, null, 2);
+                    if (json.announcements && Array.isArray(json.announcements)) {
+                        const list = document.createElement('div');
+                        list.innerHTML = '<h3>Προβολή (Parsed)</h3>';
+                        json.announcements.forEach(a => {
+                            const card = document.createElement('div');
+                            card.className = 'announcement';
+                            card.innerHTML = `<h4>${escapeHtml(a.title)}</h4><p><strong>${a.date} ${a.time}</strong></p><div class="announcement-text multiline">${escapeHtml(a.text)}</div>`;
+                            list.appendChild(card);
+                        });
+                        feedParsed.appendChild(list);
+                        feedParsed.style.display = 'block';
+                    }
+                }
+            } catch (err) {
+                feedRaw.style.display = 'block';
+                feedRaw.textContent = 'Σφάλμα φόρτωσης feed';
+            }
+        }
+
+        async function downloadFeed() {
+            const url = buildFeedUrl();
+            const format = document.getElementById('feedFormat').value || 'json';
+            try {
+                const resp = await fetch(url, { headers: { 'Accept': format === 'xml' ? 'application/xml' : 'application/json' }});
+                if (!resp.ok) {
+                    alert('Αποτυχία λήψης feed: ' + resp.status);
+                    return;
+                }
+                let filename = `announcements_feed.${format === 'xml' ? 'xml' : 'json'}`;
+                let blob;
+                if (format === 'xml') {
+                    const raw = await resp.text();
+                    if (raw.startsWith('<!DOCTYPE html')) {
+                        alert('Λήφθηκε HTML αντί για XML. Έλεγξε το URL.');
+                        return;
+                    }
+                    // Pretty-print XML (simple indentation)
+                    const pretty = (function prettyXml(s){
+                        const PADDING = '  ';
+                        let pad = 0;
+                        return s
+                          .replace(/>\s*</g, '><')
+                          .replace(/></g, '>\n<')
+                          .split(/\n/)
+                          .map(line => {
+                              if (/^<\/.+>/.test(line.trim())) pad = Math.max(pad-1,0);
+                              const indent = PADDING.repeat(pad);
+                              if (/^<[^!?][^>]*[^/]>(?!.*<\/)/.test(line.trim())) pad++;
+                              return indent + line.trim();
+                          })
+                          .join('\n');
+                    })(raw.trim());
+                    blob = new Blob([pretty + '\n'], { type: 'application/xml;charset=utf-8' });
+                } else {
+                    const data = await resp.json();
+                    const pretty = JSON.stringify(data, null, 2) + '\n';
+                    blob = new Blob([pretty], { type: 'application/json;charset=utf-8' });
+                }
+                const a = document.createElement('a');
+                a.href = URL.createObjectURL(blob);
+                a.download = filename;
+                document.body.appendChild(a);
+                a.click();
+                setTimeout(()=>{ URL.revokeObjectURL(a.href); a.remove(); }, 1000);
+            } catch (err) {
+                alert('Σφάλμα κατά το download feed');
+            }
+        }
+
+        function copyFeedUrl() {
+            const fullUrl = location.origin + buildFeedUrl();
+            navigator.clipboard.writeText(fullUrl).then(() => {
+                const btns = document.querySelectorAll('button');
+                // Quick ephemeral feedback
+                const notice = document.createElement('div');
+                notice.textContent = 'Αντιγράφηκε: ' + fullUrl;
+                notice.style.position = 'fixed';
+                notice.style.bottom = '16px';
+                notice.style.right = '16px';
+                notice.style.background = '#333';
+                notice.style.color = '#fff';
+                notice.style.padding = '8px 12px';
+                notice.style.borderRadius = '4px';
+                notice.style.fontSize = '12px';
+                document.body.appendChild(notice);
+                setTimeout(()=> notice.remove(), 2500);
+            });
+        }
     </script>
 </body>
 </html>

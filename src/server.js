@@ -73,6 +73,10 @@ app.use('/api/secretariat', isAuthenticated, authorizeRole('secretariat'), secre
 
 app.use('/api', announcementRoutes);
 
+// Expose announcements feed publicly also without /api prefix (optional convenience)
+// This avoids any future middleware ordering side-effects and aligns with spec wording.
+app.get('/announcements/feed', require('./controllers/announcementController').getAnnouncementsFeed);
+
 // Public route for root, redirects to login
 app.get('/', (req, res) => {
     res.redirect('/login.html');
