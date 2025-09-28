@@ -354,14 +354,12 @@
                     ${thesis.description ? `<div class="thesis-description"><div class="desc-label">Περιγραφή</div><div class="desc-text">${escapeHtml(thesis.description)}${thesis.description_pdf_url ? `<div style='margin-top:8px;'><a href='${escapeHtml(thesis.description_pdf_url)}' target='_blank' class='btn btn-secondary'>Αναλυτική Περιγραφή (PDF)</a></div>` : ''}</div></div>` : ''}
                     ${committeeHtml}
 
-                    ${thesis.repository_url ? `
                     <div style="margin-top: var(--space-4); text-align: center;">
-                        <a href="${escapeHtml(thesis.repository_url)}" target="_blank" class="btn btn-primary">Αποθετήριο Κώδικα</a>
-                        ${thesis.status === 'completed' ? `
-                            <button onclick="viewExaminationReport(${thesis.id})" class="btn btn-primary">Πρακτικό Εξέτασης</button>
-                         ` : ''}
+                        ${thesis.repository_url ? `<a href="${escapeHtml(thesis.repository_url)}" target="_blank" class="btn btn-primary">Αποθετήριο Κώδικα</a>` : ''}
+                        ${(thesis.grade !== null && thesis.grade !== undefined) ? `
+                            <button onclick="openExaminationReport(${thesis.id})" class="btn btn-primary">Πρακτικό Εξέτασης</button>
+                        ` : ''}
                     </div>
-                    ` : ''}
                 </div>
             `;
         }
@@ -369,6 +367,25 @@
         function viewExaminationReport(thesisId) {
             window.location.href = `/thesis/${thesisId}/examination-report`;
             window.open(url, '_blank', 'noopener');
+        }
+
+        async function openExaminationReport(thesisId) {
+            try {
+                const resp = await fetch(`/api/student/thesis/${thesisId}/exam-report`, { method: 'GET' });
+                if (!resp.ok) {
+                    const data = await resp.json().catch(()=>({message:'Σφάλμα'}));
+                    alert(data.message || 'Το πρακτικό δεν είναι διαθέσιμο.');
+                    return;
+                }
+                const html = await resp.text();
+                const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
+                const url = URL.createObjectURL(blob);
+                window.open(url, '_blank', 'noopener');
+                setTimeout(()=>URL.revokeObjectURL(url), 10000);
+            } catch (e) {
+                console.error('Error opening exam report:', e);
+                alert('Σφάλμα κατά την ανάκτηση του πρακτικού.');
+            }
         }
 
         function translateThesisStatus(status) {

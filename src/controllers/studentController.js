@@ -279,3 +279,85 @@ exports.checkAndActivateThesis = async (req, res) => {
         res.status(500).json({ message: error.message || 'Σφάλμα server κατά την ενεργοποίηση της διπλωματικής.' });
     }
 };
+
+// 7) Πρακτικό Εξέτασης (HTML) – μόνο τελικός βαθμός + ονόματα επιτροπής
+exports.getExaminationReport = async (req, res) => {
+        const { thesisId } = req.params;
+        const studentId = req.session.userId;
+        try {
+                const thesis = await Thesis.getThesisByStudentId(studentId);
+                if (!thesis || String(thesis.id) !== String(thesisId)) {
+                        return res.status(403).json({ message: 'Δεν έχετε πρόσβαση σε αυτή τη διπλωματική.' });
+                }
+                if (thesis.grade === null || thesis.grade === undefined) {
+                        return res.status(400).json({ message: 'Το πρακτικό δεν είναι διαθέσιμο πριν τον τελικό βαθμό.' });
+                }
+
+                // Φόρτωσε πλήρη στοιχεία (για επιτροπή) – επαναχρησιμοποίηση μεθόδου
+                const fullDetails = await Thesis.getThesisDetailsWithCommittee(thesis.id);
+                const committeeMembers = (fullDetails.committee_members || []).map(m => `${m.name} ${m.surname}`);
+                // Βεβαιώσου ότι ο επιβλέπων υπάρχει πρώτος
+                const supervisorFull = `${fullDetails.supervisor_name} ${fullDetails.supervisor_surname}`;
+                const uniqueSet = new Set();
+                const orderedNames = [supervisorFull, ...committeeMembers].filter(n => {
+                        const trimmed = (n || '').trim();
+                        if (!trimmed) return false;
+                        if (uniqueSet.has(trimmed)) return false;
+                        uniqueSet.add(trimmed);
+                        return true;
+                });
+
+                const escape = (s='') => String(s)
+                        .replace(/&/g,'&amp;')
+                        .replace(/</g,'&lt;')
+                        .replace(/>/g,'&gt;')
+                        .replace(/"/g,'&quot;')
+                        .replace(/'/g,'&#39;');
+
+                const today = new Date();
+                const dateStr = today.toLocaleDateString('el-GR');
+                const timeStr = today.toLocaleTimeString('el-GR',{hour:'2-digit',minute:'2-digit'});
+
+                const html = `<!DOCTYPE html>
+<html lang="el">
+<head>
+    <meta charset="UTF-8" />
+    <title>Πρακτικό Εξέτασης - ${escape(fullDetails.title)}</title>
+    <style>
+        body { font-family: Arial, sans-serif; line-height:1.5; margin:40px; }
+        h1 { font-size:22px; margin-bottom:8px; }
+        h2 { font-size:16px; margin-top:32px; }
+        .meta { margin: 0 0 20px 0; font-size:14px; color:#444; }
+        .box { border:1px solid #ccc; padding:16px; border-radius:6px; background:#fafafa; }
+        .committee { margin:0; padding-left:18px; }
+        .committee li { margin-bottom:4px; }
+        .footer { margin-top:40px; font-size:12px; color:#666; }
+    </style>
+    <meta http-equiv="Cache-Control" content="no-store" />
+</head>
+<body>
+    <h1>Πρακτικό Εξέτασης Διπλωματικής Εργασίας</h1>
+    <p class="meta">Ημερομηνία δημιουργίας: ${escape(dateStr)} – Ώρα: ${escape(timeStr)}</p>
+    <div class="box">
+        <p><strong>Τίτλος:</strong> ${escape(fullDetails.title)}</p>
+        <p><strong>Φοιτητής:</strong> ${escape(fullDetails.student_name)} ${escape(fullDetails.student_surname)}</p>
+        <p><strong>Επιβλέπων:</strong> ${escape(fullDetails.supervisor_name)} ${escape(fullDetails.supervisor_surname)}</p>
+        <p><strong>Τελικός Βαθμός:</strong> ${escape(thesis.grade)}/10</p>
+    </div>
+    <h2>Σύνθεση Τριμελούς Επιτροπής</h2>
+    <ul class="committee">
+        ${orderedNames.map(n => `<li>${escape(n)}</li>`).join('\n')}
+    </ul>
+    <h2>Δήλωση</h2>
+    <p>Η τριμελής επιτροπή ολοκλήρωσε την αξιολόγηση της παραπάνω διπλωματικής εργασίας και καθόρισε τον τελικό βαθμό όπως αναγράφεται.</p>
+    <div class="footer">Παράχθηκε αυτόματα από το Σύστημα Υποστήριξης Διπλωματικών Εργασιών.</div>
+</body>
+</html>`;
+
+                res.setHeader('Content-Type', 'text/html; charset=utf-8');
+                return res.status(200).send(html);
+        } catch (error) {
+                console.error('Error generating examination report:', error);
+                return res.status(500).json({ message: 'Σφάλμα server κατά την παραγωγή πρακτικού.' });
+        }
+};

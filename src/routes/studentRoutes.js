@@ -21,5 +21,8 @@ router.post('/thesis/:thesisId/presentation-details', studentController.submitPr
 // 5) Καταχώριση repository URL (επιτρέπεται μετά τον οριστικό τελικό βαθμό)
 router.post('/thesis/:thesisId/repository-url', studentController.submitRepositoryUrl);
 
+// 6) Πρακτικό Εξέτασης (μόνο μετά τον τελικό βαθμό)
+router.get('/thesis/:thesisId/exam-report', studentController.getExaminationReport);
+
 
 module.exports = router;
