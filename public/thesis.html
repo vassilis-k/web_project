@@ -1,0 +1,127 @@
+<!doctype html>
+<html lang="el">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Πρακτικό Εξέτασης</title>
+  <link rel="stylesheet" href="/css/style.css" />
+  <style>
+    .report-wrapper { max-width: 900px; margin: 96px auto 64px; padding: 24px; background:#fff; border-radius:8px; box-shadow:0 6px 18px rgba(0,0,0,.06); }
+    .report-header { display:flex; justify-content:space-between; align-items:center; gap:16px; margin-bottom:16px; }
+    .report-meta { margin-bottom:12px; }
+    .committee-list { margin:12px 0; padding-left:18px; }
+    .badge-final { background: var(--success-light); color: var(--success); border: 1px solid var(--success); padding:2px 8px; border-radius:9999px; }
+    .iframe-fallback { width:100%; height:80vh; border:0; }
+    .center { text-align:center; }
+  </style>
+</head>
+<body>
+  <div class="white-line-top" style="position:fixed;left:0;right:0;top:0;height:80px;z-index:1000;background:#fff;"></div>
+
+  <main class="report-wrapper" id="report">
+    <div id="loading" class="center">Φόρτωση πρακτικού...</div>
+  </main>
+
+  <script>
+    (function () {
+      function qs(name) {
+        const params = new URLSearchParams(window.location.search);
+        return params.get(name);
+      }
+
+      function escapeHtml(str) {
+        if (str === null || str === undefined) return '';
+        return String(str)
+          .replace(/&/g, '&amp;')
+          .replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;')
+          .replace(/"/g, '&quot;')
+          .replace(/'/g, '&#039;');
+      }
+
+      const thesisId = qs('id');
+      if (!thesisId) {
+        document.getElementById('report').innerHTML = '<div class="center">Δεν δόθηκε id διπλωματικής (παράμετρος ?id=)</div>';
+        return;
+      }
+
+      // δοκιμάζουμε τόσο το plural όσο και το singular mounted route
+      const candidates = [
+        `/theses/${thesisId}/examination-report-data`,
+        `/thesis/${thesisId}/examination-report-data`
+      ];
+
+      async function tryFetchJson() {
+        for (const url of candidates) {
+          try {
+            const resp = await fetch(url, { method: 'GET', credentials: 'same-origin' });
+            if (!resp.ok) continue;
+            const data = await resp.json();
+            return { data, url };
+          } catch (e) {
+            // ignore and continue
+          }
+        }
+        return null;
+      }
+
+      function renderReport(thesis) {
+        const container = document.getElementById('report');
+        const committeeHtml = (thesis.committee_members || []).map(m => `<li>${escapeHtml(m.name || '')} ${escapeHtml(m.surname || '')}: ${escapeHtml(m.grade ?? 'Μη καταχωρημένος')}</li>`).join('');
+        container.innerHTML = `
+          <div class="report-header">
+            <div>
+              <h1>Πρακτικό Εξέτασης</h1>
+              <div class="report-meta"><strong>Διπλωματική:</strong> ${escapeHtml(thesis.title || '-')}</div>
+            </div>
+            <div style="text-align:right">
+              ${thesis.grade ? `<div class="badge-final">Τελικός Βαθμός: ${escapeHtml(String(thesis.grade))}/10</div>` : ''}
+            </div>
+          </div>
+
+          <div><strong>Φοιτητής:</strong> ${escapeHtml(thesis.student_name || '')} ${escapeHtml(thesis.student_surname || '')}</div>
+          <div><strong>Επιβλέπων:</strong> ${escapeHtml(thesis.supervisor_name || '')} ${escapeHtml(thesis.supervisor_surname || '')}</div>
+
+          <h3>Βαθμολογίες Τριμελούς Επιτροπής</h3>
+          <ul class="committee-list">${committeeHtml || '<li>Δεν υπάρχουν καταχωρημένες βαθμολογίες.</li>'}</ul>
+
+          ${thesis.description ? `<h3>Περιγραφή</h3><p>${escapeHtml(thesis.description)}</p>` : ''}
+          ${thesis.description_pdf_url ? `<p><a href="${escapeHtml(thesis.description_pdf_url)}" target="_blank" class="btn btn-primary">Αναλυτική Περιγραφή (PDF)</a></p>` : ''}
+          ${thesis.repository_url ? `<p><a href="${escapeHtml(thesis.repository_url)}" target="_blank" class="btn btn-primary">Αποθετήριο Κώδικα</a></p>` : ''}
+
+          <div style="margin-top:16px;">
+            <a href="/student-dashboard.html" class="btn">Επιστροφή στο Dashboard</a>
+            <a href="${escapeHtml(window.location.href)}" class="btn">Ανανέωση</a>
+          </div>
+        `;
+      }
+
+      (async () => {
+        const result = await tryFetchJson();
+        if (result && result.data) {
+          renderReport(result.data);
+          return;
+        }
+
+        // fallback: αν δεν υπάρχει το JSON endpoint, δοκιμάζουμε να φορτώσουμε το υπάρχον html endpoint σε iframe
+        const iframeCandidates = [
+          `/theses/${thesisId}/examination-report`,
+          `/thesis/${thesisId}/examination-report`
+        ];
+        for (const p of iframeCandidates) {
+          try {
+            // test existence
+            const r = await fetch(p, { method: 'GET', credentials: 'same-origin' });
+            if (r.ok) {
+              document.getElementById('report').innerHTML = `<iframe class="iframe-fallback" src="${p}" title="Πρακτικό Εξέτασης"></iframe>`;
+              return;
+            }
+          } catch (e) { /* ignore */ }
+        }
+
+        document.getElementById('report').innerHTML = '<div class="center">Δεν βρέθηκε το πρακτικό (δοκίμασε ξανά ή επικοινώνησε με τη γραμματεία).</div>';
+      })();
+    })();
+  </script>
+</body>
+</html>
