@@ -107,6 +107,8 @@ class Thesis {
                 OR cm.professor_id = ? 
                 OR (ci.invited_professor_id = ? AND ci.status = 'accepted')
             )
+            AND t.student_id IS NOT NULL
+            AND t.status != 'available'
         `;
         
         const params = [professor_id, professor_id, professor_id];

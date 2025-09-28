@@ -1609,59 +1609,66 @@
         }
 
         function exportTable(format, event) {
-    if (event) {
-        event.preventDefault(); // Prevent default behavior if triggered by a form or link
-    }
+            if (event) event.preventDefault();
 
-    const table = document.querySelector('#professorThesesList table');
-    if (!table) {
-        alert('Δεν υπάρχουν δεδομένα για εξαγωγή.');
-        return;
-    }
+            // Re-fetch with current filters to ensure we have full underlying data (including fields not displayed in the table)
+            const statusFilter = document.getElementById('thesisStatusFilter').value;
+            const roleFilter = document.getElementById('thesisRoleFilter').value;
+            fetch(`/api/professor/theses?status=${statusFilter}&role=${roleFilter}`)
+                .then(r => r.json())
+                .then(data => {
+                    if (!Array.isArray(data) || !data.length) {
+                        alert('Δεν υπάρχουν δεδομένα για εξαγωγή.');
+                        return;
+                    }
 
-    // Build header list and an index map excluding the "Ενέργειες" column
-    const ths = Array.from(table.querySelectorAll('thead th'));
-    const included = ths
-        .map((th, idx) => ({ text: th.textContent.trim(), idx }))
-        .filter(h => h.text !== 'Ενέργειες');
-    const headers = included.map(h => h.text);
+                    // Fields mapping (requested):
+                    // Φοιτητής, Επιβλέπων, Τίτλος, Περιγραφή, Κατάσταση, Ημερομηνία Ανάθεσης, ΑΠ Γ.Σ. Ανάθεσης, Τελικός Βαθμός, Σύνδεσμος Αποθετηρίου, Κείμενο Διπλωματικής
+                    const rows = data
+                      .filter(t => t.student_id && t.status !== 'available')
+                      .map(t => ({
+                        'Φοιτητής': t.student_name ? `${t.student_name} ${t.student_surname || ''}`.trim() : '',
+                        'Επιβλέπων': t.supervisor_name ? `${t.supervisor_name} ${t.supervisor_surname || ''}`.trim() : '',
+                        'Τίτλος': t.title || '',
+                        'Περιγραφή': t.description || '',
+                        'Κατάσταση': translateThesisStatus(t.status),
+                        'Ημερομηνία Ανάθεσης': t.assignment_date ? new Date(t.assignment_date).toLocaleDateString('el-GR') : '',
+                        'ΑΠ Γ.Σ. Ανάθεσης': t.gs_approval_protocol || '',
+                        'Τελικός Βαθμός': (t.grade !== null && t.grade !== undefined) ? t.grade : '',
+                        'Σύνδεσμος Αποθετηρίου': t.repository_url || '',
+                        'Κείμενο Διπλωματικής': t.draft_file_url || ''
+                      }));
 
-    // Extract rows using the included column indices
-    const rows = Array.from(table.querySelectorAll('tbody tr')).map(row => {
-        const tds = Array.from(row.querySelectorAll('td'));
-        return included.map(h => (tds[h.idx] ? tds[h.idx].textContent.trim() : ''));
-    });
-
-    if (format === 'csv') {
-        // Convert to CSV
-        const csvContent = [headers.join(','), ...rows.map(row => row.map(v => v?.includes(',') ? '"' + v.replaceAll('"','""') + '"' : v).join(','))].join('\n');
-        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `theses_export_${Date.now()}.csv`;
-        a.click();
-        URL.revokeObjectURL(url);
-    } else if (format === 'json') {
-        // Convert to JSON
-        const jsonContent = rows.map(row => {
-            const obj = {};
-            headers.forEach((header, index) => {
-                obj[header] = row[index];
-            });
-            return obj;
-        });
-        const blob = new Blob([JSON.stringify(jsonContent, null, 2)], { type: 'application/json;charset=utf-8;' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `theses_export_${Date.now()}.json`;
-        a.click();
-        URL.revokeObjectURL(url);
-    } else {
-        alert('Μη υποστηριζόμενη μορφή εξαγωγής.');
-    }
-}
+                    if (format === 'csv') {
+                        const headers = Object.keys(rows[0]);
+                        const csvLines = [headers.join(',')].concat(rows.map(r => headers.map(h => {
+                            const v = (r[h] ?? '').toString();
+                            return v.includes(',') || v.includes('"') || v.includes('\n') ? '"' + v.replaceAll('"','""') + '"' : v;
+                        }).join(',')));
+                        const blob = new Blob([csvLines.join('\n') + '\n'], { type: 'text/csv;charset=utf-8;' });
+                        const url = URL.createObjectURL(blob);
+                        const a = document.createElement('a');
+                        a.href = url;
+                        a.download = `theses_export_${Date.now()}.csv`;
+                        a.click();
+                        URL.revokeObjectURL(url);
+                    } else if (format === 'json') {
+                        const blob = new Blob([JSON.stringify(rows, null, 2) + '\n'], { type: 'application/json;charset=utf-8;' });
+                        const url = URL.createObjectURL(blob);
+                        const a = document.createElement('a');
+                        a.href = url;
+                        a.download = `theses_export_${Date.now()}.json`;
+                        a.click();
+                        URL.revokeObjectURL(url);
+                    } else {
+                        alert('Μη υποστηριζόμενη μορφή εξαγωγής.');
+                    }
+                })
+                .catch(err => {
+                    console.error('Export error:', err);
+                    alert('Σφάλμα κατά την εξαγωγή.');
+                });
+        }
 
 // Statistics functionality
 async function fetchProfessorStatistics() {
