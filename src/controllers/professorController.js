@@ -276,6 +276,9 @@ exports.setThesisUnderReview = async (req, res) => {
         }
     } catch (error) {
         console.error('Error setting thesis under review:', error);
+        if (error && error.message === 'GS_PROTOCOL_REQUIRED') {
+            return res.status(400).json({ message: 'Απαιτείται πρώτα καταχώριση Αριθμού Πρωτοκόλλου Γ.Σ. από τη Γραμματεία πριν η διπλωματική μεταβεί σε "Υπό Εξέταση".' });
+        }
         res.status(500).json({ message: 'Σφάλμα server κατά την αλλαγή κατάστασης.' });
     }
 };

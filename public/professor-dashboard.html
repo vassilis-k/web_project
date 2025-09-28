@@ -608,7 +608,7 @@
                 if (response.ok) {
                     const students = await response.json();
                     if (students.length === 0) {
-                        searchResultsDiv.innerHTML = '<p>Δεν βρέθηκαν φοιτητές.</p>';
+                        searchResultsDiv.innerHTML = '<p>Δεν βρέθηκαν φοιτητές.</p><p class="small-notice">(Φοιτητές με ήδη ανατεθειμένη / ολοκληρωμένη / υπό εξέταση διπλωματική δεν εμφανίζονται.)</p>';
                     } else {
                         const ul = document.createElement('ul');
                         students.forEach(student => {
@@ -620,6 +620,11 @@
                             ul.appendChild(li);
                         });
                         searchResultsDiv.appendChild(ul);
+                        const hint = document.createElement('div');
+                        hint.className = 'small-notice';
+                        hint.style.marginTop = '8px';
+                        hint.textContent = 'Φοιτητές με ήδη ανατεθειμένη / ολοκληρωμένη / υπό εξέταση διπλωματική δεν εμφανίζονται.';
+                        searchResultsDiv.appendChild(hint);
                     }
                 } else {
                     messageElement.textContent = 'Σφάλμα αναζήτησης φοιτητών.';
@@ -1014,7 +1019,11 @@
                     const assignmentDate = new Date(thesis.assignment_date);
                     const twoYearsAgo = new Date();
                     twoYearsAgo.setFullYear(twoYearsAgo.getFullYear() - 2);
-                    viewDocBtn = `<button class=\"action-button\" onclick=\"setThesisUnderReview(${thesis.id})\">Μεταφορά σε \"Υπό Εξέταση\"</button>`;
+                    if (!thesis.gs_approval_protocol) {
+                        viewDocBtn = `<button class=\"action-button disabled\" disabled title=\"Απαιτείται πρώτα καταχώριση Αριθμού Πρωτοκόλλου Γ.Σ. από τη Γραμματεία.\">Μεταφορά σε \"Υπό Εξέταση\"</button>`;
+                    } else {
+                        viewDocBtn = `<button class=\"action-button\" onclick=\"setThesisUnderReview(${thesis.id})\">Μεταφορά σε \"Υπό Εξέταση\"</button>`;
+                    }
                     if (assignmentDate <= twoYearsAgo) {
                         gradeBtn = `<button class=\"action-button\" onclick=\"openCancelThesisBySupervisorModal(${thesis.id}, '${thesis.assignment_date}')\">Ακύρωση Ανάθεσης (2ετία)</button>`;
                     } else {

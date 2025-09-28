@@ -338,6 +338,7 @@ exports.getExaminationReport = async (req, res) => {
 <body>
     <h1>Πρακτικό Εξέτασης Διπλωματικής Εργασίας</h1>
     <p class="meta">Ημερομηνία δημιουργίας: ${escape(dateStr)} – Ώρα: ${escape(timeStr)}</p>
+                        ${fullDetails.gs_approval_protocol ? `<p class="meta">Αριθμός Πρωτοκόλλου Γ.Σ. Ανάθεσης: <strong>${escape(fullDetails.gs_approval_protocol)}</strong></p>` : ''}
     <div class="box">
         <p><strong>Τίτλος:</strong> ${escape(fullDetails.title)}</p>
         <p><strong>Φοιτητής:</strong> ${escape(fullDetails.student_name)} ${escape(fullDetails.student_surname)}</p>

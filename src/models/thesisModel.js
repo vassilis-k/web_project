@@ -366,6 +366,7 @@ class Thesis {
             const [theses] = await pool.execute(
                 `SELECT
                     t.id, t.title, t.description, t.status, t.assignment_date,
+                    t.gs_approval_protocol,
                     s.name AS student_name, s.surname AS student_surname,
                     sup.id AS supervisor_id, sup.name AS supervisor_name, sup.surname AS supervisor_surname, sup.email AS supervisor_email
                 FROM thesis t
@@ -758,6 +759,21 @@ class Thesis {
         const connection = await pool.getConnection();
         try {
             await connection.beginTransaction();
+            // Fetch current thesis ensuring supervisor ownership and active status
+            const [rows] = await connection.execute(
+                'SELECT gs_approval_protocol FROM thesis WHERE id = ? AND supervisor_id = ? AND status = "active"',
+                [thesisId, supervisorId]
+            );
+            if (!rows.length) {
+                await connection.rollback();
+                return false; // Not found / not owned / not active
+            }
+            const { gs_approval_protocol } = rows[0];
+            if (!gs_approval_protocol) {
+                await connection.rollback();
+                throw new Error('GS_PROTOCOL_REQUIRED');
+            }
+
             const [result] = await connection.execute(
                 'UPDATE thesis SET status = "under_review" WHERE id = ? AND supervisor_id = ? AND status = "active"',
                 [thesisId, supervisorId]

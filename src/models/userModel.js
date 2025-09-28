@@ -51,17 +51,17 @@ class User {
 
     static async searchStudents(searchTerm) {
         try {
-            const query = `
-                SELECT u.id, u.name, u.surname, u.email
-                FROM users u
-                WHERE u.role = 'student'
-                  AND (CAST(u.id AS CHAR) LIKE ? OR u.name LIKE ? OR u.surname LIKE ? OR u.email LIKE ?)
-                  AND u.id NOT IN (
-                      SELECT t.student_id
-                      FROM thesis t
-                      WHERE t.student_id IS NOT NULL
-                        AND t.status NOT IN ('completed', 'cancelled')
-                  )`;
+                        // Exclude any student who already has a thesis in ANY lifecycle state except explicitly cancelled.
+                        // This prevents assigning a second thesis to someone who already completed or is progressing through one.
+                        const query = `
+                                SELECT u.id, u.name, u.surname, u.email
+                                FROM users u
+                                WHERE u.role = 'student'
+                                    AND (CAST(u.id AS CHAR) LIKE ? OR u.name LIKE ? OR u.surname LIKE ? OR u.email LIKE ?)
+                                    AND u.id NOT IN (
+                                            SELECT t.student_id FROM thesis t
+                                            WHERE t.student_id IS NOT NULL AND t.status != 'cancelled'
+                                    )`;
             const likeTerm = `%${searchTerm}%`;
             const [rows] = await pool.execute(query, [likeTerm, likeTerm, likeTerm, likeTerm]);
             return rows;
