@@ -1,32 +1,7 @@
 [
   {
-    "email": "student1@example.com",
-    "password": "PlaintextWillBeHashedServerSide",
-    "name": "Μαρία",
-    "surname": "Παπαδοπούλου",
-    "role": "student",
-    "department": "ΤΜΗΥΠ",
-    "university": "Πανεπιστήμιο Πατρών",
-    "landline": null,
-    "mobile": "+30 69xxxxxxxx",
-    "street": "Οδός",
-    "street_number": "1",
-    "city": "Πάτρα",
-    "postal_code": "26504",
-    "country": "Ελλάδα"
-  },
-  {
-    "email": "prof1@example.com",
-    "password": "PlaintextWillBeHashedServerSide",
-    "name": "Νίκος",
-    "surname": "Ιωάννου",
-    "role": "professor",
-    "department": "ΤΜΗΥΠ",
-    "university": "Πανεπιστήμιο Πατρών"
-  },
-  {
     "email": "104333999@students.upatras.gr",
-    "password": "PlaintextWillBeHashedServerSide",
+    "password": "student123",
     "name": "Makis",
     "surname": "Makopoulos",
     "role": "student",
@@ -42,7 +17,7 @@
   },
   {
     "email": "st10434000@upnet.gr",
-    "password": "PlaintextWillBeHashedServerSide",
+    "password": "student123",
     "name": "John",
     "surname": "Lennon",
     "role": "student",
@@ -58,7 +33,7 @@
   },
   {
     "email": "st10434001@upnet.gr",
-    "password": "PlaintextWillBeHashedServerSide",
+    "password": "student123",
     "name": "Petros",
     "surname": "Verikokos",
     "role": "student",
@@ -74,7 +49,7 @@
   },
   {
     "email": "st10434002@upnet.gr",
-    "password": "PlaintextWillBeHashedServerSide",
+    "password": "student123",
     "name": "test",
     "surname": "name",
     "role": "student",
@@ -90,7 +65,7 @@
   },
   {
     "email": "st10434003@upnet.gr",
-    "password": "PlaintextWillBeHashedServerSide",
+    "password": "student123",
     "name": "Robert",
     "surname": "Smith",
     "role": "student",
@@ -106,7 +81,7 @@
   },
   {
     "email": "akomninos@ceid.upatras.gr",
-    "password": "PlaintextWillBeHashedServerSide",
+    "password": "professor123",
     "name": "Andreas",
     "surname": "Komninos",
     "role": "professor",
@@ -115,7 +90,7 @@
   },
   {
     "email": "vasfou@ceid.upatras.gr",
-    "password": "PlaintextWillBeHashedServerSide",
+    "password": "professor123",
     "name": "Vasilis",
     "surname": "Foukaras",
     "role": "professor",
@@ -124,10 +99,19 @@
   },
   {
     "email": "karras@nterti.com",
-    "password": "PlaintextWillBeHashedServerSide",
+    "password": "professor123",
     "name": "Basilis",
     "surname": "Karras",
     "role": "professor",
+    "department": "CEID",
+    "university": "University of Patras"
+  },
+    {
+    "email": "admin@upatras.gr",
+    "password": "admin",
+    "name": "Admin",
+    "surname": "User",
+    "role": "secretariat",
     "department": "CEID",
     "university": "University of Patras"
   }
