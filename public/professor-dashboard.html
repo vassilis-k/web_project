@@ -832,7 +832,7 @@
                             <td>${translateThesisStatus(thesis.status)}</td>
                             <td>${thesis.grade !== null && thesis.grade !== undefined ? thesis.grade : 'N/A'}</td>
                             <td>
-                                <button class="action-button info" onclick="viewThesisDetails(${thesis.id})">Προβολή</button>
+                                <button class="action-button btn-primary-red" onclick="viewThesisDetails(${thesis.id})">Προβολή</button>
                             </td>
                         </tr>
                     `).join('')}
@@ -916,7 +916,7 @@
                             <ul class="committee-list">
                                 ${pendingInvites.map(invite => `
                                     <li>
-                                        <p>${escapeHtml(invite.name)} ${escapeHtml(invite.surname)} (Μέλος)${invite.email ? ` (${escapeHtml(invite.email)})` : ''} - <strong>${translateInvitationStatus(invite.status)}</strong></p>
+                                        <p>${escapeHtml(invite.name)} ${escapeHtml(invite.surname)} (Μέλος)${invite.email ? ` (${escapeHtml(invite.email)})` : ''}</p>
                                     </li>
                                 `).join('')}
                             </ul>
@@ -1538,11 +1538,10 @@
                         <h4>Πρόσκληση για Διπλωματική: "${escapeHtml(invitation.thesis_title)}"</h4>
                         <p>Φοιτητής: ${escapeHtml(invitation.student_name)} ${escapeHtml(invitation.student_surname)}</p>
                         <p>Επιβλέπων: ${escapeHtml(invitation.supervisor_name)} ${escapeHtml(invitation.supervisor_surname)}</p>
-                        <p>Κατάσταση: <strong>${translateInvitationStatus(invitation.status)}</strong></p>
                     </div>
                     <div class="invitation-actions">
-                        <button class="action-button primary" onclick="acceptInvitation(${invitation.invitation_id})">Αποδοχή</button>
-                        <button class="action-button danger" onclick="declineInvitation(${invitation.invitation_id})">Απόρριψη</button>
+                        <button class="action-button invitation-btn" onclick="acceptInvitation(${invitation.invitation_id})">Αποδοχή</button>
+                        <button class="action-button invitation-btn" onclick="declineInvitation(${invitation.invitation_id})">Απόρριψη</button>
                     </div>
                 `;
                 ul.appendChild(li);

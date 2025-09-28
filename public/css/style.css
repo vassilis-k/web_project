@@ -189,14 +189,16 @@ p {
     top: 0;
     left: 0;
     right: 0;
-    height: 80px;
+    /* Allow a little extra vertical space so subtitle fits inside */
+    height: auto;
+    min-height: 80px;
     background: var(--white);
     border-bottom: 1px solid var(--gray-200);
     z-index: 1000;
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 0 var(--space-8);
+    padding: 4px var(--space-8) 10px; /* top / horizontal / bottom */
     box-shadow: var(--shadow-sm);
 }
 
@@ -228,7 +230,63 @@ p {
 .subtitle {
     font-size: var(--text-sm);
     color: var(--text-secondary);
-    margin-top: -20px;
+    margin-top: 0; /* keep inside white header */
+}
+
+/* === Mobile Conservative Shrink (keep original structure) === */
+@media (max-width: 880px) {
+    .white-line-top { padding: 0 var(--space-4); }
+    .logo-top-left img { height: 46px; }
+    .main-title { font-size: 0.95rem; }
+    .subtitle { font-size: 0.65rem; margin-top: -6px; }
+    .header-buttons-inline { gap: var(--space-2); margin-top: var(--space-4); }
+    .header-buttons-inline a,
+    .header-buttons-inline button,
+    .login-header-btn,
+    .announcements-header-btn,
+    .dashboard-header-btn,
+    .logout-header-btn { padding: 6px 14px; font-size: 0.72rem; }
+}
+
+@media (max-width: 720px) {
+    .logo-top-left img { height: 42px; }
+    .main-title { font-size: 0.9rem; }
+    .header-buttons-inline { gap: 6px; }
+    .header-buttons-inline a,
+    .header-buttons-inline button,
+    .login-header-btn,
+    .announcements-header-btn,
+    .dashboard-header-btn,
+    .logout-header-btn { padding: 5px 12px; font-size: 0.68rem; }
+}
+
+@media (max-width: 640px) {
+    .white-line-top { padding: 0 16px; }
+    .logo-top-left img { height: 40px; }
+    .header-buttons-inline { gap: 4px; }
+    .header-buttons-inline a,
+    .header-buttons-inline button,
+    .login-header-btn,
+    .announcements-header-btn,
+    .dashboard-header-btn,
+    .logout-header-btn { padding: 5px 10px; font-size: 0.65rem; }
+    .main-title { font-size: 0.85rem; }
+    .subtitle { display:none; }
+}
+
+/* If still not fitting, allow gentle wrap (buttons drop below) */
+@media (max-width: 520px) {
+    .white-line-top { height: auto; align-items: flex-start; padding-top: 6px; padding-bottom: 8px; }
+    .header-text-top-right { align-items: flex-start; }
+    .header-buttons-inline { flex-wrap: wrap; margin-top: 6px; }
+    .header-buttons-inline a,
+    .header-buttons-inline button { flex: 0 1 auto; }
+    .main-wrapper { padding-top: 125px; }
+}
+
+/* Slightly more offset for secretariat page on very small screens (cards + header) */
+@media (max-width:520px) {
+    body:has(#active-theses-section) .main-wrapper { padding-top: 135px; }
 }
 
 .header-buttons-inline {
@@ -237,6 +295,7 @@ p {
     gap: var(--space-3);
     margin-bottom: var(--space-2);
     margin-top: var(--space-5);
+    margin-left: var(--space-4); /* extra breathing room from logo */
 }
 
 .header-buttons-inline a.active {
@@ -251,9 +310,9 @@ p {
     display: flex;
     align-items: center;
     justify-content: center;
-    min-height: calc(100vh - 80px);
+    min-height: calc(100vh - 90px); /* header slightly taller now */
     padding: var(--space-4);
-    padding-top: 100px;
+    padding-top: 110px; /* compensate for added header height */
 }
 
 /* Main Content Areas */
@@ -285,6 +344,24 @@ p {
 .announcement-text.multiline {
     white-space: pre-line; /* respect \n while collapsing other whitespace */
 }
+
+/* === Secretariat / General Responsive Tables to Cards === */
+/* Card view for very narrow widths (<=720px). Above that keep normal table layout */
+@media (max-width: 720px) {
+    table.theses-table { width:100%; border-collapse:collapse; }
+    table.theses-table thead { display:none; }
+    table.theses-table tbody { display:flex; flex-direction:column; gap:12px; }
+    table.theses-table tr { display:block; background:var(--white); border:1px solid var(--gray-200); border-radius:8px; padding:10px 12px; box-shadow:var(--shadow-sm); }
+    table.theses-table td { display:flex; padding:4px 0; font-size:0.8rem; line-height:1.25; border:none; }
+    table.theses-table td::before { content: attr(data-label) ": "; font-weight:600; min-width:110px; color:var(--primary-color); }
+    table.theses-table td.actions-cell { display:block; padding-top:8px; }
+    table.theses-table td.actions-cell::before { content:""; display:none; }
+    table.theses-table td.actions-cell button { width:auto; font-size:0.75rem; padding:6px 14px; }
+}
+
+/* Horizontal scroll fallback (when we keep table form) */
+.table-scroll-x { overflow-x:auto; -webkit-overflow-scrolling:touch; }
+.table-scroll-x table { min-width:700px; }
 
 /* Extra vertical offset so announcements box doesn't stick to fixed header */
 .announcements-page .main-wrapper {
@@ -1538,3 +1615,23 @@ body.dashboard-page {
 .thesis-actions-wrapper {
     margin-top: var(--space-4);
 }
+
+/* Primary deep red variant */
+.btn-primary-red,
+button.btn-primary-red {
+    background: var(--primary-color);
+    color: var(--white);
+    border: 1px solid var(--primary-color);
+}
+.btn-primary-red:hover,
+button.btn-primary-red:hover { background: var(--primary-dark); }
+
+/* Unified invitation buttons (accept & decline same red style) */
+.invitation-btn {
+    background: var(--primary-color);
+    color: var(--white);
+    border: 1px solid var(--primary-color);
+    font-weight:600;
+}
+.invitation-btn:hover { background: var(--primary-dark); }
+.invitation-btn:focus { outline:2px solid var(--primary-dark); outline-offset:2px; }
